@@ -5,7 +5,11 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import NavBar from '@/components/NavBar';
 
-const Microsoft365 = () => {
+interface Microsoft365Props {
+  children?: React.ReactNode;
+}
+
+const Microsoft365 = ({ children }: Microsoft365Props) => {
   const location = useLocation();
   const [isHovering, setIsHovering] = React.useState<string | null>(null);
   
@@ -70,6 +74,8 @@ const Microsoft365 = () => {
           </div>
         </div>
       </div>
+      
+      {children}
     </div>
   );
 };
