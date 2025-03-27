@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -251,12 +250,14 @@ const Settings = () => {
                     <TenantForm 
                       onSubmit={handleAddTenant} 
                       onCancel={() => setIsAddingTenant(false)}
+                      existingTenants={tenants}
                     />
                   ) : editingTenant ? (
                     <TenantForm 
                       initialData={editingTenant}
                       onSubmit={handleEditTenant} 
                       onCancel={() => setEditingTenant(null)}
+                      existingTenants={tenants}
                     />
                   ) : (
                     <TenantsList 

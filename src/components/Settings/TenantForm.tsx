@@ -17,11 +17,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TenantConfig } from '@/utils/types';
+import { getTenants } from '@/utils/database';
+import { useToast } from '@/hooks/use-toast';
 
 const tenantFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Tenant name must be at least 2 characters.",
-  }),
+  name: z.string()
+    .min(3, {
+      message: "Tenant name must be at least 3 characters.",
+    })
+    .max(15, {
+      message: "Tenant name must not exceed 15 characters.",
+    })
+    .regex(/^[a-zA-Z0-9._-]+$/, {
+      message: "Tenant name can only contain letters, numbers, dots (.), underscores (_), or hyphens (-).",
+    }),
   tenantId: z.string().min(5, {
     message: "Tenant ID is required and must be at least 5 characters.",
   }),
@@ -40,13 +49,18 @@ type TenantFormProps = {
   initialData?: TenantConfig;
   onSubmit: (values: TenantFormValues) => void;
   onCancel: () => void;
+  existingTenants?: TenantConfig[];
 };
 
 const TenantForm: React.FC<TenantFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
+  existingTenants = [],
 }) => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
     defaultValues: initialData || {
@@ -58,9 +72,67 @@ const TenantForm: React.FC<TenantFormProps> = ({
     },
   });
 
+  const handleSubmit = async (values: TenantFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Get the latest tenants data to check for duplicates
+      const currentTenants = existingTenants.length > 0 
+        ? existingTenants 
+        : await getTenants();
+      
+      // Filter out the current tenant when editing
+      const otherTenants = initialData 
+        ? currentTenants.filter(t => t.id !== initialData.id) 
+        : currentTenants;
+
+      // Check for duplicate tenant name
+      const duplicateName = otherTenants.find(
+        tenant => tenant.name.toLowerCase() === values.name.toLowerCase()
+      );
+      
+      if (duplicateName) {
+        toast({
+          title: "Validation Error",
+          description: `A tenant with the name "${values.name}" already exists.`,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Check for duplicate tenant ID
+      const duplicateTenantId = otherTenants.find(
+        tenant => tenant.tenantId === values.tenantId
+      );
+      
+      if (duplicateTenantId) {
+        toast({
+          title: "Validation Error",
+          description: `A tenant with the ID "${values.tenantId}" already exists.`,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // All validations passed, submit the form
+      onSubmit(values);
+    } catch (error) {
+      console.error("Error validating tenant:", error);
+      toast({
+        title: "Validation Error",
+        description: "An error occurred while validating tenant information",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -72,7 +144,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                   <Input placeholder="Contoso Corp" {...field} />
                 </FormControl>
                 <FormDescription>
-                  A friendly name for this tenant
+                  A friendly name for this tenant (3-15 chars, alphanumeric with ., _, -)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -158,11 +230,12 @@ const TenantForm: React.FC<TenantFormProps> = ({
             variant="outline"
             onClick={onCancel}
             className="gap-2"
+            disabled={isSubmitting}
           >
             <X size={16} />
             <span>Cancel</span>
           </Button>
-          <Button type="submit" className="gap-2">
+          <Button type="submit" className="gap-2" disabled={isSubmitting}>
             <Save size={16} />
             <span>{initialData ? 'Update' : 'Save'} Tenant</span>
           </Button>
