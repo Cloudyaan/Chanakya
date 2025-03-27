@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
+import { Info, AlertCircle, MessageSquare, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Microsoft365 from '../Microsoft365';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getTenants, getTenantUpdates } from '@/utils/database';
 import { TenantConfig, TenantUpdate } from '@/utils/types';
 
@@ -39,6 +40,7 @@ const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [updates, setUpdates] = useState<TenantUpdate[]>([]);
+  const [systemMessages, setSystemMessages] = useState<TenantUpdate[]>([]);
 
   // Load tenants and updates
   const loadData = async () => {
@@ -56,8 +58,7 @@ const Updates = () => {
       
       // Load updates for selected tenant or all updates if none selected
       const tenantIdToUse = selectedTenantId || (loadedTenants[0]?.id || '');
-      const loadedUpdates = await getTenantUpdates(tenantIdToUse);
-      setUpdates(loadedUpdates);
+      await loadUpdatesForTenant(tenantIdToUse);
     } catch (error) {
       console.error("Error loading data:", error);
       toast({
@@ -81,12 +82,22 @@ const Updates = () => {
     loadUpdatesForTenant(tenantId);
   };
   
+  // Filter system messages from regular updates
+  const processUpdates = (allUpdates: TenantUpdate[]) => {
+    // Separate system messages from regular updates
+    const systemMsgs = allUpdates.filter(update => update.category === 'System');
+    const regularUpdates = allUpdates.filter(update => update.category !== 'System');
+    
+    setSystemMessages(systemMsgs);
+    setUpdates(regularUpdates);
+  };
+  
   // Load updates for a specific tenant
   const loadUpdatesForTenant = async (tenantId: string) => {
     try {
       setIsLoading(true);
       const loadedUpdates = await getTenantUpdates(tenantId);
-      setUpdates(loadedUpdates);
+      processUpdates(loadedUpdates);
     } catch (error) {
       console.error("Error loading updates for tenant:", error);
       toast({
@@ -94,6 +105,8 @@ const Updates = () => {
         description: "Failed to load updates for the selected tenant",
         variant: "destructive",
       });
+      setUpdates([]);
+      setSystemMessages([]);
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +142,26 @@ const Updates = () => {
           <h1 className="text-2xl font-semibold text-foreground">Message Center Updates</h1>
           <p className="text-m365-gray-500">Stay informed about changes and updates to Microsoft 365 services</p>
         </motion.div>
+        
+        {/* System Messages/Alerts */}
+        {systemMessages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="mb-6"
+          >
+            {systemMessages.map((message) => (
+              <Alert key={message.id} variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{message.title}</AlertTitle>
+                <AlertDescription>
+                  {message.description}
+                </AlertDescription>
+              </Alert>
+            ))}
+          </motion.div>
+        )}
         
         <Card className="mb-6">
           <CardHeader className="pb-3">
@@ -173,6 +206,11 @@ const Updates = () => {
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
                 <p>No updates found for this tenant</p>
+                {tenants.length === 0 && (
+                  <p className="mt-2 text-sm">
+                    Add a tenant in Settings to see updates
+                  </p>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm" 

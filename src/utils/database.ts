@@ -173,20 +173,55 @@ export const deleteAzureAccount = async (id: string): Promise<boolean> => {
 // Message Center Updates Operations
 export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[]> => {
   try {
+    // Build the URL with the tenantId if provided
     const url = tenantId 
       ? `${API_URL}/updates?tenantId=${tenantId}` 
       : `${API_URL}/updates`;
     
+    console.log(`Fetching tenant updates from: ${url}`);
+    
     const response = await fetch(url);
+    
+    // Handle different response status codes
     if (!response.ok) {
-      // If endpoint not found (404), return mock data
+      // If endpoint returns 404 (Not Found)
       if (response.status === 404) {
         console.warn('Updates endpoint not available, using mock data');
         return generateMockUpdates(tenantId);
       }
-      throw new Error('Failed to fetch tenant updates');
+      
+      // If endpoint returns 501 (Not Implemented) or 503 (Service Unavailable)
+      if (response.status === 501 || response.status === 503) {
+        console.warn('Updates service not implemented or unavailable, using mock data');
+        return generateMockUpdates(tenantId);
+      }
+      
+      // For 500 errors, check if there's a more detailed error message
+      if (response.status >= 500) {
+        try {
+          const errorData = await response.json();
+          console.error('Server error details:', errorData);
+          
+          // If the error mentions MSAL package, provide specific mock data
+          if (errorData.error && errorData.error.includes('msal')) {
+            console.warn('MSAL package missing on server, using mock data');
+            return generateMockUpdatesWithMsalError(tenantId);
+          }
+        } catch (e) {
+          // If we can't parse the error JSON, just log the status
+          console.error('Error response status:', response.status);
+        }
+        
+        return generateMockUpdates(tenantId);
+      }
+      
+      throw new Error(`Failed to fetch tenant updates: ${response.status}`);
     }
-    return await response.json();
+    
+    // If response is OK, parse and return the data
+    const data = await response.json();
+    console.log(`Received ${data.length} updates for tenant ID: ${tenantId || 'all'}`);
+    return data;
   } catch (error) {
     console.error('Error fetching tenant updates:', error);
     // Return mock data in case of any error
@@ -235,4 +270,25 @@ const generateMockUpdates = (tenantId?: string): TenantUpdate[] => {
       publishedDate: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
     }
   ];
+};
+
+// Generate mock updates specifically for MSAL-related errors
+const generateMockUpdatesWithMsalError = (tenantId?: string): TenantUpdate[] => {
+  const baseUpdates = generateMockUpdates(tenantId);
+  
+  // Add a special update about the MSAL dependency
+  baseUpdates.unshift({
+    id: 'msal-error',
+    tenantId: tenantId || 'default',
+    tenantName: 'System Message',
+    title: 'Backend Configuration Required: MSAL Package Missing',
+    messageId: 'SYS-MSAL-001',
+    description: 'The backend server is missing the MSAL Python package required to fetch real data from Microsoft Graph. Please install it using "pip install msal" on the server.',
+    category: 'System',
+    severity: 'High',
+    actionType: 'Action Required',
+    publishedDate: new Date().toISOString(),
+  });
+  
+  return baseUpdates;
 };
