@@ -1,4 +1,5 @@
 
+
 export interface License {
   id: string;
   name: string;
@@ -49,3 +50,4 @@ export interface LicenseDistribution {
   count: number;
   color: string;
 }
+
