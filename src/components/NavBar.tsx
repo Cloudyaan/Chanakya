@@ -8,15 +8,17 @@ const NavBar = () => {
   const location = useLocation();
   const [isHovering, setIsHovering] = useState<string | null>(null);
 
+  // Simplified top-level navigation
   const navItems = [
-    { name: 'Dashboard', path: '/' },
-    { name: 'Licenses', path: '/licenses' },
-    { name: 'M365 Licensing', path: '/m365-licensing' },
-    { name: 'M365 DSC', path: '/m365-dsc' },
-    { name: 'Azure Cost', path: '/azure-cost' },
-    { name: 'Reports', path: '/reports' },
+    { name: 'Microsoft 365', path: '/microsoft-365' },
+    { name: 'Azure', path: '/azure' },
     { name: 'Settings', path: '/settings' }
   ];
+
+  // Check if we're in a top-level path
+  const currentTopLevel = navItems.find(item => 
+    location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+  );
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-border">
@@ -33,7 +35,7 @@ const NavBar = () => {
           
           <div className="flex items-center overflow-x-auto scrollbar-hide space-x-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = currentTopLevel?.path === item.path;
               
               return (
                 <Link

@@ -1,5 +1,3 @@
-
-
 export interface License {
   id: string;
   name: string;
@@ -51,3 +49,13 @@ export interface LicenseDistribution {
   color: string;
 }
 
+export interface AzureConfig {
+  id: string;
+  name: string;
+  subscriptionId: string;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  isActive: boolean;
+  dateAdded: string;
+}

@@ -5,11 +5,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Licenses from "./pages/Licenses";
-import M365Licensing from "./pages/M365Licensing";
-import M365DSC from "./pages/M365DSC";
-import AzureCost from "./pages/AzureCost";
-import Reports from "./pages/Reports";
+import Licenses from "./pages/Microsoft365/Licenses";
+import M365Dashboard from "./pages/Microsoft365/Dashboard";
+import M365DSC from "./pages/Microsoft365/M365DSC";
+import Reports from "./pages/Microsoft365/Reports";
+import Microsoft365 from "./pages/Microsoft365";
+import Azure from "./pages/Azure";
+import AzureCostAnalysis from "./pages/Azure/CostAnalysis";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -23,11 +25,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/licenses" element={<Licenses />} />
-          <Route path="/m365-licensing" element={<M365Licensing />} />
-          <Route path="/m365-dsc" element={<M365DSC />} />
-          <Route path="/azure-cost" element={<AzureCost />} />
-          <Route path="/reports" element={<Reports />} />
+          <Route path="/microsoft-365" element={<Microsoft365 />} />
+          <Route path="/microsoft-365/dashboard" element={<M365Dashboard />} />
+          <Route path="/microsoft-365/licenses" element={<Licenses />} />
+          <Route path="/microsoft-365/dsc" element={<M365DSC />} />
+          <Route path="/microsoft-365/reports" element={<Reports />} />
+          <Route path="/azure" element={<Azure />} />
+          <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
