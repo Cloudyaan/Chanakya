@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Licenses from "./pages/Licenses";
+import M365Licensing from "./pages/M365Licensing";
+import M365DSC from "./pages/M365DSC";
+import AzureCost from "./pages/AzureCost";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -21,6 +24,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/licenses" element={<Licenses />} />
+          <Route path="/m365-licensing" element={<M365Licensing />} />
+          <Route path="/m365-dsc" element={<M365DSC />} />
+          <Route path="/azure-cost" element={<AzureCost />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

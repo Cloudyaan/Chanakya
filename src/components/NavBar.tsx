@@ -11,7 +11,11 @@ const NavBar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/' },
     { name: 'Licenses', path: '/licenses' },
-    { name: 'Reports', path: '/reports' }
+    { name: 'M365 Licensing', path: '/m365-licensing' },
+    { name: 'M365 DSC', path: '/m365-dsc' },
+    { name: 'Azure Cost', path: '/azure-cost' },
+    { name: 'Reports', path: '/reports' },
+    { name: 'Settings', path: '/settings' }
   ];
 
   return (
@@ -27,7 +31,7 @@ const NavBar = () => {
             </Link>
           </div>
           
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center overflow-x-auto scrollbar-hide space-x-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               
@@ -36,7 +40,7 @@ const NavBar = () => {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "relative px-4 py-2 rounded-md text-sm font-medium premium-transition",
+                    "relative px-3 py-2 rounded-md text-sm font-medium premium-transition whitespace-nowrap",
                     isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                   onMouseEnter={() => setIsHovering(item.path)}
@@ -46,7 +50,7 @@ const NavBar = () => {
                   
                   {isActive && (
                     <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-600 mx-4"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-600 mx-3"
                       layoutId="navbar-indicator"
                       initial={false}
                       transition={{ type: "spring", stiffness: 350, damping: 30 }}
@@ -55,7 +59,7 @@ const NavBar = () => {
                   
                   {isHovering === item.path && !isActive && (
                     <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-300 mx-4"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-300 mx-3"
                       layoutId="navbar-hover"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
