@@ -27,9 +27,9 @@ const NavBar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-m365-600 rounded flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">M365</span>
+                <span className="text-white font-semibold text-sm">CH</span>
               </div>
-              <span className="text-foreground font-semibold text-lg">License Keeper</span>
+              <span className="text-foreground font-semibold text-lg">Chanakya</span>
             </Link>
           </div>
           
