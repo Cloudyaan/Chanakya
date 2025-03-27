@@ -59,3 +59,18 @@ export interface AzureConfig {
   isActive: boolean;
   dateAdded: string;
 }
+
+export interface TenantUpdate {
+  id: string;
+  tenantId: string;
+  tenantName?: string;
+  title: string;
+  messageId: string;
+  description: string;
+  category: string;
+  severity?: 'High' | 'Medium' | 'Low' | 'Normal';
+  actionType?: 'Action Required' | 'Plan for Change' | 'Informational';
+  publishedDate: string;
+  lastModifiedDate?: string;
+  isRead?: boolean;
+}

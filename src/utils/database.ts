@@ -1,4 +1,4 @@
-import { TenantConfig, AzureConfig } from './types';
+import { TenantConfig, AzureConfig, TenantUpdate } from './types';
 
 // Use the exact URL that's shown in the Flask terminal output
 const API_URL = 'http://127.0.0.1:5000/api';
@@ -166,5 +166,23 @@ export const deleteAzureAccount = async (id: string): Promise<boolean> => {
   } catch (error) {
     console.error('Error deleting Azure account:', error);
     return false;
+  }
+};
+
+// Message Center Updates Operations
+export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[]> => {
+  try {
+    const url = tenantId 
+      ? `${API_URL}/updates?tenantId=${tenantId}` 
+      : `${API_URL}/updates`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch tenant updates');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching tenant updates:', error);
+    return [];
   }
 };
