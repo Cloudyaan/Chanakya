@@ -5,6 +5,8 @@ import sqlite3
 import uuid
 import json
 from datetime import datetime
+import os
+import importlib.util
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -138,10 +140,23 @@ def update_tenant(id):
 
 @app.route('/api/tenants/<string:id>', methods=['DELETE'])
 def delete_tenant(id):
+    # First, check if there's a tenant-specific database we need to delete
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM tenants WHERE id = ?', (id,))
+    tenant = cursor.execute('SELECT tenantId FROM tenants WHERE id = ?', (id,)).fetchone()
     
+    if tenant:
+        # Try to delete the tenant-specific updates database if it exists
+        tenant_db_path = f"service_announcements_{tenant['tenantId']}.db"
+        if os.path.exists(tenant_db_path):
+            try:
+                os.remove(tenant_db_path)
+                print(f"Deleted tenant database: {tenant_db_path}")
+            except Exception as e:
+                print(f"Error deleting tenant database: {e}")
+    
+    # Now delete the tenant record
+    cursor.execute('DELETE FROM tenants WHERE id = ?', (id,))
     conn.commit()
     conn.close()
     
@@ -244,6 +259,119 @@ def delete_azure_account(id):
     conn.close()
     
     return jsonify({'success': True})
+
+# New endpoint for tenant updates
+@app.route('/api/updates', methods=['GET'])
+def get_updates():
+    tenant_id = request.args.get('tenantId')
+    
+    # If no tenant ID is specified, return an error
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId parameter'
+        }), 400
+    
+    # Try to find the tenant
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    # Check if MSAL is installed
+    msal_spec = importlib.util.find_spec('msal')
+    if msal_spec is None:
+        return jsonify({
+            'error': 'MSAL package not installed',
+            'message': 'The MSAL package is required to fetch updates from Microsoft Graph. Please install it using "pip install msal".'
+        }), 503  # 503 Service Unavailable
+    
+    try:
+        # Check if the tenant-specific database exists
+        db_path = f"service_announcements_{tenant['tenantId']}.db"
+        has_database = os.path.exists(db_path)
+        
+        # If the database doesn't exist yet, try to create it and fetch fresh data
+        if not has_database:
+            # Import the required packages here to avoid errors if they're not installed
+            import msal
+            import requests
+            
+            # This would be where we fetch new data from Microsoft Graph
+            # For demonstration, we'll just return a message for now
+            return jsonify({
+                'message': 'No updates database found for this tenant',
+                'instructions': 'Run the data fetching script to populate the updates database'
+            }), 404
+        
+        # If the database exists, read from it
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Check if the announcements table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='announcements'")
+            if not cursor.fetchone():
+                return jsonify([])  # Return empty array if table doesn't exist
+            
+            # Get the announcements
+            cursor.execute("""
+                SELECT 
+                    id,
+                    title,
+                    category,
+                    severity,
+                    lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType,
+                    bodyContent as description
+                FROM announcements
+                ORDER BY lastModifiedDateTime DESC
+                LIMIT 100
+            """)
+            
+            updates = []
+            for row in cursor.fetchall():
+                # Convert SQLite row to dictionary
+                update = dict(row)
+                
+                # Map action type
+                action_type = update.get('actionType')
+                if action_type == 'MajorChange':
+                    update['actionType'] = 'Action Required'
+                else:
+                    update['actionType'] = 'Informational'
+                
+                # Add tenant information
+                update['tenantId'] = tenant['tenantId']
+                update['tenantName'] = tenant['name']
+                
+                # Add a message ID if not present
+                if 'messageId' not in update:
+                    update['messageId'] = f"MC{update['id'][-6:]}"
+                
+                updates.append(update)
+            
+            conn.close()
+            return jsonify(updates)
+            
+        except sqlite3.Error as e:
+            return jsonify({
+                'error': 'Database error',
+                'message': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
