@@ -6,9 +6,13 @@ import './index.css';
 import { initDatabases } from './utils/database';
 
 // Initialize databases at application startup
-initDatabases().catch(error => {
-  console.error('Failed to initialize databases:', error);
-});
+initDatabases()
+  .then(success => {
+    console.log('Database initialization:', success ? 'successful' : 'failed');
+  })
+  .catch(error => {
+    console.error('Failed to initialize databases:', error);
+  });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
