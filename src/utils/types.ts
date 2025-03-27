@@ -26,6 +26,16 @@ export interface Tenant {
   activeUsers: number;
 }
 
+export interface TenantConfig {
+  id: string;
+  name: string;
+  tenantId: string;
+  applicationId: string;
+  applicationSecret: string;
+  isActive: boolean;
+  dateAdded: string;
+}
+
 export interface LicenseMetric {
   name: string;
   value: number;
