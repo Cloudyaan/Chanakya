@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import NavBar from '@/components/NavBar';
@@ -60,6 +59,7 @@ const M365Licensing = () => {
         const mockLicenses: License[] = [
           {
             id: "license-1",
+            name: "Microsoft 365 E3",
             sku: "ENTERPRISEPACK",
             displayName: "Microsoft 365 E3",
             totalCount: 100,
@@ -68,13 +68,14 @@ const M365Licensing = () => {
             renewalDate: new Date().toISOString(),
             price: 32,
             currency: "USD",
-            tenantId: tenant?.id || "",
-            tenantName: tenant?.name || "Unknown",
+            tenantId: tenant?.id,
+            tenantName: tenant?.name,
             includedServices: ["Exchange Online", "SharePoint Online", "Teams", "OneDrive for Business"],
             description: "Microsoft 365 E3 includes premium Office applications, security and compliance tools, and Windows 10 Enterprise."
           },
           {
             id: "license-2",
+            name: "Microsoft 365 E5",
             sku: "ENTERPRISEPREMIUM",
             displayName: "Microsoft 365 E5",
             totalCount: 20,
@@ -83,8 +84,8 @@ const M365Licensing = () => {
             renewalDate: new Date().toISOString(),
             price: 57,
             currency: "USD",
-            tenantId: tenant?.id || "",
-            tenantName: tenant?.name || "Unknown",
+            tenantId: tenant?.id,
+            tenantName: tenant?.name,
             includedServices: ["Exchange Online", "SharePoint Online", "Teams", "OneDrive for Business", "Power BI Pro", "Advanced Security"],
             description: "Microsoft 365 E5 includes all E3 features plus advanced security, analytics, and voice capabilities."
           }

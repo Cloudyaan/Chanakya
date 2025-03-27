@@ -48,7 +48,7 @@ type TenantFormValues = z.infer<typeof tenantFormSchema>;
 
 type TenantFormProps = {
   initialData?: TenantConfig;
-  onSubmit: (values: TenantFormValues) => void;
+  onSubmit: (values: TenantConfig) => void;
   onCancel: () => void;
   existingTenants?: TenantConfig[];
 };
@@ -123,9 +123,13 @@ const TenantForm: React.FC<TenantFormProps> = ({
       console.log("Submitting tenant with values:", values);
       
       const finalValues: TenantConfig = {
-        ...values,
-        id: initialData?.id || crypto.randomUUID(),
-        dateAdded: initialData?.dateAdded || new Date().toISOString(),
+        id: values.id || initialData?.id || crypto.randomUUID(),
+        name: values.name,
+        tenantId: values.tenantId,
+        applicationId: values.applicationId,
+        applicationSecret: values.applicationSecret,
+        isActive: values.isActive,
+        dateAdded: values.dateAdded || initialData?.dateAdded || new Date().toISOString(),
       };
       
       console.log("Final tenant data being submitted:", finalValues);

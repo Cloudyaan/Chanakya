@@ -11,6 +11,8 @@ export interface License {
   currency?: string;
   renewalDate?: string;
   includedServices?: string[];
+  tenantId?: string;
+  tenantName?: string;
 }
 
 export interface Tenant {
