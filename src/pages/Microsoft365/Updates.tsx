@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, AlertCircle, MessageSquare, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Info, AlertCircle, MessageSquare, RefreshCw, AlertTriangle, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Microsoft365 from '../Microsoft365';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ const getActionTypeColor = (actionType?: string) => {
 const Updates = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [updates, setUpdates] = useState<TenantUpdate[]>([]);
@@ -130,6 +131,55 @@ const Updates = () => {
     });
   };
 
+  // Handle fetch updates
+  const handleFetchUpdates = async () => {
+    if (!selectedTenantId) {
+      toast({
+        title: "Error",
+        description: "No tenant selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsFetching(true);
+      const response = await fetch('http://127.0.0.1:5000/api/fetch-updates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tenantId: selectedTenantId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: data.message || "Successfully fetched updates",
+        });
+        // Reload updates after fetching
+        await loadUpdatesForTenant(selectedTenantId);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to fetch updates",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching updates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch updates. Make sure the backend server is running.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
@@ -194,6 +244,16 @@ const Updates = () => {
                   <RefreshCw size={14} />
                   <span>Refresh</span>
                 </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={handleFetchUpdates}
+                  disabled={isFetching || !selectedTenantId}
+                >
+                  <Download size={14} />
+                  <span>{isFetching ? "Fetching..." : "Fetch Updates"}</span>
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -211,14 +271,23 @@ const Updates = () => {
                     Add a tenant in Settings to see updates
                   </p>
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4"
-                  onClick={handleRefresh}
-                >
-                  Refresh Updates
-                </Button>
+                <div className="flex gap-2 justify-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRefresh}
+                  >
+                    Refresh Updates
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={handleFetchUpdates}
+                    disabled={isFetching || !selectedTenantId}
+                  >
+                    {isFetching ? "Fetching..." : "Fetch Updates"}
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">

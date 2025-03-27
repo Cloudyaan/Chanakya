@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 import os
 import importlib.util
+import subprocess
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -297,17 +298,11 @@ def get_updates():
         db_path = f"service_announcements_{tenant['tenantId']}.db"
         has_database = os.path.exists(db_path)
         
-        # If the database doesn't exist yet, try to create it and fetch fresh data
+        # If the database doesn't exist yet, return a helpful message with instructions
         if not has_database:
-            # Import the required packages here to avoid errors if they're not installed
-            import msal
-            import requests
-            
-            # This would be where we fetch new data from Microsoft Graph
-            # For demonstration, we'll just return a message for now
             return jsonify({
-                'message': 'No updates database found for this tenant',
-                'instructions': 'Run the data fetching script to populate the updates database'
+                'error': 'Database not found',
+                'message': f'No updates database found for this tenant. Run the fetch_updates.py script with the tenant ID: python fetch_updates.py {tenant_id}'
             }), 404
         
         # If the database exists, read from it
@@ -371,6 +366,60 @@ def get_updates():
         return jsonify({
             'error': 'Server error',
             'message': str(e)
+        }), 500
+
+# New endpoint to trigger the fetch_updates.py script for a specific tenant
+@app.route('/api/fetch-updates', methods=['POST'])
+def trigger_fetch_updates():
+    tenant_id = request.json.get('tenantId')
+    
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId in the request body'
+        }), 400
+    
+    # Check if the tenant exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    # Check if MSAL is installed
+    msal_spec = importlib.util.find_spec('msal')
+    if msal_spec is None:
+        return jsonify({
+            'error': 'MSAL package not installed',
+            'message': 'The MSAL package is required to fetch updates from Microsoft Graph. Please install it using "pip install msal".'
+        }), 503  # 503 Service Unavailable
+    
+    try:
+        # On Windows, run the batch file
+        if os.name == 'nt':
+            subprocess.run(['fetch_updates.bat', tenant_id], check=True)
+        else:
+            # On non-Windows, run the Python script directly
+            subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully fetched updates for tenant {tenant["name"]}'
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'error': 'Fetch updates failed',
+            'message': f'Error running fetch_updates script: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': f'Unexpected error: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

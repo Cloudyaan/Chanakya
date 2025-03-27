@@ -238,6 +238,30 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
   }
 };
 
+// Function to fetch updates from Microsoft Graph for a specific tenant
+export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_URL}/fetch-updates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tenantId }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error fetching updates:', errorData);
+      throw new Error(errorData.message || 'Failed to fetch updates');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error triggering update fetch:', error);
+    return false;
+  }
+};
+
 // Generate mock updates for demonstration
 const generateMockUpdates = (tenantId?: string): TenantUpdate[] => {
   // Create mock updates with the current tenantId

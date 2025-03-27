@@ -36,16 +36,37 @@ If you encounter errors installing MSAL:
 After installing MSAL, you can fetch updates by:
 
 1. Running the Flask server: `python app.py`
-2. Running the fetch script: `python fetch_updates.py`
+2. Going to the Updates page in the web application and clicking the "Fetch Updates" button
 
-The fetch script can be run for all tenants or for a specific tenant by providing the tenant ID as an argument:
+OR
+
+Using the fetch script directly:
 
 ```bash
+# For Windows:
+fetch_updates.bat <tenant_id>
+
+# For macOS/Linux:
 python fetch_updates.py <tenant_id>
 ```
 
-Or use the batch file:
+Where `<tenant_id>` is the ID of the tenant you want to fetch updates for.
 
-```bash
-fetch_updates.bat <tenant_id>
-```
+## Common Errors
+
+If you see the error message "Data Initialization Required" or "MSAL package missing", here are the steps to resolve:
+
+1. Make sure MSAL is installed: `pip install msal`
+2. Run the fetch updates script manually: `python fetch_updates.py <tenant_id>`
+3. Check that your tenant credentials (Application ID, Application Secret, etc.) are correct
+4. Ensure your Azure AD application has the appropriate permissions
+
+## Required Permissions for the Azure AD Application
+
+The Azure AD application used for fetching updates needs the following API permissions:
+
+- Microsoft Graph API:
+  - ServiceMessage.Read.All (Application permission)
+  - Organization.Read.All (Application permission)
+
+Make sure these permissions are granted and admin consent is provided in the Azure portal.
