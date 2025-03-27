@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -59,28 +60,28 @@ const Settings = () => {
     initializeData();
   }, []);
 
-  const loadTenants = () => {
-    const loadedTenants = getTenants();
+  const loadTenants = async () => {
+    const loadedTenants = await getTenants();
     setTenants(loadedTenants);
   };
 
-  const loadAzureAccounts = () => {
-    const loadedAccounts = getAzureAccounts();
+  const loadAzureAccounts = async () => {
+    const loadedAccounts = await getAzureAccounts();
     setAzureAccounts(loadedAccounts);
   };
 
   // M365 Tenant handlers
-  const handleAddTenant = (tenant: Omit<TenantConfig, 'id' | 'dateAdded'>) => {
+  const handleAddTenant = async (tenant: Omit<TenantConfig, 'id' | 'dateAdded'>) => {
     const newTenant: TenantConfig = {
       ...tenant,
       id: crypto.randomUUID(),
       dateAdded: new Date().toISOString(),
     };
     
-    const success = addTenant(newTenant);
+    const success = await addTenant(newTenant);
     
     if (success) {
-      loadTenants();
+      await loadTenants();
       setIsAddingTenant(false);
       
       toast({
@@ -96,11 +97,11 @@ const Settings = () => {
     }
   };
 
-  const handleEditTenant = (updatedTenant: TenantConfig) => {
-    const success = updateTenant(updatedTenant);
+  const handleEditTenant = async (updatedTenant: TenantConfig) => {
+    const success = await updateTenant(updatedTenant);
     
     if (success) {
-      loadTenants();
+      await loadTenants();
       setEditingTenant(null);
       
       toast({
@@ -116,12 +117,12 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteTenant = (id: string) => {
+  const handleDeleteTenant = async (id: string) => {
     const tenantToDelete = tenants.find(tenant => tenant.id === id);
-    const success = deleteTenant(id);
+    const success = await deleteTenant(id);
     
     if (success) {
-      loadTenants();
+      await loadTenants();
       
       toast({
         title: "Tenant removed",
@@ -138,17 +139,17 @@ const Settings = () => {
   };
 
   // Azure account handlers
-  const handleAddAzure = (azure: Omit<AzureConfig, 'id' | 'dateAdded'>) => {
+  const handleAddAzure = async (azure: Omit<AzureConfig, 'id' | 'dateAdded'>) => {
     const newAzure: AzureConfig = {
       ...azure,
       id: crypto.randomUUID(),
       dateAdded: new Date().toISOString(),
     };
     
-    const success = addAzureAccount(newAzure);
+    const success = await addAzureAccount(newAzure);
     
     if (success) {
-      loadAzureAccounts();
+      await loadAzureAccounts();
       setIsAddingAzure(false);
       
       toast({
@@ -164,11 +165,11 @@ const Settings = () => {
     }
   };
 
-  const handleEditAzure = (updatedAzure: AzureConfig) => {
-    const success = updateAzureAccount(updatedAzure);
+  const handleEditAzure = async (updatedAzure: AzureConfig) => {
+    const success = await updateAzureAccount(updatedAzure);
     
     if (success) {
-      loadAzureAccounts();
+      await loadAzureAccounts();
       setEditingAzure(null);
       
       toast({
@@ -184,12 +185,12 @@ const Settings = () => {
     }
   };
 
-  const handleDeleteAzure = (id: string) => {
+  const handleDeleteAzure = async (id: string) => {
     const azureToDelete = azureAccounts.find(azure => azure.id === id);
-    const success = deleteAzureAccount(id);
+    const success = await deleteAzureAccount(id);
     
     if (success) {
-      loadAzureAccounts();
+      await loadAzureAccounts();
       
       toast({
         title: "Azure account removed",

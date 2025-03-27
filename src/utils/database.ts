@@ -1,52 +1,50 @@
 
 import { TenantConfig, AzureConfig } from './types';
-import Database from 'better-sqlite3';
-import { app } from '@tauri-apps/api';
-import * as path from 'path';
-import * as fs from 'fs';
 
-// Ensure the database directory exists
-let dbPath = './data';
-let tenantsDb: Database.Database;
-let azureDb: Database.Database;
+// IndexedDB database names and stores
+const DB_NAME = 'chanakya-db';
+const DB_VERSION = 1;
+const TENANTS_STORE = 'tenants';
+const AZURE_STORE = 'azure-accounts';
+
+// Open database connection
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => {
+      console.error("Error opening database:", request.error);
+      reject(request.error);
+    };
+    
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = request.result;
+      
+      // Create M365 tenants object store if it doesn't exist
+      if (!db.objectStoreNames.contains(TENANTS_STORE)) {
+        const tenantStore = db.createObjectStore(TENANTS_STORE, { keyPath: 'id' });
+        tenantStore.createIndex('name', 'name', { unique: false });
+        tenantStore.createIndex('isActive', 'isActive', { unique: false });
+      }
+      
+      // Create Azure accounts object store if it doesn't exist
+      if (!db.objectStoreNames.contains(AZURE_STORE)) {
+        const azureStore = db.createObjectStore(AZURE_STORE, { keyPath: 'id' });
+        azureStore.createIndex('name', 'name', { unique: false });
+        azureStore.createIndex('isActive', 'isActive', { unique: false });
+      }
+    };
+  });
+};
 
 // Initialize databases
-export const initDatabases = async () => {
+export const initDatabases = async (): Promise<boolean> => {
   try {
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(dbPath)) {
-      fs.mkdirSync(dbPath, { recursive: true });
-    }
-
-    // Initialize M365 tenants database
-    tenantsDb = new Database(path.join(dbPath, 'tenants.db'));
-    tenantsDb.exec(`
-      CREATE TABLE IF NOT EXISTS tenants (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        tenantId TEXT NOT NULL,
-        applicationId TEXT NOT NULL,
-        applicationSecret TEXT NOT NULL,
-        isActive INTEGER NOT NULL DEFAULT 1,
-        dateAdded TEXT NOT NULL
-      )
-    `);
-
-    // Initialize Azure accounts database
-    azureDb = new Database(path.join(dbPath, 'azure.db'));
-    azureDb.exec(`
-      CREATE TABLE IF NOT EXISTS azure_accounts (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        subscriptionId TEXT NOT NULL,
-        tenantId TEXT NOT NULL,
-        clientId TEXT NOT NULL,
-        clientSecret TEXT NOT NULL,
-        isActive INTEGER NOT NULL DEFAULT 1,
-        dateAdded TEXT NOT NULL
-      )
-    `);
-
+    await openDB();
     console.log('Databases initialized successfully');
     return true;
   } catch (error) {
@@ -55,152 +53,132 @@ export const initDatabases = async () => {
   }
 };
 
-// M365 Tenant Operations
-export const getTenants = (): TenantConfig[] => {
+// Generic function to get all items from a store
+const getAllItems = async <T>(storeName: string): Promise<T[]> => {
   try {
-    const stmt = tenantsDb.prepare('SELECT * FROM tenants');
-    const tenants = stmt.all() as TenantConfig[];
-    return tenants.map(tenant => ({
-      ...tenant,
-      isActive: Boolean(tenant.isActive)
-    }));
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+      
+      request.onsuccess = () => {
+        resolve(request.result as T[]);
+      };
+      
+      request.onerror = () => {
+        console.error(`Error fetching items from ${storeName}:`, request.error);
+        reject(request.error);
+      };
+    });
   } catch (error) {
-    console.error('Error fetching tenants:', error);
+    console.error(`Error accessing ${storeName} store:`, error);
     return [];
   }
 };
 
-export const addTenant = (tenant: TenantConfig): boolean => {
+// Generic function to add an item to a store
+const addItem = async <T>(storeName: string, item: T): Promise<boolean> => {
   try {
-    const stmt = tenantsDb.prepare(`
-      INSERT INTO tenants (id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      tenant.id,
-      tenant.name,
-      tenant.tenantId,
-      tenant.applicationId,
-      tenant.applicationSecret,
-      tenant.isActive ? 1 : 0,
-      tenant.dateAdded
-    );
-    
-    return true;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.add(item);
+      
+      request.onsuccess = () => {
+        resolve(true);
+      };
+      
+      request.onerror = () => {
+        console.error(`Error adding item to ${storeName}:`, request.error);
+        reject(request.error);
+      };
+    });
   } catch (error) {
-    console.error('Error adding tenant:', error);
+    console.error(`Error accessing ${storeName} store:`, error);
     return false;
   }
 };
 
-export const updateTenant = (tenant: TenantConfig): boolean => {
+// Generic function to update an item in a store
+const updateItem = async <T>(storeName: string, item: T): Promise<boolean> => {
   try {
-    const stmt = tenantsDb.prepare(`
-      UPDATE tenants 
-      SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?
-      WHERE id = ?
-    `);
-    
-    stmt.run(
-      tenant.name,
-      tenant.tenantId,
-      tenant.applicationId,
-      tenant.applicationSecret,
-      tenant.isActive ? 1 : 0,
-      tenant.id
-    );
-    
-    return true;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.put(item);
+      
+      request.onsuccess = () => {
+        resolve(true);
+      };
+      
+      request.onerror = () => {
+        console.error(`Error updating item in ${storeName}:`, request.error);
+        reject(request.error);
+      };
+    });
   } catch (error) {
-    console.error('Error updating tenant:', error);
+    console.error(`Error accessing ${storeName} store:`, error);
     return false;
   }
 };
 
-export const deleteTenant = (id: string): boolean => {
+// Generic function to delete an item from a store
+const deleteItem = async (storeName: string, id: string): Promise<boolean> => {
   try {
-    const stmt = tenantsDb.prepare('DELETE FROM tenants WHERE id = ?');
-    stmt.run(id);
-    return true;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.delete(id);
+      
+      request.onsuccess = () => {
+        resolve(true);
+      };
+      
+      request.onerror = () => {
+        console.error(`Error deleting item from ${storeName}:`, request.error);
+        reject(request.error);
+      };
+    });
   } catch (error) {
-    console.error('Error deleting tenant:', error);
+    console.error(`Error accessing ${storeName} store:`, error);
     return false;
   }
+};
+
+// M365 Tenant Operations
+export const getTenants = async (): Promise<TenantConfig[]> => {
+  return await getAllItems<TenantConfig>(TENANTS_STORE);
+};
+
+export const addTenant = async (tenant: TenantConfig): Promise<boolean> => {
+  return await addItem<TenantConfig>(TENANTS_STORE, tenant);
+};
+
+export const updateTenant = async (tenant: TenantConfig): Promise<boolean> => {
+  return await updateItem<TenantConfig>(TENANTS_STORE, tenant);
+};
+
+export const deleteTenant = async (id: string): Promise<boolean> => {
+  return await deleteItem(TENANTS_STORE, id);
 };
 
 // Azure Account Operations
-export const getAzureAccounts = (): AzureConfig[] => {
-  try {
-    const stmt = azureDb.prepare('SELECT * FROM azure_accounts');
-    const accounts = stmt.all() as AzureConfig[];
-    return accounts.map(account => ({
-      ...account,
-      isActive: Boolean(account.isActive)
-    }));
-  } catch (error) {
-    console.error('Error fetching Azure accounts:', error);
-    return [];
-  }
+export const getAzureAccounts = async (): Promise<AzureConfig[]> => {
+  return await getAllItems<AzureConfig>(AZURE_STORE);
 };
 
-export const addAzureAccount = (account: AzureConfig): boolean => {
-  try {
-    const stmt = azureDb.prepare(`
-      INSERT INTO azure_accounts (id, name, subscriptionId, tenantId, clientId, clientSecret, isActive, dateAdded)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      account.id,
-      account.name,
-      account.subscriptionId,
-      account.tenantId,
-      account.clientId,
-      account.clientSecret,
-      account.isActive ? 1 : 0,
-      account.dateAdded
-    );
-    
-    return true;
-  } catch (error) {
-    console.error('Error adding Azure account:', error);
-    return false;
-  }
+export const addAzureAccount = async (account: AzureConfig): Promise<boolean> => {
+  return await addItem<AzureConfig>(AZURE_STORE, account);
 };
 
-export const updateAzureAccount = (account: AzureConfig): boolean => {
-  try {
-    const stmt = azureDb.prepare(`
-      UPDATE azure_accounts 
-      SET name = ?, subscriptionId = ?, tenantId = ?, clientId = ?, clientSecret = ?, isActive = ?
-      WHERE id = ?
-    `);
-    
-    stmt.run(
-      account.name,
-      account.subscriptionId,
-      account.tenantId,
-      account.clientId,
-      account.clientSecret,
-      account.isActive ? 1 : 0,
-      account.id
-    );
-    
-    return true;
-  } catch (error) {
-    console.error('Error updating Azure account:', error);
-    return false;
-  }
+export const updateAzureAccount = async (account: AzureConfig): Promise<boolean> => {
+  return await updateItem<AzureConfig>(AZURE_STORE, account);
 };
 
-export const deleteAzureAccount = (id: string): boolean => {
-  try {
-    const stmt = azureDb.prepare('DELETE FROM azure_accounts WHERE id = ?');
-    stmt.run(id);
-    return true;
-  } catch (error) {
-    console.error('Error deleting Azure account:', error);
-    return false;
-  }
+export const deleteAzureAccount = async (id: string): Promise<boolean> => {
+  return await deleteItem(AZURE_STORE, id);
 };
