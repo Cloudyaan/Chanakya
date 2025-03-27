@@ -61,7 +61,13 @@ export const addTenant = async (tenant: TenantConfig): Promise<boolean> => {
 
 export const updateTenant = async (tenant: TenantConfig): Promise<boolean> => {
   try {
-    console.log("Updating tenant in database:", tenant);
+    if (!tenant.id) {
+      console.error("Cannot update tenant: Missing ID");
+      return false;
+    }
+    
+    console.log(`Updating tenant in database (ID: ${tenant.id}):`, tenant);
+    
     const response = await fetch(`${API_URL}/tenants/${tenant.id}`, {
       method: 'PUT',
       headers: {
@@ -72,6 +78,8 @@ export const updateTenant = async (tenant: TenantConfig): Promise<boolean> => {
     
     if (!response.ok) {
       console.error("API error response:", response.status);
+      const errorData = await response.json().catch(() => null);
+      console.error("Error details:", errorData);
       throw new Error('Failed to update tenant');
     }
     

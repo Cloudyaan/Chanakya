@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -21,6 +20,7 @@ import { getTenants } from '@/utils/database';
 import { useToast } from '@/hooks/use-toast';
 
 const tenantFormSchema = z.object({
+  id: z.string().optional(),
   name: z.string()
     .min(3, {
       message: "Tenant name must be at least 3 characters.",
@@ -41,6 +41,7 @@ const tenantFormSchema = z.object({
     message: "Application secret is required and must be at least 8 characters.",
   }),
   isActive: z.boolean().default(true),
+  dateAdded: z.string().optional(),
 });
 
 type TenantFormValues = z.infer<typeof tenantFormSchema>;
@@ -72,7 +73,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
     },
   });
 
-  // Debug the form values when they change
   React.useEffect(() => {
     const subscription = form.watch((value) => {
       console.log("Form values changed:", value);
@@ -84,17 +84,14 @@ const TenantForm: React.FC<TenantFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Get the latest tenants data to check for duplicates
       const currentTenants = existingTenants.length > 0 
         ? existingTenants 
         : await getTenants();
       
-      // Filter out the current tenant when editing
       const otherTenants = initialData 
         ? currentTenants.filter(t => t.id !== initialData.id) 
         : currentTenants;
 
-      // Check for duplicate tenant name
       const duplicateName = otherTenants.find(
         tenant => tenant.name.toLowerCase() === values.name.toLowerCase()
       );
@@ -109,7 +106,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
         return;
       }
       
-      // Check for duplicate tenant ID
       const duplicateTenantId = otherTenants.find(
         tenant => tenant.tenantId === values.tenantId
       );
@@ -126,8 +122,15 @@ const TenantForm: React.FC<TenantFormProps> = ({
       
       console.log("Submitting tenant with values:", values);
       
-      // All validations passed, submit the form
-      onSubmit(values);
+      const finalValues: TenantConfig = {
+        ...values,
+        id: initialData?.id || crypto.randomUUID(),
+        dateAdded: initialData?.dateAdded || new Date().toISOString(),
+      };
+      
+      console.log("Final tenant data being submitted:", finalValues);
+      
+      onSubmit(finalValues);
     } catch (error) {
       console.error("Error validating tenant:", error);
       toast({

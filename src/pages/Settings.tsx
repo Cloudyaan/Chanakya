@@ -98,7 +98,18 @@ const Settings = () => {
   };
 
   const handleEditTenant = async (updatedTenant: TenantConfig) => {
-    console.log("Updating tenant with data:", updatedTenant);
+    console.log("Updating tenant with complete data:", updatedTenant);
+    
+    if (!updatedTenant.id) {
+      console.error("Error: Missing tenant ID when updating tenant");
+      toast({
+        title: "Error updating tenant",
+        description: "Unable to update tenant: Missing tenant ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const success = await updateTenant(updatedTenant);
     
     if (success) {
