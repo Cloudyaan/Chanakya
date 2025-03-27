@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import importlib.util
 import subprocess
+import glob
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -55,6 +56,22 @@ def init_db():
 
 # Initialize the database when the app starts
 init_db()
+
+# Helper function to find tenant-specific database
+def find_tenant_database(tenant_id):
+    # Look for database files matching different naming patterns
+    patterns = [
+        f"service_announcements_{tenant_id}.db",
+        f"*_{tenant_id}.db",
+        f"*{tenant_id}*.db"
+    ]
+    
+    for pattern in patterns:
+        matching_files = glob.glob(pattern)
+        if matching_files:
+            return matching_files[0]
+    
+    return None
 
 # Routes for M365 tenants
 @app.route('/api/tenants', methods=['GET'])
@@ -147,14 +164,21 @@ def delete_tenant(id):
     tenant = cursor.execute('SELECT tenantId FROM tenants WHERE id = ?', (id,)).fetchone()
     
     if tenant:
-        # Try to delete the tenant-specific updates database if it exists
-        tenant_db_path = f"service_announcements_{tenant['tenantId']}.db"
-        if os.path.exists(tenant_db_path):
-            try:
-                os.remove(tenant_db_path)
-                print(f"Deleted tenant database: {tenant_db_path}")
-            except Exception as e:
-                print(f"Error deleting tenant database: {e}")
+        # Try to delete the tenant-specific databases if they exist
+        tenant_id = tenant['tenantId']
+        patterns = [
+            f"service_announcements_{tenant_id}.db",
+            f"*_{tenant_id}.db",
+            f"*{tenant_id}*.db"
+        ]
+        
+        for pattern in patterns:
+            for db_file in glob.glob(pattern):
+                try:
+                    os.remove(db_file)
+                    print(f"Deleted tenant database: {db_file}")
+                except Exception as e:
+                    print(f"Error deleting tenant database: {e}")
     
     # Now delete the tenant record
     cursor.execute('DELETE FROM tenants WHERE id = ?', (id,))
@@ -164,102 +188,7 @@ def delete_tenant(id):
     return jsonify({'success': True})
 
 # Routes for Azure accounts
-@app.route('/api/azure', methods=['GET'])
-def get_azure_accounts():
-    conn = get_db_connection()
-    accounts = conn.execute('SELECT * FROM azure_accounts').fetchall()
-    conn.close()
-    
-    # Convert rows to dictionaries
-    result = []
-    for account in accounts:
-        result.append({
-            'id': account['id'],
-            'name': account['name'],
-            'subscriptionId': account['subscriptionId'],
-            'tenantId': account['tenantId'],
-            'clientId': account['clientId'],
-            'clientSecret': account['clientSecret'],
-            'isActive': bool(account['isActive']),
-            'dateAdded': account['dateAdded']
-        })
-    
-    return jsonify(result)
-
-@app.route('/api/azure', methods=['POST'])
-def add_azure_account():
-    data = request.json
-    
-    # Generate a new ID and add current timestamp
-    account_id = str(uuid.uuid4())
-    date_added = datetime.now().isoformat()
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-    INSERT INTO azure_accounts (id, name, subscriptionId, tenantId, clientId, clientSecret, isActive, dateAdded)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        account_id,
-        data['name'],
-        data['subscriptionId'],
-        data['tenantId'],
-        data['clientId'],
-        data['clientSecret'],
-        1 if data['isActive'] else 0,
-        date_added
-    ))
-    
-    conn.commit()
-    conn.close()
-    
-    # Return the newly created account with its ID
-    return jsonify({
-        'id': account_id,
-        'name': data['name'],
-        'subscriptionId': data['subscriptionId'],
-        'tenantId': data['tenantId'],
-        'clientId': data['clientId'],
-        'clientSecret': data['clientSecret'],
-        'isActive': data['isActive'],
-        'dateAdded': date_added
-    })
-
-@app.route('/api/azure/<string:id>', methods=['PUT'])
-def update_azure_account(id):
-    data = request.json
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-    UPDATE azure_accounts
-    SET name = ?, subscriptionId = ?, tenantId = ?, clientId = ?, clientSecret = ?, isActive = ?
-    WHERE id = ?
-    ''', (
-        data['name'],
-        data['subscriptionId'],
-        data['tenantId'],
-        data['clientId'],
-        data['clientSecret'],
-        1 if data['isActive'] else 0,
-        id
-    ))
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True})
-
-@app.route('/api/azure/<string:id>', methods=['DELETE'])
-def delete_azure_account(id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM azure_accounts WHERE id = ?', (id,))
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True})
+# ... keep existing code (Azure account API routes)
 
 # New endpoint for tenant updates
 @app.route('/api/updates', methods=['GET'])
@@ -294,12 +223,11 @@ def get_updates():
         }), 503  # 503 Service Unavailable
     
     try:
-        # Check if the tenant-specific database exists
-        db_path = f"service_announcements_{tenant['tenantId']}.db"
-        has_database = os.path.exists(db_path)
+        # Find the tenant database - look for multiple patterns
+        tenant_db_path = find_tenant_database(tenant['tenantId'])
         
         # If the database doesn't exist yet, return a helpful message with instructions
-        if not has_database:
+        if not tenant_db_path:
             return jsonify({
                 'error': 'Database not found',
                 'message': f'No updates database found for this tenant. Run the fetch_updates.py script with the tenant ID: python fetch_updates.py {tenant_id}'
@@ -307,29 +235,49 @@ def get_updates():
         
         # If the database exists, read from it
         try:
-            conn = sqlite3.connect(db_path)
+            conn = sqlite3.connect(tenant_db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            # Check if the announcements table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='announcements'")
-            if not cursor.fetchone():
-                return jsonify([])  # Return empty array if table doesn't exist
+            # Check if the updates table exists - try both table names
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
+            table_result = cursor.fetchone()
             
-            # Get the announcements
-            cursor.execute("""
-                SELECT 
-                    id,
-                    title,
-                    category,
-                    severity,
-                    lastModifiedDateTime as publishedDate,
-                    isMajorChange as actionType,
-                    bodyContent as description
-                FROM announcements
-                ORDER BY lastModifiedDateTime DESC
-                LIMIT 100
-            """)
+            if not table_result:
+                return jsonify([])  # Return empty array if table doesn't exist
+                
+            table_name = table_result['name']
+            print(f"Found table: {table_name} in database: {tenant_db_path}")
+            
+            # Adapt query based on which table exists
+            if table_name == 'updates':
+                cursor.execute("""
+                    SELECT 
+                        id,
+                        title,
+                        category,
+                        severity,
+                        lastModifiedDateTime as publishedDate,
+                        isMajorChange as actionType,
+                        bodyContent as description
+                    FROM updates
+                    ORDER BY lastModifiedDateTime DESC
+                    LIMIT 100
+                """)
+            else:  # announcements
+                cursor.execute("""
+                    SELECT 
+                        id,
+                        title,
+                        category,
+                        severity,
+                        lastModifiedDateTime as publishedDate,
+                        isMajorChange as actionType,
+                        bodyContent as description
+                    FROM announcements
+                    ORDER BY lastModifiedDateTime DESC
+                    LIMIT 100
+                """)
             
             updates = []
             for row in cursor.fetchall():
@@ -355,6 +303,105 @@ def get_updates():
             
             conn.close()
             return jsonify(updates)
+            
+        except sqlite3.Error as e:
+            return jsonify({
+                'error': 'Database error',
+                'message': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': str(e)
+        }), 500
+
+# Add a new endpoint for licenses
+@app.route('/api/licenses', methods=['GET'])
+def get_licenses():
+    tenant_id = request.args.get('tenantId')
+    
+    # If no tenant ID is specified, return an error
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId parameter'
+        }), 400
+    
+    # Try to find the tenant
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    try:
+        # Find the tenant database for licenses - look for multiple patterns
+        tenant_db_path = find_tenant_database(tenant['tenantId'])
+        
+        # If the database doesn't exist yet, return an error
+        if not tenant_db_path:
+            return jsonify({
+                'error': 'Database not found',
+                'message': f'No license database found for this tenant. Run the fetch_licenses.py script with the tenant ID: python fetch_licenses.py {tenant_id}'
+            }), 404
+        
+        # If the database exists, read from it
+        try:
+            conn = sqlite3.connect(tenant_db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Check if the licenses table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='licenses'")
+            if not cursor.fetchone():
+                return jsonify([])  # Return empty array if table doesn't exist
+            
+            # Get the licenses
+            cursor.execute("""
+                SELECT 
+                    id,
+                    license_sku as sku,
+                    license_sku as name,
+                    license_sku as displayName,
+                    type,
+                    total_licenses as totalCount,
+                    used_licenses as usedCount,
+                    unused_licenses as availableCount,
+                    renewal_expiration_date as renewalDate,
+                    captured_date
+                FROM licenses
+                ORDER BY total_licenses DESC
+            """)
+            
+            licenses = []
+            for row in cursor.fetchall():
+                # Convert SQLite row to dictionary
+                license_data = dict(row)
+                
+                # Add tenant information and format data
+                license_record = {
+                    'id': str(license_data['id']),
+                    'name': license_data['name'],
+                    'sku': license_data['sku'],
+                    'displayName': license_data['displayName'],
+                    'totalCount': license_data['totalCount'],
+                    'usedCount': license_data['usedCount'],
+                    'availableCount': license_data['availableCount'],
+                    'renewalDate': license_data['renewalDate'],
+                    'tenantId': tenant['id'],
+                    'tenantName': tenant['name']
+                }
+                
+                licenses.append(license_record)
+            
+            conn.close()
+            return jsonify(licenses)
             
         except sqlite3.Error as e:
             return jsonify({

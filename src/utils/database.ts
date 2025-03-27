@@ -1,5 +1,5 @@
 
-import { TenantConfig, AzureConfig, TenantUpdate } from './types';
+import { TenantConfig, AzureConfig, TenantUpdate, License } from './types';
 
 // Use the exact URL that's shown in the Flask terminal output
 const API_URL = 'http://127.0.0.1:5000/api';
@@ -200,6 +200,14 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
         const errorData = await response.json();
         console.error('Error response:', errorData);
         
+        // Check specifically for database naming convention errors
+        if (errorData.message && errorData.message.includes('database not found') || 
+            errorData.message && errorData.message.includes('run the fetch_updates.py script')) {
+          console.error('Database not found with tenant ID. This could be a naming convention issue.');
+          console.log('Looking for database name format: service_announcements_tenantId.db or TenantName_tenantId.db');
+          return generateMockUpdatesWithDatabaseMessage(tenantId, errorData.message);
+        }
+        
         // Check specifically for MSAL dependency error
         if (errorData.error === 'MSAL package not installed' || 
             (errorData.message && errorData.message.includes('msal'))) {
@@ -249,9 +257,33 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
   }
 };
 
+// Get license data from the updated database structure
+export const getLicenseData = async (tenantId: string): Promise<License[]> => {
+  try {
+    const url = `${API_URL}/licenses?tenantId=${tenantId}`;
+    console.log(`Fetching license data from: ${url}`);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error('Error fetching license data:', response.status);
+      // Return empty array on error
+      return [];
+    }
+    
+    const data = await response.json();
+    console.log(`Received ${data.length} licenses for tenant ID: ${tenantId}`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching license data:', error);
+    return [];
+  }
+};
+
 // Function to fetch updates from Microsoft Graph for a specific tenant
 export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => {
   try {
+    console.log(`Triggering fetch-updates for tenant: ${tenantId}`);
     const response = await fetch(`${API_URL}/fetch-updates`, {
       method: 'POST',
       headers: {
