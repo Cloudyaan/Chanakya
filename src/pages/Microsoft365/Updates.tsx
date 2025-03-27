@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, AlertCircle, MessageSquare } from 'lucide-react';
+import { Info, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Microsoft365 from '../Microsoft365';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { getTenants, getTenantUpdates } from '@/utils/database';
 import { TenantConfig, TenantUpdate } from '@/utils/types';
 
@@ -40,41 +41,62 @@ const Updates = () => {
   const [updates, setUpdates] = useState<TenantUpdate[]>([]);
 
   // Load tenants and updates
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Load tenants
-        const loadedTenants = await getTenants();
-        setTenants(loadedTenants);
-        
-        // Set first tenant as default if available
-        if (loadedTenants.length > 0 && !selectedTenantId) {
-          setSelectedTenantId(loadedTenants[0].id);
-        }
-        
-        // Load updates for selected tenant or all updates if none selected
-        const loadedUpdates = await getTenantUpdates(selectedTenantId);
-        setUpdates(loadedUpdates);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load tenant updates",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load tenants
+      const loadedTenants = await getTenants();
+      setTenants(loadedTenants);
+      
+      // Set first tenant as default if available and no tenant is selected
+      if (loadedTenants.length > 0 && !selectedTenantId) {
+        setSelectedTenantId(loadedTenants[0].id);
       }
-    };
+      
+      // Load updates for selected tenant or all updates if none selected
+      const tenantIdToUse = selectedTenantId || (loadedTenants[0]?.id || '');
+      const loadedUpdates = await getTenantUpdates(tenantIdToUse);
+      setUpdates(loadedUpdates);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tenant updates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Initial data load
+  useEffect(() => {
     loadData();
-  }, [selectedTenantId, toast]);
+  }, []);
 
   // Handle tenant selection change
   const handleTenantChange = (tenantId: string) => {
     setSelectedTenantId(tenantId);
+    loadUpdatesForTenant(tenantId);
+  };
+  
+  // Load updates for a specific tenant
+  const loadUpdatesForTenant = async (tenantId: string) => {
+    try {
+      setIsLoading(true);
+      const loadedUpdates = await getTenantUpdates(tenantId);
+      setUpdates(loadedUpdates);
+    } catch (error) {
+      console.error("Error loading updates for tenant:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load updates for the selected tenant",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   // Format date for display
@@ -83,6 +105,15 @@ const Updates = () => {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    });
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    loadData();
+    toast({
+      title: "Refreshing",
+      description: "Refreshing tenant updates...",
     });
   };
 
@@ -103,23 +134,34 @@ const Updates = () => {
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg font-medium">Updates and Messages</CardTitle>
-              {tenants.length > 1 && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Tenant:</span>
-                  <Select value={selectedTenantId} onValueChange={handleTenantChange}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select tenant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tenants.map((tenant) => (
-                        <SelectItem key={tenant.id} value={tenant.id}>
-                          {tenant.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {tenants.length > 1 && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Tenant:</span>
+                    <Select value={selectedTenantId} onValueChange={handleTenantChange}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select tenant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tenants.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={handleRefresh}
+                >
+                  <RefreshCw size={14} />
+                  <span>Refresh</span>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -131,6 +173,14 @@ const Updates = () => {
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
                 <p>No updates found for this tenant</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-4"
+                  onClick={handleRefresh}
+                >
+                  Refresh Updates
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
