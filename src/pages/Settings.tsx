@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -97,6 +98,7 @@ const Settings = () => {
   };
 
   const handleEditTenant = async (updatedTenant: TenantConfig) => {
+    console.log("Updating tenant with data:", updatedTenant);
     const success = await updateTenant(updatedTenant);
     
     if (success) {

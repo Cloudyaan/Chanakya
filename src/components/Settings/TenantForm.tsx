@@ -72,6 +72,14 @@ const TenantForm: React.FC<TenantFormProps> = ({
     },
   });
 
+  // Debug the form values when they change
+  React.useEffect(() => {
+    const subscription = form.watch((value) => {
+      console.log("Form values changed:", value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const handleSubmit = async (values: TenantFormValues) => {
     setIsSubmitting(true);
     
@@ -115,6 +123,8 @@ const TenantForm: React.FC<TenantFormProps> = ({
         setIsSubmitting(false);
         return;
       }
+      
+      console.log("Submitting tenant with values:", values);
       
       // All validations passed, submit the form
       onSubmit(values);
@@ -217,7 +227,10 @@ const TenantForm: React.FC<TenantFormProps> = ({
               <FormControl>
                 <Switch
                   checked={field.value}
-                  onCheckedChange={field.onChange}
+                  onCheckedChange={(checked) => {
+                    console.log("Switch toggled to:", checked);
+                    field.onChange(checked);
+                  }}
                 />
               </FormControl>
             </FormItem>
