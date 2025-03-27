@@ -1,6 +1,6 @@
 import { TenantConfig, AzureConfig } from './types';
 
-// Use a consistent API URL that matches your running backend
+// Use the exact URL that's shown in the Flask terminal output
 const API_URL = 'http://127.0.0.1:5000/api';
 
 // Initialize backend connection

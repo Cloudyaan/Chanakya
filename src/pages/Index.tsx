@@ -7,10 +7,10 @@ const Index = () => {
   const [isRedirecting, setIsRedirecting] = useState(true);
   
   useEffect(() => {
-    // Add a console log to verify this component is being rendered
+    // Add more detailed logging
     console.log('Index component mounted, attempting to redirect to dashboard...');
     
-    // Redirect to the Microsoft 365 dashboard
+    // Add a slight delay before redirecting to ensure component is fully mounted
     const redirectTimer = setTimeout(() => {
       console.log('Redirecting to dashboard now...');
       navigate('/microsoft-365/dashboard', { replace: true });
