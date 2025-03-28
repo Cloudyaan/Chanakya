@@ -124,8 +124,8 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
             </div>
             
             {/* Tenant Selector Dropdown on right side */}
-            {activeTenants.length > 1 && (
-              <div className="ml-auto">
+            <div className="ml-auto">
+              {activeTenants.length > 0 && (
                 <Select 
                   value={selectedTenant || ''} 
                   onValueChange={handleTenantChange}
@@ -141,8 +141,8 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -153,3 +153,4 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
 };
 
 export default Microsoft365;
+

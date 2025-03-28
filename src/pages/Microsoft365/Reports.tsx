@@ -1,8 +1,33 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Microsoft365 from '../Microsoft365';
 
 const Reports = () => {
+  const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+  
+  // Listen for tenant changes
+  useEffect(() => {
+    const handleTenantChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.tenantId) {
+        setSelectedTenant(customEvent.detail.tenantId);
+      }
+    };
+
+    // Get initial tenant from localStorage
+    const savedTenant = localStorage.getItem('selectedTenant');
+    if (savedTenant) {
+      setSelectedTenant(savedTenant);
+    }
+
+    // Add event listener for tenant changes
+    window.addEventListener('tenantChanged', handleTenantChange);
+    
+    return () => {
+      window.removeEventListener('tenantChanged', handleTenantChange);
+    };
+  }, []);
+  
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">

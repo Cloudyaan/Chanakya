@@ -81,7 +81,7 @@ const NavBar = () => {
             </div>
           </div>
           
-          {/* Optional right area for future components like user profile */}
+          {/* Right area for future components */}
           <div className="flex-shrink-0">
             {/* Placeholder for future components */}
           </div>
