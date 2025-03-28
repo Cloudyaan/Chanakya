@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
-import MetricsCard from '@/components/Dashboard/MetricsCard';
-import TenantInfo from '@/components/Dashboard/TenantInfo';
-import LicenseChart from '@/components/Dashboard/LicenseChart';
-import LicenseOverview from '@/components/Dashboard/LicenseOverview';
-import { getTenants, getLicenseData } from '@/utils/database';
-import { TenantConfig, License, LicenseMetric, LicenseDistribution } from '@/utils/types';
+import { getLicenseData } from '@/utils/database';
+import { License, LicenseMetric, LicenseDistribution } from '@/utils/types';
 import { tenant as mockTenant } from '@/utils/mockData';
-import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+// Import new components
+import DashboardHeader from '@/components/Dashboard/DashboardHeader';
+import DashboardMetrics from '@/components/Dashboard/DashboardMetrics';
+import DashboardContent from '@/components/Dashboard/DashboardContent';
+import LoadingIndicator from '@/components/Dashboard/LoadingIndicator';
+import EmptyState from '@/components/Dashboard/EmptyState';
 
 const Dashboard = () => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
@@ -165,71 +166,23 @@ const Dashboard = () => {
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-6 flex flex-wrap justify-between items-center"
-        >
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">License Dashboard</h1>
-            <p className="text-m365-gray-500">Monitor and manage your Microsoft 365 licenses</p>
-          </div>
-          
-          <div className="flex items-center gap-3 mt-2 sm:mt-0">
-            <button 
-              onClick={refreshData}
-              disabled={isLoading}
-              className="inline-flex items-center px-3 py-1.5 border border-border rounded-md text-sm font-medium bg-background hover:bg-muted transition-colors"
-            >
-              <RefreshCw size={16} className={isLoading ? "animate-spin mr-2" : "mr-2"} />
-              Refresh
-            </button>
-          </div>
-        </motion.div>
+        <DashboardHeader isLoading={isLoading} onRefresh={refreshData} />
         
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <RefreshCw size={40} className="animate-spin text-m365-600" />
-          </div>
+          <LoadingIndicator />
         ) : (
           <>
             {metrics.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {metrics.map((metric, index) => (
-                    <MetricsCard 
-                      key={metric.name} 
-                      metric={metric} 
-                      className={`animation-delay-${index * 100}`}
-                    />
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  <TenantInfo tenant={mockTenant} className="lg:col-span-1" />
-                  {licenseDistribution.length > 0 && (
-                    <LicenseChart data={licenseDistribution} className="lg:col-span-2" />
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6">
-                  {licenses.length > 0 && (
-                    <LicenseOverview licenses={licenses} className="lg:col-span-3" />
-                  )}
-                </div>
+                <DashboardMetrics metrics={metrics} />
+                <DashboardContent 
+                  tenant={mockTenant} 
+                  licenses={licenses} 
+                  licenseDistribution={licenseDistribution} 
+                />
               </>
             ) : (
-              <div className="p-8 text-center border border-dashed rounded-lg">
-                <h2 className="text-xl text-gray-500 mb-2">No License Data Available</h2>
-                <p className="text-gray-400 mb-4">Run the <code>fetch_licenses.py</code> script to retrieve license data from Microsoft Graph API.</p>
-                <button 
-                  onClick={refreshData}
-                  className="px-4 py-2 border border-border rounded-md text-sm font-medium bg-background hover:bg-muted transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
+              <EmptyState onRefresh={refreshData} />
             )}
           </>
         )}
