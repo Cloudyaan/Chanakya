@@ -187,18 +187,20 @@ const Updates = () => {
     const sections = description.split(/(?:\r?\n){2,}/);
     
     return sections.map((section, index) => {
-      // Check if section looks like a headline
-      if (section.length < 100 && (section.endsWith(':') || section.toUpperCase() === section)) {
+      // Check if section looks like a headline (short, all caps, or ends with colon)
+      if ((section.length < 100 && section.toUpperCase() === section) || 
+          (section.length < 100 && section.endsWith(':')) || 
+          (section.length < 100 && /^[A-Z][A-Za-z\s]+:/.test(section))) {
         return <h3 key={index} className="text-base font-semibold mt-4 mb-2">{section}</h3>;
       }
       
       // Check for bullet points
-      if (section.trim().startsWith('•') || section.trim().startsWith('-')) {
+      if (section.trim().startsWith('•') || section.trim().startsWith('-') || /^\s*[\-•]\s/.test(section)) {
         const listItems = section.split(/\r?\n/).filter(item => item.trim());
         return (
           <ul key={index} className="list-disc pl-5 my-2">
             {listItems.map((item, i) => (
-              <li key={i} className="mb-1">{item.replace(/^[•\-]\s*/, '')}</li>
+              <li key={i} className="mb-1">{item.replace(/^[•\-\s]+/, '')}</li>
             ))}
           </ul>
         );
@@ -354,7 +356,7 @@ const Updates = () => {
                               </TableCell>
                               <TableCell>
                                 {update.actionType === 'Plan for Change' ? (
-                                  <Badge variant="purple" className="flex gap-1 items-center">
+                                  <Badge variant="purple">
                                     {update.category || 'General'}
                                   </Badge>
                                 ) : (
@@ -420,7 +422,7 @@ const Updates = () => {
                               {selectedUpdate.actionType || 'Informational'}
                             </Badge>
                             {selectedUpdate.actionType === 'Plan for Change' ? (
-                              <Badge variant="purple" className="flex gap-1 items-center">
+                              <Badge variant="purple">
                                 {selectedUpdate.category || 'General'}
                               </Badge>
                             ) : (
