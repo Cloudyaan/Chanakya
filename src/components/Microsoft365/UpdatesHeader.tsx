@@ -3,13 +3,6 @@ import React from 'react';
 import { TenantConfig } from '@/utils/types';
 import { Download, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface UpdatesHeaderProps {
   tenants: TenantConfig[];
@@ -22,36 +15,14 @@ interface UpdatesHeaderProps {
 }
 
 const UpdatesHeader = ({ 
-  tenants, 
-  selectedTenant, 
-  onTenantSelect, 
   onRefresh, 
   onFetch,
   isLoading,
-  isFetching
+  isFetching,
+  selectedTenant
 }: UpdatesHeaderProps) => {
-  const activeTenants = tenants.filter(t => t.isActive);
-  
   return (
     <div className="flex items-center gap-3 mt-2 sm:mt-0">
-      {activeTenants.length > 1 && (
-        <Select 
-          value={selectedTenant || ''} 
-          onValueChange={onTenantSelect}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select Tenant" />
-          </SelectTrigger>
-          <SelectContent>
-            {activeTenants.map(tenant => (
-              <SelectItem key={tenant.id} value={tenant.id}>
-                {tenant.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-      
       <Button 
         variant="outline" 
         size="sm" 

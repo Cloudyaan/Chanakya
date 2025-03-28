@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
@@ -29,9 +28,14 @@ const Updates = () => {
         const loadedTenants = await getTenants();
         setTenants(loadedTenants);
         
-        const activeTenant = loadedTenants.find(t => t.isActive);
-        if (activeTenant) {
-          setSelectedTenant(activeTenant.id);
+        const savedTenant = localStorage.getItem('selectedTenant');
+        if (savedTenant) {
+          setSelectedTenant(savedTenant);
+        } else {
+          const activeTenant = loadedTenants.find(t => t.isActive);
+          if (activeTenant) {
+            setSelectedTenant(activeTenant.id);
+          }
         }
       } catch (error) {
         console.error("Error loading tenants:", error);
@@ -45,6 +49,17 @@ const Updates = () => {
     }
     
     loadTenants();
+    
+    const handleTenantChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setSelectedTenant(customEvent.detail.tenantId);
+    };
+    
+    window.addEventListener('tenantChanged', handleTenantChange);
+    
+    return () => {
+      window.removeEventListener('tenantChanged', handleTenantChange);
+    };
   }, [toast]);
 
   useEffect(() => {
