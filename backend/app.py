@@ -8,6 +8,7 @@ import os
 import importlib.util
 import subprocess
 import glob
+import sys
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -53,8 +54,34 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Check if required packages are installed
+def check_dependencies():
+    required_packages = ['msal', 'pandas', 'requests']
+    missing_packages = []
+    
+    for package in required_packages:
+        spec = importlib.util.find_spec(package)
+        if spec is None:
+            missing_packages.append(package)
+    
+    if missing_packages:
+        print(f"Warning: Missing required packages: {', '.join(missing_packages)}")
+        print("Installing missing packages...")
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + missing_packages)
+            print("Successfully installed missing packages")
+            return True
+        except subprocess.CalledProcessError:
+            print("Error installing packages. Please install them manually:")
+            for package in missing_packages:
+                print(f"  pip install {package}")
+            return False
+    
+    return True
+
 # Initialize the database when the app starts
 init_db()
+check_dependencies()
 
 # Helper function to find tenant-specific database
 def find_tenant_database(tenant_id):
@@ -122,27 +149,25 @@ def add_tenant():
     
     # Automatically run the fetch scripts for the new tenant
     if data['isActive']:
-        try:
-            # Check if MSAL is installed before attempting to run scripts
-            msal_spec = importlib.util.find_spec('msal')
-            if msal_spec is not None:
-                # Run fetch_updates.py for the new tenant
+        # Ensure dependencies are installed
+        if check_dependencies():
+            try:
                 print(f"Automatically fetching updates for new tenant {data['name']} (ID: {tenant_id})")
+                
+                # Run fetch_updates.py for the new tenant
                 if os.name == 'nt':
-                    subprocess.Popen(['fetch_updates.bat', tenant_id])
+                    subprocess.run(['fetch_updates.bat', tenant_id], check=False)
                 else:
-                    subprocess.Popen(['python', 'fetch_updates.py', tenant_id])
+                    subprocess.run(['python', 'fetch_updates.py', tenant_id], check=False)
                 
                 # Run fetch_licenses.py for the new tenant
                 print(f"Automatically fetching licenses for new tenant {data['name']} (ID: {tenant_id})")
                 if os.name == 'nt':
-                    subprocess.Popen(['fetch_licenses.bat', tenant_id])
+                    subprocess.run(['fetch_licenses.bat', tenant_id], check=False)
                 else:
-                    subprocess.Popen(['python', 'fetch_licenses.py', tenant_id])
-            else:
-                print("Warning: MSAL not installed. Cannot fetch data automatically.")
-        except Exception as e:
-            print(f"Error initiating automatic data fetch: {e}")
+                    subprocess.run(['python', 'fetch_licenses.py', tenant_id], check=False)
+            except Exception as e:
+                print(f"Error initiating automatic data fetch: {e}")
     
     # Return the newly created tenant with its ID
     return jsonify({
@@ -182,27 +207,25 @@ def update_tenant(id):
     
     # If tenant was not active before but is active now, fetch data
     if current_tenant and not current_tenant['isActive'] and data['isActive']:
-        try:
-            # Check if MSAL is installed before attempting to run scripts
-            msal_spec = importlib.util.find_spec('msal')
-            if msal_spec is not None:
-                # Run fetch_updates.py for the newly activated tenant
+        # Ensure dependencies are installed
+        if check_dependencies():
+            try:
                 print(f"Automatically fetching updates for newly activated tenant {data['name']} (ID: {id})")
+                
+                # Run fetch_updates.py for the newly activated tenant
                 if os.name == 'nt':
-                    subprocess.Popen(['fetch_updates.bat', id])
+                    subprocess.run(['fetch_updates.bat', id], check=False)
                 else:
-                    subprocess.Popen(['python', 'fetch_updates.py', id])
+                    subprocess.run(['python', 'fetch_updates.py', id], check=False)
                 
                 # Run fetch_licenses.py for the newly activated tenant
                 print(f"Automatically fetching licenses for newly activated tenant {data['name']} (ID: {id})")
                 if os.name == 'nt':
-                    subprocess.Popen(['fetch_licenses.bat', id])
+                    subprocess.run(['fetch_licenses.bat', id], check=False)
                 else:
-                    subprocess.Popen(['python', 'fetch_licenses.py', id])
-            else:
-                print("Warning: MSAL not installed. Cannot fetch data automatically.")
-        except Exception as e:
-            print(f"Error initiating automatic data fetch: {e}")
+                    subprocess.run(['python', 'fetch_licenses.py', id], check=False)
+            except Exception as e:
+                print(f"Error initiating automatic data fetch: {e}")
     
     return jsonify({'success': True})
 
@@ -500,13 +523,12 @@ def trigger_fetch_updates():
             'message': f'No tenant found with ID {tenant_id}'
         }), 404
     
-    # Check if MSAL is installed
-    msal_spec = importlib.util.find_spec('msal')
-    if msal_spec is None:
+    # Ensure dependencies are installed
+    if not check_dependencies():
         return jsonify({
-            'error': 'MSAL package not installed',
-            'message': 'The MSAL package is required to fetch updates from Microsoft Graph. Please install it using "pip install msal".'
-        }), 503  # 503 Service Unavailable
+            'error': 'Missing dependencies',
+            'message': 'Required packages are not installed. Please install them manually.'
+        }), 503
     
     try:
         # On Windows, run the batch file
@@ -524,6 +546,59 @@ def trigger_fetch_updates():
         return jsonify({
             'error': 'Fetch updates failed',
             'message': f'Error running fetch_updates script: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+# New endpoint to trigger the fetch_licenses.py script
+@app.route('/api/fetch-licenses', methods=['POST'])
+def trigger_fetch_licenses():
+    tenant_id = request.json.get('tenantId')
+    
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId in the request body'
+        }), 400
+    
+    # Check if the tenant exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    # Ensure dependencies are installed
+    if not check_dependencies():
+        return jsonify({
+            'error': 'Missing dependencies',
+            'message': 'Required packages are not installed. Please install them manually.'
+        }), 503
+    
+    try:
+        # On Windows, run the batch file
+        if os.name == 'nt':
+            subprocess.run(['fetch_licenses.bat', tenant_id], check=True)
+        else:
+            # On non-Windows, run the Python script directly
+            subprocess.run(['python', 'fetch_licenses.py', tenant_id], check=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully fetched licenses for tenant {tenant["name"]}'
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'error': 'Fetch licenses failed',
+            'message': f'Error running fetch_licenses script: {str(e)}'
         }), 500
     except Exception as e:
         return jsonify({

@@ -1,4 +1,3 @@
-
 import { TenantConfig, AzureConfig, TenantUpdate, License } from './types';
 
 // Use the exact URL that's shown in the Flask terminal output
@@ -301,6 +300,31 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
     return true;
   } catch (error) {
     console.error('Error triggering update fetch:', error);
+    return false;
+  }
+};
+
+// Function to fetch license data from Microsoft Graph for a specific tenant
+export const fetchTenantLicenses = async (tenantId: string): Promise<boolean> => {
+  try {
+    console.log(`Triggering fetch-licenses for tenant: ${tenantId}`);
+    const response = await fetch(`${API_URL}/fetch-licenses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tenantId }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error fetching licenses:', errorData);
+      throw new Error(errorData.message || 'Failed to fetch licenses');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error triggering license fetch:', error);
     return false;
   }
 };

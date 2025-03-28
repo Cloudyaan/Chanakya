@@ -1,182 +1,152 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Info, AlertCircle, MessageSquare, RefreshCw, AlertTriangle, Download } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import Microsoft365 from '../Microsoft365';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getTenants, getTenantUpdates } from '@/utils/database';
+import { getTenants, getTenantUpdates, fetchTenantUpdates } from '@/utils/database';
 import { TenantConfig, TenantUpdate } from '@/utils/types';
-
-const getSeverityIcon = (severity?: string) => {
-  switch (severity) {
-    case 'High':
-      return <AlertCircle className="h-4 w-4 text-red-500" />;
-    case 'Medium':
-      return <Info className="h-4 w-4 text-yellow-500" />;
-    default:
-      return <MessageSquare className="h-4 w-4 text-blue-500" />;
-  }
-};
-
-const getActionTypeColor = (actionType?: string) => {
-  switch (actionType) {
-    case 'Action Required':
-      return 'bg-red-100 text-red-800';
-    case 'Plan for Change':
-      return 'bg-yellow-100 text-yellow-800';
-    default:
-      return 'bg-blue-100 text-blue-800';
-  }
-};
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Download, RefreshCw } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const Updates = () => {
-  const { toast } = useToast();
+  const [tenants, setTenants] = useState<TenantConfig[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+  const [updates, setUpdates] = useState<TenantUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [tenants, setTenants] = useState<TenantConfig[]>([]);
-  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
-  const [updates, setUpdates] = useState<TenantUpdate[]>([]);
-  const [systemMessages, setSystemMessages] = useState<TenantUpdate[]>([]);
+  const { toast } = useToast();
 
-  // Load tenants and updates
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Load tenants
-      const loadedTenants = await getTenants();
-      setTenants(loadedTenants);
-      
-      // Set first tenant as default if available and no tenant is selected
-      if (loadedTenants.length > 0 && !selectedTenantId) {
-        setSelectedTenantId(loadedTenants[0].id);
-      }
-      
-      // Load updates for selected tenant or all updates if none selected
-      const tenantIdToUse = selectedTenantId || (loadedTenants[0]?.id || '');
-      await loadUpdatesForTenant(tenantIdToUse);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load tenant updates",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial data load
+  // Load tenants on mount
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Handle tenant selection change
-  const handleTenantChange = (tenantId: string) => {
-    setSelectedTenantId(tenantId);
-    loadUpdatesForTenant(tenantId);
-  };
-  
-  // Filter system messages from regular updates
-  const processUpdates = (allUpdates: TenantUpdate[]) => {
-    // Separate system messages from regular updates
-    const systemMsgs = allUpdates.filter(update => update.category === 'System');
-    const regularUpdates = allUpdates.filter(update => update.category !== 'System');
+    async function loadTenants() {
+      try {
+        const loadedTenants = await getTenants();
+        setTenants(loadedTenants);
+        
+        // Select the first active tenant by default
+        const activeTenant = loadedTenants.find(t => t.isActive);
+        if (activeTenant) {
+          setSelectedTenant(activeTenant.id);
+        }
+      } catch (error) {
+        console.error("Error loading tenants:", error);
+        toast({
+          title: "Error loading tenants",
+          description: "Could not load tenant information",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+      }
+    }
     
-    setSystemMessages(systemMsgs);
-    setUpdates(regularUpdates);
-  };
-  
-  // Load updates for a specific tenant
-  const loadUpdatesForTenant = async (tenantId: string) => {
+    loadTenants();
+  }, [toast]);
+
+  // Fetch updates when tenant is selected
+  useEffect(() => {
+    if (selectedTenant) {
+      fetchUpdates(selectedTenant);
+    }
+  }, [selectedTenant]);
+
+  const fetchUpdates = async (tenantId: string) => {
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      const loadedUpdates = await getTenantUpdates(tenantId);
-      processUpdates(loadedUpdates);
+      const updateData = await getTenantUpdates(tenantId);
+      setUpdates(updateData);
     } catch (error) {
-      console.error("Error loading updates for tenant:", error);
+      console.error("Error fetching updates:", error);
       toast({
-        title: "Error",
-        description: "Failed to load updates for the selected tenant",
+        title: "Error loading updates",
+        description: "Could not load update information",
         variant: "destructive",
       });
-      setUpdates([]);
-      setSystemMessages([]);
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
-  // Handle refresh
-  const handleRefresh = () => {
-    loadData();
-    toast({
-      title: "Refreshing",
-      description: "Refreshing tenant updates...",
-    });
-  };
-
-  // Handle fetch updates
-  const handleFetchUpdates = async () => {
-    if (!selectedTenantId) {
-      toast({
-        title: "Error",
-        description: "No tenant selected",
-        variant: "destructive",
-      });
-      return;
+  const refreshData = () => {
+    if (selectedTenant) {
+      fetchUpdates(selectedTenant);
     }
+  };
 
+  const fetchUpdateData = async () => {
+    if (!selectedTenant) return;
+    
+    setIsFetching(true);
     try {
-      setIsFetching(true);
-      const response = await fetch('http://127.0.0.1:5000/api/fetch-updates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tenantId: selectedTenantId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const success = await fetchTenantUpdates(selectedTenant);
+      
+      if (success) {
         toast({
-          title: "Success",
-          description: data.message || "Successfully fetched updates",
+          title: "Fetching updates succeeded",
+          description: "Update data is being retrieved from Microsoft Graph API",
+          variant: "default",
         });
-        // Reload updates after fetching
-        await loadUpdatesForTenant(selectedTenantId);
+        
+        // Refresh the data after a short delay to allow the backend to process
+        setTimeout(() => {
+          refreshData();
+        }, 2000);
       } else {
         toast({
-          title: "Error",
-          description: data.message || "Failed to fetch updates",
+          title: "Fetching updates failed",
+          description: "Could not fetch update data from Microsoft Graph API",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error fetching updates:", error);
+      console.error("Error triggering update fetch:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch updates. Make sure the backend server is running.",
+        description: "Failed to trigger update data fetch",
         variant: "destructive",
       });
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const activeTenants = tenants.filter(t => t.isActive);
+
+  // Determine if there's a special system message
+  const hasSystemMessage = updates.some(u => 
+    u.id === 'db-init' || 
+    u.id === 'msal-error' || 
+    u.tenantName === 'System Message'
+  );
+
+  // Filter out regular updates (non-system messages)
+  const regularUpdates = updates.filter(u => 
+    u.id !== 'db-init' && 
+    u.id !== 'msal-error' && 
+    u.tenantName !== 'System Message'
+  );
+
+  // Get system messages
+  const systemMessages = updates.filter(u => 
+    u.id === 'db-init' || 
+    u.id === 'msal-error' || 
+    u.tenantName === 'System Message'
+  );
+
+  // Helper to format date
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    } catch (e) {
+      return dateString;
     }
   };
 
@@ -187,153 +157,180 @@ const Updates = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-6"
+          className="mb-6 flex flex-wrap justify-between items-center"
         >
-          <h1 className="text-2xl font-semibold text-foreground">Message Center Updates</h1>
-          <p className="text-m365-gray-500">Stay informed about changes and updates to Microsoft 365 services</p>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Message Center Updates</h1>
+            <p className="text-m365-gray-500">View all service announcements from Microsoft</p>
+          </div>
+          
+          <div className="flex items-center gap-3 mt-2 sm:mt-0">
+            {activeTenants.length > 1 && (
+              <Select 
+                value={selectedTenant || ''} 
+                onValueChange={setSelectedTenant}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTenants.map(tenant => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshData}
+              disabled={isLoading}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+              Refresh
+            </Button>
+            
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={fetchUpdateData}
+              disabled={isLoading || isFetching || !selectedTenant}
+              className="flex items-center gap-1"
+            >
+              <Download size={16} className={isFetching ? "animate-bounce" : ""} />
+              Fetch Updates
+            </Button>
+          </div>
         </motion.div>
         
-        {/* System Messages/Alerts */}
-        {systemMessages.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="mb-6"
-          >
-            {systemMessages.map((message) => (
-              <Alert key={message.id} variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{message.title}</AlertTitle>
-                <AlertDescription>
-                  {message.description}
-                </AlertDescription>
-              </Alert>
-            ))}
-          </motion.div>
-        )}
-        
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-medium">Updates and Messages</CardTitle>
-              <div className="flex items-center gap-4">
-                {tenants.length > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">Tenant:</span>
-                    <Select value={selectedTenantId} onValueChange={handleTenantChange}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select tenant" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tenants.map((tenant) => (
-                          <SelectItem key={tenant.id} value={tenant.id}>
-                            {tenant.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-1" 
-                  onClick={handleRefresh}
-                >
-                  <RefreshCw size={14} />
-                  <span>Refresh</span>
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="flex items-center gap-1" 
-                  onClick={handleFetchUpdates}
-                  disabled={isFetching || !selectedTenantId}
-                >
-                  <Download size={14} />
-                  <span>{isFetching ? "Fetching..." : "Fetch Updates"}</span>
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+        {activeTenants.length === 0 ? (
+          <div className="p-8 text-center border border-dashed rounded-lg">
+            <h2 className="text-xl text-gray-500 mb-2">No Active Tenants</h2>
+            <p className="text-gray-400 mb-4">Please add and activate at least one Microsoft 365 tenant in Settings.</p>
+            <Button variant="outline" onClick={() => window.location.href = '/settings'}>
+              Go to Settings
+            </Button>
+          </div>
+        ) : (
+          <>
             {isLoading ? (
-              <div className="flex justify-center p-8">
-                <div className="h-6 w-6 border-t-2 border-b-2 border-m365-600 rounded-full animate-spin"></div>
-              </div>
-            ) : updates.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                <p>No updates found for this tenant</p>
-                {tenants.length === 0 && (
-                  <p className="mt-2 text-sm">
-                    Add a tenant in Settings to see updates
-                  </p>
-                )}
-                <div className="flex gap-2 justify-center mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleRefresh}
-                  >
-                    Refresh Updates
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={handleFetchUpdates}
-                    disabled={isFetching || !selectedTenantId}
-                  >
-                    {isFetching ? "Fetching..." : "Fetch Updates"}
-                  </Button>
+              <div className="p-12 flex justify-center">
+                <div className="flex flex-col items-center">
+                  <RefreshCw size={40} className="animate-spin text-m365-600 mb-4" />
+                  <p className="text-m365-gray-500">Loading updates...</p>
                 </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]"></TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead className="w-[130px]">Category</TableHead>
-                      <TableHead className="w-[150px]">Action</TableHead>
-                      <TableHead className="w-[120px] text-right">Published</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {updates.map((update) => (
-                      <TableRow key={update.id} className="group">
-                        <TableCell className="py-2">
-                          {getSeverityIcon(update.severity)}
-                        </TableCell>
-                        <TableCell className="font-medium py-3">
-                          <div className="cursor-pointer hover:text-m365-600">
-                            {update.title}
+              <div className="space-y-6">
+                {hasSystemMessage && (
+                  <div className="mb-8">
+                    {systemMessages.map((message) => (
+                      <div key={message.id} className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 rounded">
+                        <div className="flex">
+                          <AlertCircle className="h-6 w-6 text-amber-500 mr-3" />
+                          <div>
+                            <p className="font-semibold text-amber-700">{message.title}</p>
+                            <p className="text-amber-600 mt-1">{message.description}</p>
+                            <div className="mt-3 flex gap-2">
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                onClick={fetchUpdateData}
+                                disabled={isFetching}
+                              >
+                                {isFetching ? (
+                                  <>
+                                    <RefreshCw size={14} className="mr-2 animate-spin" />
+                                    Fetching...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download size={14} className="mr-2" />
+                                    Fetch Updates Now
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                            {update.description}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">{update.category}</TableCell>
-                        <TableCell>
-                          {update.actionType && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActionTypeColor(update.actionType)}`}>
-                              {update.actionType}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right text-sm">
-                          {formatDate(update.publishedDate)}
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                )}
+                
+                {regularUpdates.length > 0 ? (
+                  <div className="space-y-4">
+                    {regularUpdates.map((update) => (
+                      <div key={update.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex flex-wrap justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-medium">
+                              {update.title}
+                            </h3>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {update.category}
+                              </span>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                update.severity === 'High' 
+                                  ? 'bg-red-100 text-red-800' 
+                                  : update.severity === 'Medium'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                              }`}>
+                                {update.severity}
+                              </span>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                update.actionType === 'Action Required' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {update.actionType}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {formatDate(update.publishedDate)}
+                          </div>
+                        </div>
+                        <p className="mt-3 text-gray-600">
+                          {update.description}
+                        </p>
+                        <div className="mt-2 text-xs text-gray-400">
+                          ID: {update.messageId || update.id}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !hasSystemMessage && (
+                  <div className="p-8 text-center border border-dashed rounded-lg">
+                    <h2 className="text-xl text-gray-500 mb-2">No Updates Available</h2>
+                    <p className="text-gray-400 mb-4">
+                      Click the "Fetch Updates" button above to retrieve service announcements from Microsoft Graph API.
+                    </p>
+                    <Button variant="default" onClick={fetchUpdateData} disabled={isFetching}>
+                      {isFetching ? (
+                        <>
+                          <RefreshCw size={16} className="mr-2 animate-spin" />
+                          Fetching...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={16} className="mr-2" />
+                          Fetch Updates
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </>
+        )}
       </main>
     </Microsoft365>
   );

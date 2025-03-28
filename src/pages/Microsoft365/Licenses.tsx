@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
 import LicenseTable from '@/components/LicenseTable/LicenseTable';
-import { getTenants, getLicenseData } from '@/utils/database';
+import { getTenants, getLicenseData, fetchTenantLicenses } from '@/utils/database';
 import { TenantConfig, License } from '@/utils/types';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ const Licenses = () => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
   
   // Fetch tenants on mount
@@ -96,6 +97,43 @@ const Licenses = () => {
     }
   };
   
+  const fetchLicenseData = async () => {
+    if (!selectedTenant) return;
+    
+    setIsFetching(true);
+    try {
+      const success = await fetchTenantLicenses(selectedTenant);
+      
+      if (success) {
+        toast({
+          title: "Fetching licenses succeeded",
+          description: "License data is being updated from Microsoft Graph API",
+          variant: "default",
+        });
+        
+        // Refresh the data after a short delay to allow the backend to process
+        setTimeout(() => {
+          refreshData();
+        }, 2000);
+      } else {
+        toast({
+          title: "Fetching licenses failed",
+          description: "Could not fetch license data from Microsoft Graph API",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error triggering license fetch:", error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger license data fetch",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+  
   const activeTenants = tenants.filter(t => t.isActive);
   
   return (
@@ -141,6 +179,17 @@ const Licenses = () => {
               <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
               Refresh
             </Button>
+            
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={fetchLicenseData}
+              disabled={isLoading || isFetching || !selectedTenant}
+              className="flex items-center gap-1"
+            >
+              <Download size={16} className={isFetching ? "animate-bounce" : ""} />
+              Fetch Licenses
+            </Button>
           </div>
         </motion.div>
         
@@ -168,9 +217,21 @@ const Licenses = () => {
             ) : (
               <div className="p-8 text-center border border-dashed rounded-lg">
                 <h2 className="text-xl text-gray-500 mb-2">No License Data Available</h2>
-                <p className="text-gray-400 mb-4">Run the <code>fetch_licenses.py</code> script to retrieve license data from Microsoft Graph API.</p>
-                <Button variant="outline" onClick={refreshData}>
-                  Try Again
+                <p className="text-gray-400 mb-4">
+                  Click the "Fetch Licenses" button above to retrieve license data from Microsoft Graph API.
+                </p>
+                <Button variant="default" onClick={fetchLicenseData} disabled={isFetching}>
+                  {isFetching ? (
+                    <>
+                      <RefreshCw size={16} className="mr-2 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} className="mr-2" />
+                      Fetch Licenses
+                    </>
+                  )}
                 </Button>
               </div>
             )}
