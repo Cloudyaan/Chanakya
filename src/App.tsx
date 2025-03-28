@@ -34,12 +34,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/microsoft-365" element={<Microsoft365 />} />
-          <Route path="/microsoft-365/dashboard" element={<M365Dashboard />} />
-          <Route path="/microsoft-365/licenses" element={<Licenses />} />
-          <Route path="/microsoft-365/updates" element={<Updates />} />
-          <Route path="/microsoft-365/dsc" element={<M365DSC />} />
-          <Route path="/microsoft-365/reports" element={<Reports />} />
+          <Route path="/microsoft-365" element={<Microsoft365 />}>
+            <Route path="dashboard" element={<M365Dashboard />} />
+            <Route path="licenses" element={<Licenses />} />
+            <Route path="updates" element={<Updates />} />
+            <Route path="dsc" element={<M365DSC />} />
+            <Route path="reports" element={<Reports />} />
+          </Route>
           <Route path="/azure" element={<Azure />} />
           <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
           <Route path="/settings" element={<Settings />} />
