@@ -168,20 +168,18 @@ const Updates = () => {
           </div>
           
           <UpdatesHeader
-            tenants={tenants}
-            selectedTenant={selectedTenant}
-            onTenantSelect={setSelectedTenant}
             onRefresh={refreshData}
             onFetch={fetchUpdateData}
             isLoading={isLoading}
             isFetching={isFetching}
+            selectedTenant={selectedTenant}
           />
         </motion.div>
         
         {activeTenants.length === 0 ? (
           <NoTenantsMessage />
         ) : (
-          <>
+          <div className="space-y-6">
             {isLoading ? (
               <div className="p-12 flex justify-center">
                 <div className="flex flex-col items-center">
@@ -190,7 +188,7 @@ const Updates = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <>
                 {hasSystemMessage && (
                   <SystemMessages 
                     messages={systemMessages} 
@@ -216,9 +214,9 @@ const Updates = () => {
                   onOpenChange={setIsDialogOpen}
                   update={selectedUpdate}
                 />
-              </div>
+              </>
             )}
-          </>
+          </div>
         )}
       </main>
     </Microsoft365>
