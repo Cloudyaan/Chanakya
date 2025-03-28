@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -162,6 +163,7 @@ const Updates = () => {
   };
 
   const getBadgeVariant = (actionType: string | undefined) => {
+    if (!actionType) return 'default';
     if (actionType === 'Action Required') return 'destructive';
     if (actionType === 'Plan for Change') return 'purple';
     return 'default';
@@ -175,6 +177,35 @@ const Updates = () => {
   const handleUpdateClick = (update: TenantUpdate) => {
     setSelectedUpdate(update);
     setIsDialogOpen(true);
+  };
+
+  // Function to format description with headlines
+  const formatDescription = (description: string) => {
+    if (!description) return "";
+    
+    // Split by common headline indicators
+    const sections = description.split(/(?:\r?\n){2,}/);
+    
+    return sections.map((section, index) => {
+      // Check if section looks like a headline
+      if (section.length < 100 && (section.endsWith(':') || section.toUpperCase() === section)) {
+        return <h3 key={index} className="text-base font-semibold mt-4 mb-2">{section}</h3>;
+      }
+      
+      // Check for bullet points
+      if (section.trim().startsWith('•') || section.trim().startsWith('-')) {
+        const listItems = section.split(/\r?\n/).filter(item => item.trim());
+        return (
+          <ul key={index} className="list-disc pl-5 my-2">
+            {listItems.map((item, i) => (
+              <li key={i} className="mb-1">{item.replace(/^[•\-]\s*/, '')}</li>
+            ))}
+          </ul>
+        );
+      }
+      
+      return <p key={index} className="mb-3">{section}</p>;
+    });
   };
 
   return (
@@ -322,9 +353,15 @@ const Updates = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                                  {update.category || 'General'}
-                                </Badge>
+                                {update.actionType === 'Plan for Change' ? (
+                                  <Badge variant="purple" className="flex gap-1 items-center">
+                                    {update.category || 'General'}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                    {update.category || 'General'}
+                                  </Badge>
+                                )}
                               </TableCell>
                               <TableCell className="font-mono text-xs">
                                 {update.messageId || update.id}
@@ -382,9 +419,15 @@ const Updates = () => {
                               {getBadgeIcon(selectedUpdate.actionType)}
                               {selectedUpdate.actionType || 'Informational'}
                             </Badge>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                              {selectedUpdate.category || 'General'}
-                            </Badge>
+                            {selectedUpdate.actionType === 'Plan for Change' ? (
+                              <Badge variant="purple" className="flex gap-1 items-center">
+                                {selectedUpdate.category || 'General'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                {selectedUpdate.category || 'General'}
+                              </Badge>
+                            )}
                           </div>
                           <DialogTitle className="text-xl">
                             {selectedUpdate.title}
@@ -401,7 +444,7 @@ const Updates = () => {
                         </DialogHeader>
                         
                         <div className="mt-4 prose prose-sm max-w-none">
-                          <p className="whitespace-pre-line">{selectedUpdate.description}</p>
+                          {formatDescription(selectedUpdate.description)}
                         </div>
                         
                         <DialogFooter>
