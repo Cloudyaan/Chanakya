@@ -74,7 +74,7 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                 </TableCell>
                 <TableCell>
                   {update.actionType === 'Plan for Change' ? (
-                    <Badge variant="purple">
+                    <Badge variant="purple" className="bg-purple-600 text-white hover:bg-purple-700">
                       {update.category || 'General'}
                     </Badge>
                   ) : (
