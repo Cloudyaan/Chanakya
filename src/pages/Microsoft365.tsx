@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,11 @@ import { getTenants } from '@/utils/database';
 import { TenantConfig } from '@/utils/types';
 import { toast } from '@/hooks/use-toast';
 
-const Microsoft365 = () => {
+interface Microsoft365Props {
+  children?: ReactNode;
+}
+
+const Microsoft365 = ({ children }: Microsoft365Props) => {
   const location = useLocation();
   const [isHovering, setIsHovering] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -150,7 +154,7 @@ const Microsoft365 = () => {
       </div>
       
       <div className="tenant-context" data-tenant-id={selectedTenant}>
-        <Outlet />
+        {children || <Outlet />}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import LicenseChart from '@/components/Dashboard/LicenseChart';
 import LicenseOverview from '@/components/Dashboard/LicenseOverview';
 import { getTenants, getLicenseData } from '@/utils/database';
 import { TenantConfig, License, LicenseMetric, LicenseDistribution } from '@/utils/types';
-import { tenant as mockTenant } from '@/utils/mockData';
+import { tenant } from '@/utils/mockData';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 

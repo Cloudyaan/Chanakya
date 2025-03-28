@@ -23,7 +23,7 @@ const NavBar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
-        <div className="flex h-16 items-center">
+        <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <img 
@@ -35,7 +35,7 @@ const NavBar = () => {
           </div>
           
           <div className="flex-1 flex justify-center">
-            <div className="flex items-center overflow-x-auto scrollbar-hide space-x-4">
+            <div className="flex items-center space-x-6">
               {navItems.map((item) => {
                 const isActive = currentTopLevel?.path === item.path;
                 
@@ -44,7 +44,7 @@ const NavBar = () => {
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      "relative px-4 py-2 rounded-md text-sm font-medium premium-transition whitespace-nowrap",
+                      "relative px-3 py-2 rounded-md text-sm font-medium premium-transition whitespace-nowrap",
                       isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
                     )}
                     onMouseEnter={() => setIsHovering(item.path)}
@@ -54,7 +54,7 @@ const NavBar = () => {
                     
                     {isActive && (
                       <motion.div
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-600 mx-3"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-600 mx-1"
                         layoutId="navbar-indicator"
                         initial={false}
                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
@@ -63,7 +63,7 @@ const NavBar = () => {
                     
                     {isHovering === item.path && !isActive && (
                       <motion.div
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-300 mx-3"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-300 mx-1"
                         layoutId="navbar-hover"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -75,6 +75,10 @@ const NavBar = () => {
                 );
               })}
             </div>
+          </div>
+          
+          <div className="w-32">
+            {/* Right side placeholder for balance */}
           </div>
         </div>
       </div>
