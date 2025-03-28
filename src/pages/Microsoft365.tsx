@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, ReactNode } from 'react';
-import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import NavBar from '@/components/NavBar';
@@ -13,10 +13,9 @@ import {
 } from '@/components/ui/select';
 import { getTenants } from '@/utils/database';
 import { TenantConfig } from '@/utils/types';
-import { toast } from '@/hooks/use-toast';
 
 interface Microsoft365Props {
-  children?: ReactNode;
+  children?: React.ReactNode;
 }
 
 const Microsoft365 = ({ children }: Microsoft365Props) => {
@@ -55,11 +54,6 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
         }
       } catch (error) {
         console.error("Error loading tenants:", error);
-        toast({
-          title: "Error loading tenants",
-          description: "Could not load tenant information",
-          variant: "destructive",
-        });
       }
     }
     
@@ -153,9 +147,7 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
         </div>
       </div>
       
-      <div className="tenant-context" data-tenant-id={selectedTenant}>
-        {children || <Outlet />}
-      </div>
+      {children}
     </div>
   );
 };

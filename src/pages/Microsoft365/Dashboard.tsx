@@ -8,7 +8,7 @@ import LicenseChart from '@/components/Dashboard/LicenseChart';
 import LicenseOverview from '@/components/Dashboard/LicenseOverview';
 import { getTenants, getLicenseData } from '@/utils/database';
 import { TenantConfig, License, LicenseMetric, LicenseDistribution } from '@/utils/types';
-import { tenant } from '@/utils/mockData';
+import { tenant as mockTenant } from '@/utils/mockData';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -238,7 +238,7 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  <TenantInfo tenant={tenant} className="lg:col-span-1" />
+                  <TenantInfo tenant={mockTenant} className="lg:col-span-1" />
                   {licenseDistribution.length > 0 && (
                     <LicenseChart data={licenseDistribution} className="lg:col-span-2" />
                   )}
