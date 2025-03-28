@@ -11,6 +11,7 @@ import M365DSC from "./pages/Microsoft365/M365DSC";
 import Updates from "./pages/Microsoft365/Updates";
 import Notifications from "./pages/Microsoft365/Notifications";
 import Reports from "./pages/Microsoft365/Reports";
+import EmailNotifications from "./pages/Microsoft365/EmailNotifications";
 import Microsoft365 from "./pages/Microsoft365";
 import Azure from "./pages/Azure";
 import AzureCostAnalysis from "./pages/Azure/CostAnalysis";
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/microsoft-365/notifications" element={<Notifications />} />
           <Route path="/microsoft-365/dsc" element={<M365DSC />} />
           <Route path="/microsoft-365/reports" element={<Reports />} />
+          <Route path="/microsoft-365/email-notifications" element={<EmailNotifications />} />
           <Route path="/azure" element={<Azure />} />
           <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
           <Route path="/settings" element={<Settings />} />
