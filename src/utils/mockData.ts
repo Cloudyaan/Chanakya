@@ -1,5 +1,5 @@
 
-import { TenantUpdate, TenantConfig, LicenseDistribution } from './types';
+import { TenantUpdate, TenantConfig, LicenseDistribution, Tenant } from './types';
 
 // Generate mock updates for demonstration
 export const generateMockUpdates = (tenantId?: string): TenantUpdate[] => {
@@ -87,15 +87,27 @@ export const generateMockUpdatesWithDatabaseMessage = (tenantId?: string, messag
 };
 
 // Mock tenant data for dashboard
-export const tenant: TenantConfig = {
+export const tenant: Tenant = {
+  id: 'tenant-1',
+  name: 'Demo Corporation',
+  domain: 'demotenant.onmicrosoft.com',
+  countryCode: 'US',
+  subscriptionStatus: 'Active',
+  adminEmail: 'admin@demotenant.onmicrosoft.com',
+  creationDate: new Date().toISOString(),
+  totalUsers: 250,
+  activeUsers: 230
+};
+
+// Mock tenant configuration data
+export const tenantConfig: TenantConfig = {
   id: 'tenant-1',
   name: 'Demo Corporation',
   tenantId: 'demotenant.onmicrosoft.com',
-  clientId: 'demo-client-id',
-  clientSecret: '***********',
+  applicationId: 'demo-application-id',
+  applicationSecret: '***********',
   isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
+  dateAdded: new Date().toISOString()
 };
 
 // Mock data for monthly license trend chart
