@@ -7,7 +7,13 @@ import { getTenants, getLicenseData } from '@/utils/database';
 import { TenantConfig, License } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 const Licenses = () => {
@@ -106,7 +112,25 @@ const Licenses = () => {
             <p className="text-m365-gray-500">View and manage all Microsoft 365 licenses</p>
           </div>
           
-          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+          <div className="flex items-center gap-3 mt-2 sm:mt-0">
+            {activeTenants.length > 1 && (
+              <Select 
+                value={selectedTenant || ''} 
+                onValueChange={setSelectedTenant}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTenants.map(tenant => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
@@ -130,22 +154,6 @@ const Licenses = () => {
           </div>
         ) : (
           <>
-            {activeTenants.length > 1 && (
-              <Tabs 
-                defaultValue={selectedTenant || undefined} 
-                className="mb-6"
-                onValueChange={(value) => setSelectedTenant(value)}
-              >
-                <TabsList>
-                  {activeTenants.map(tenant => (
-                    <TabsTrigger key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            )}
-            
             {isLoading ? (
               <div className="p-12 flex justify-center">
                 <div className="flex flex-col items-center">

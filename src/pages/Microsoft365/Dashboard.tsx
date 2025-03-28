@@ -11,6 +11,13 @@ import { TenantConfig, License, LicenseMetric, LicenseDistribution } from '@/uti
 import { tenant as mockTenant } from '@/utils/mockData';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 const Dashboard = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -165,6 +172,9 @@ const Dashboard = () => {
     }
   };
 
+  // Filter active tenants for dropdown
+  const activeTenants = tenants.filter(t => t.isActive);
+
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
@@ -179,7 +189,25 @@ const Dashboard = () => {
             <p className="text-m365-gray-500">Monitor and manage your Microsoft 365 licenses</p>
           </div>
           
-          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+          <div className="flex items-center gap-3 mt-2 sm:mt-0">
+            {activeTenants.length > 1 && (
+              <Select 
+                value={selectedTenant || ''} 
+                onValueChange={setSelectedTenant}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTenants.map(tenant => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <button 
               onClick={refreshData}
               disabled={isLoading}

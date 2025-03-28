@@ -1,41 +1,56 @@
 
-# Chanakya Backend
+# Microsoft 365 Management Backend
 
-This is the Python backend for the Chanakya application.
+This backend provides API endpoints for managing Microsoft 365 tenants, licenses, and service announcements.
 
 ## Setup
 
-1. Create a virtual environment:
-   ```
-   python -m venv venv
-   ```
+1. Install the required Python packages:
+```
+pip install -r requirements.txt
+```
 
-2. Activate the virtual environment:
-   - On Windows: `venv\Scripts\activate`
-   - On macOS/Linux: `source venv/bin/activate`
+2. Run the Flask application:
+```
+python app.py
+```
 
-3. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+## Automatic Data Fetching
 
-4. Run the application:
-   ```
-   python app.py
-   ```
+When a new tenant is added or an existing tenant is activated, the system will automatically:
+1. Run `fetch_updates.py` to retrieve service announcements
+2. Run `fetch_licenses.py` to retrieve license information
 
-The server will start on http://localhost:5000
+This requires the MSAL package to be installed:
+```
+pip install msal
+```
+
+## Manual Data Fetching
+
+You can also manually fetch data for a specific tenant:
+
+```
+# Fetch service announcements
+python fetch_updates.py <tenant_id>
+
+# Fetch license information
+python fetch_licenses.py <tenant_id>
+```
+
+Where `<tenant_id>` is the ID of the tenant in the database (not the Microsoft tenant ID).
+
+## Database Structure
+
+- `chanakya.db`: Main database containing tenant and Azure account information
+- `TenantName_tenantId.db`: Tenant-specific database containing license data and service announcements
 
 ## API Endpoints
 
-### M365 Tenants
-- GET `/api/tenants` - Get all tenants
-- POST `/api/tenants` - Add a new tenant
-- PUT `/api/tenants/:id` - Update a tenant
-- DELETE `/api/tenants/:id` - Delete a tenant
+- GET `/api/tenants`: Get all tenants
+- POST `/api/tenants`: Add a new tenant (automatically fetches data if active)
+- PUT `/api/tenants/<id>`: Update a tenant (automatically fetches data if newly activated)
+- DELETE `/api/tenants/<id>`: Delete a tenant
 
-### Azure Accounts
-- GET `/api/azure` - Get all Azure accounts
-- POST `/api/azure` - Add a new Azure account
-- PUT `/api/azure/:id` - Update an Azure account
-- DELETE `/api/azure/:id` - Delete an Azure account
+- GET `/api/licenses?tenantId=<id>`: Get license data for a specific tenant
+- GET `/api/updates?tenantId=<id>`: Get service announcements for a specific tenant

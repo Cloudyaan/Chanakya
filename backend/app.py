@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
@@ -121,6 +120,30 @@ def add_tenant():
     conn.commit()
     conn.close()
     
+    # Automatically run the fetch scripts for the new tenant
+    if data['isActive']:
+        try:
+            # Check if MSAL is installed before attempting to run scripts
+            msal_spec = importlib.util.find_spec('msal')
+            if msal_spec is not None:
+                # Run fetch_updates.py for the new tenant
+                print(f"Automatically fetching updates for new tenant {data['name']} (ID: {tenant_id})")
+                if os.name == 'nt':
+                    subprocess.Popen(['fetch_updates.bat', tenant_id])
+                else:
+                    subprocess.Popen(['python', 'fetch_updates.py', tenant_id])
+                
+                # Run fetch_licenses.py for the new tenant
+                print(f"Automatically fetching licenses for new tenant {data['name']} (ID: {tenant_id})")
+                if os.name == 'nt':
+                    subprocess.Popen(['fetch_licenses.bat', tenant_id])
+                else:
+                    subprocess.Popen(['python', 'fetch_licenses.py', tenant_id])
+            else:
+                print("Warning: MSAL not installed. Cannot fetch data automatically.")
+        except Exception as e:
+            print(f"Error initiating automatic data fetch: {e}")
+    
     # Return the newly created tenant with its ID
     return jsonify({
         'id': tenant_id,
@@ -136,8 +159,11 @@ def add_tenant():
 def update_tenant(id):
     data = request.json
     
+    # Get current tenant state to check if isActive changed
     conn = get_db_connection()
     cursor = conn.cursor()
+    current_tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (id,)).fetchone()
+    
     cursor.execute('''
     UPDATE tenants
     SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?
@@ -153,6 +179,30 @@ def update_tenant(id):
     
     conn.commit()
     conn.close()
+    
+    # If tenant was not active before but is active now, fetch data
+    if current_tenant and not current_tenant['isActive'] and data['isActive']:
+        try:
+            # Check if MSAL is installed before attempting to run scripts
+            msal_spec = importlib.util.find_spec('msal')
+            if msal_spec is not None:
+                # Run fetch_updates.py for the newly activated tenant
+                print(f"Automatically fetching updates for newly activated tenant {data['name']} (ID: {id})")
+                if os.name == 'nt':
+                    subprocess.Popen(['fetch_updates.bat', id])
+                else:
+                    subprocess.Popen(['python', 'fetch_updates.py', id])
+                
+                # Run fetch_licenses.py for the newly activated tenant
+                print(f"Automatically fetching licenses for newly activated tenant {data['name']} (ID: {id})")
+                if os.name == 'nt':
+                    subprocess.Popen(['fetch_licenses.bat', id])
+                else:
+                    subprocess.Popen(['python', 'fetch_licenses.py', id])
+            else:
+                print("Warning: MSAL not installed. Cannot fetch data automatically.")
+        except Exception as e:
+            print(f"Error initiating automatic data fetch: {e}")
     
     return jsonify({'success': True})
 
@@ -187,8 +237,20 @@ def delete_tenant(id):
     
     return jsonify({'success': True})
 
-# Routes for Azure accounts
-# ... keep existing code (Azure account API routes)
+# Create batch file for fetch_licenses if not exists
+def create_fetch_licenses_batch():
+    batch_file = 'fetch_licenses.bat'
+    if not os.path.exists(batch_file):
+        with open(batch_file, 'w') as f:
+            f.write('@echo off\n')
+            f.write('python fetch_licenses.py %*\n')
+        print(f"Created {batch_file}")
+
+# Ensure batch files exist
+create_fetch_licenses_batch()
+
+# Routes for Azure accounts and other API endpoints
+# ... keep existing code (remaining api routes)
 
 # New endpoint for tenant updates
 @app.route('/api/updates', methods=['GET'])
