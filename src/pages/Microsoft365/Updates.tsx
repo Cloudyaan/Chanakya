@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -33,14 +32,12 @@ const Updates = () => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
-  // Load tenants on mount
   useEffect(() => {
     async function loadTenants() {
       try {
         const loadedTenants = await getTenants();
         setTenants(loadedTenants);
         
-        // Select the first active tenant by default
         const activeTenant = loadedTenants.find(t => t.isActive);
         if (activeTenant) {
           setSelectedTenant(activeTenant.id);
@@ -59,7 +56,6 @@ const Updates = () => {
     loadTenants();
   }, [toast]);
 
-  // Fetch updates when tenant is selected
   useEffect(() => {
     if (selectedTenant) {
       fetchUpdates(selectedTenant);
@@ -104,7 +100,6 @@ const Updates = () => {
           variant: "default",
         });
         
-        // Refresh the data after a short delay to allow the backend to process
         setTimeout(() => {
           refreshData();
         }, 2000);
@@ -129,32 +124,28 @@ const Updates = () => {
 
   const activeTenants = tenants.filter(t => t.isActive);
 
-  // Determine if there's a special system message
   const hasSystemMessage = updates.some(u => 
     u.id === 'db-init' || 
     u.id === 'msal-error' || 
     u.tenantName === 'System Message'
   );
 
-  // Filter out regular updates (non-system messages)
   const regularUpdates = updates.filter(u => 
     u.id !== 'db-init' && 
     u.id !== 'msal-error' && 
     u.tenantName !== 'System Message'
   );
 
-  // Get system messages
   const systemMessages = updates.filter(u => 
     u.id === 'db-init' || 
     u.id === 'msal-error' || 
     u.tenantName === 'System Message'
   );
 
-  // Helper to format date
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+      return date.toLocaleDateString();
     } catch (e) {
       return dateString;
     }
