@@ -3,39 +3,52 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
 import LicenseTable from '@/components/LicenseTable/LicenseTable';
-import { getLicenseData, fetchTenantLicenses } from '@/utils/database';
-import { License } from '@/utils/types';
+import { getTenants, getLicenseData, fetchTenantLicenses } from '@/utils/database';
+import { TenantConfig, License } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Download } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 const Licenses = () => {
+  const [tenants, setTenants] = useState<TenantConfig[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Listen for tenant changes from the NavBar
+  // Fetch tenants on mount
   useEffect(() => {
-    const handleTenantChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.tenantId) {
-        setSelectedTenant(customEvent.detail.tenantId);
+    async function loadTenants() {
+      try {
+        const loadedTenants = await getTenants();
+        setTenants(loadedTenants);
+        
+        // Select the first active tenant by default
+        const activeTenant = loadedTenants.find(t => t.isActive);
+        if (activeTenant) {
+          setSelectedTenant(activeTenant.id);
+        }
+      } catch (error) {
+        console.error("Error loading tenants:", error);
+        toast({
+          title: "Error loading tenants",
+          description: "Could not load tenant information",
+          variant: "destructive",
+        });
+        setIsLoading(false);
       }
-    };
-    
-    // Also check localStorage on mount
-    const savedTenant = localStorage.getItem('selectedTenant');
-    if (savedTenant) {
-      setSelectedTenant(savedTenant);
     }
-
-    window.addEventListener('tenantChanged', handleTenantChange);
-    return () => {
-      window.removeEventListener('tenantChanged', handleTenantChange);
-    };
-  }, []);
+    
+    loadTenants();
+  }, [toast]);
   
   // Fetch licenses when tenant is selected
   useEffect(() => {
@@ -121,7 +134,7 @@ const Licenses = () => {
     }
   };
   
-  const noTenantSelected = !selectedTenant;
+  const activeTenants = tenants.filter(t => t.isActive);
   
   return (
     <Microsoft365>
@@ -138,11 +151,29 @@ const Licenses = () => {
           </div>
           
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
+            {activeTenants.length > 1 && (
+              <Select 
+                value={selectedTenant || ''} 
+                onValueChange={setSelectedTenant}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTenants.map(tenant => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
               onClick={refreshData}
-              disabled={isLoading || noTenantSelected}
+              disabled={isLoading}
               className="flex items-center gap-1"
             >
               <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
@@ -153,7 +184,7 @@ const Licenses = () => {
               variant="default" 
               size="sm" 
               onClick={fetchLicenseData}
-              disabled={isLoading || isFetching || noTenantSelected}
+              disabled={isLoading || isFetching || !selectedTenant}
               className="flex items-center gap-1"
             >
               <Download size={16} className={isFetching ? "animate-bounce" : ""} />
@@ -162,10 +193,13 @@ const Licenses = () => {
           </div>
         </motion.div>
         
-        {noTenantSelected ? (
+        {activeTenants.length === 0 ? (
           <div className="p-8 text-center border border-dashed rounded-lg">
-            <h2 className="text-xl text-gray-500 mb-2">No Tenant Selected</h2>
-            <p className="text-gray-400 mb-4">Please select a tenant from the dropdown in the navigation bar.</p>
+            <h2 className="text-xl text-gray-500 mb-2">No Active Tenants</h2>
+            <p className="text-gray-400 mb-4">Please add and activate at least one Microsoft 365 tenant in Settings.</p>
+            <Button variant="outline" onClick={() => window.location.href = '/settings'}>
+              Go to Settings
+            </Button>
           </div>
         ) : (
           <>
