@@ -11,16 +11,8 @@ import { TenantConfig, License, LicenseMetric, LicenseDistribution } from '@/uti
 import { tenant as mockTenant } from '@/utils/mockData';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 
 const Dashboard = () => {
-  const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,30 +20,28 @@ const Dashboard = () => {
   const [licenseDistribution, setLicenseDistribution] = useState<LicenseDistribution[]>([]);
   const { toast } = useToast();
 
-  // Fetch tenants on mount
+  // Listen for tenant changes
   useEffect(() => {
-    async function loadTenants() {
-      try {
-        const loadedTenants = await getTenants();
-        setTenants(loadedTenants);
-        
-        // Select the first active tenant by default
-        const activeTenant = loadedTenants.find(t => t.isActive);
-        if (activeTenant) {
-          setSelectedTenant(activeTenant.id);
-        }
-      } catch (error) {
-        console.error("Error loading tenants:", error);
-        toast({
-          title: "Error loading tenants",
-          description: "Could not load tenant information",
-          variant: "destructive",
-        });
+    const handleTenantChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.tenantId) {
+        setSelectedTenant(customEvent.detail.tenantId);
       }
+    };
+
+    // Get initial tenant from localStorage
+    const savedTenant = localStorage.getItem('selectedTenant');
+    if (savedTenant) {
+      setSelectedTenant(savedTenant);
     }
+
+    // Add event listener for tenant changes
+    window.addEventListener('tenantChanged', handleTenantChange);
     
-    loadTenants();
-  }, [toast]);
+    return () => {
+      window.removeEventListener('tenantChanged', handleTenantChange);
+    };
+  }, []);
   
   // Fetch licenses when tenant is selected
   useEffect(() => {
@@ -172,9 +162,6 @@ const Dashboard = () => {
     }
   };
 
-  // Filter active tenants for dropdown
-  const activeTenants = tenants.filter(t => t.isActive);
-
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
@@ -190,24 +177,6 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
-            {activeTenants.length > 1 && (
-              <Select 
-                value={selectedTenant || ''} 
-                onValueChange={setSelectedTenant}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select Tenant" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeTenants.map(tenant => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
             <button 
               onClick={refreshData}
               disabled={isLoading}
