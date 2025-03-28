@@ -10,7 +10,9 @@ import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/lice
 // Import components
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import DashboardMetrics from '@/components/Dashboard/DashboardMetrics';
-import DashboardContent from '@/components/Dashboard/DashboardContent';
+import TenantInfo from '@/components/Dashboard/TenantInfo';
+import LicenseChart from '@/components/Dashboard/LicenseChart';
+import LicenseOverview from '@/components/Dashboard/LicenseOverview';
 import LoadingIndicator from '@/components/Dashboard/LoadingIndicator';
 import EmptyState from '@/components/Dashboard/EmptyState';
 
@@ -114,12 +116,24 @@ const Dashboard = () => {
           <>
             {metrics.length > 0 ? (
               <>
+                {/* Tenant Info moved to the top */}
+                <div className="mb-8">
+                  <TenantInfo tenant={mockTenant} />
+                </div>
+                
                 <DashboardMetrics metrics={metrics} />
-                <DashboardContent 
-                  tenant={mockTenant} 
-                  licenses={licenses} 
-                  licenseDistribution={licenseDistribution} 
-                />
+                
+                <div className="grid grid-cols-1 gap-6">
+                  {licenses.length > 0 && licenseDistribution.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                      <LicenseChart data={licenseDistribution} className="lg:col-span-3" />
+                    </div>
+                  )}
+                  
+                  {licenses.length > 0 && (
+                    <LicenseOverview licenses={licenses} className="lg:col-span-3" />
+                  )}
+                </div>
               </>
             ) : (
               <EmptyState onRefresh={refreshData} />

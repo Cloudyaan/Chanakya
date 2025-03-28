@@ -17,8 +17,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ isLoading, onRefresh 
       className="mb-6 flex flex-wrap justify-between items-center"
     >
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">License Dashboard</h1>
-        <p className="text-m365-gray-500">Monitor and manage your Microsoft 365 licenses</p>
+        <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
+        <p className="text-m365-gray-500">Overview of Microsoft M365 Tenant</p>
       </div>
       
       <div className="flex items-center gap-3 mt-2 sm:mt-0">
