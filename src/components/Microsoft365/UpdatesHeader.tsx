@@ -1,17 +1,14 @@
 
 import React from 'react';
-import { TenantConfig } from '@/utils/types';
 import { Download, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface UpdatesHeaderProps {
-  tenants: TenantConfig[];
-  selectedTenant: string | null;
-  onTenantSelect: (tenantId: string) => void;
   onRefresh: () => void;
   onFetch: () => void;
   isLoading: boolean;
   isFetching: boolean;
+  selectedTenant: string | null;
 }
 
 const UpdatesHeader = ({ 
