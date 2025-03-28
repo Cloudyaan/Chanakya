@@ -1,5 +1,5 @@
 
-import { TenantUpdate } from './types';
+import { TenantUpdate, TenantConfig, LicenseDistribution } from './types';
 
 // Generate mock updates for demonstration
 export const generateMockUpdates = (tenantId?: string): TenantUpdate[] => {
@@ -85,3 +85,36 @@ export const generateMockUpdatesWithDatabaseMessage = (tenantId?: string, messag
   
   return baseUpdates;
 };
+
+// Mock tenant data for dashboard
+export const tenant: TenantConfig = {
+  id: 'tenant-1',
+  name: 'Demo Corporation',
+  tenantId: 'demotenant.onmicrosoft.com',
+  clientId: 'demo-client-id',
+  clientSecret: '***********',
+  isActive: true,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+};
+
+// Mock data for monthly license trend chart
+export const monthlyTrend = [
+  { month: 'Jan', licenses: 120 },
+  { month: 'Feb', licenses: 132 },
+  { month: 'Mar', licenses: 145 },
+  { month: 'Apr', licenses: 155 },
+  { month: 'May', licenses: 165 },
+  { month: 'Jun', licenses: 180 },
+  { month: 'Jul', licenses: 190 },
+  { month: 'Aug', licenses: 205 }
+];
+
+// Mock data for license utilization chart
+export const licenseUtilization = [
+  { name: 'Microsoft 365 E3', utilization: 92 },
+  { name: 'Microsoft 365 E5', utilization: 78 },
+  { name: 'Microsoft 365 Business Premium', utilization: 85 },
+  { name: 'Exchange Online Plan 2', utilization: 68 },
+  { name: 'Office 365 E1', utilization: 72 }
+];
