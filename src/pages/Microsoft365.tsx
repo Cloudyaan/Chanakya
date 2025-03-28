@@ -24,14 +24,14 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   
-  // Subnav items for Microsoft 365
+  // Subnav items for Microsoft 365 - Notifications moved to the end after Reports
   const subNavItems = [
     { name: 'Dashboard', path: '/microsoft-365/dashboard' },
     { name: 'Licenses', path: '/microsoft-365/licenses' },
     { name: 'Updates', path: '/microsoft-365/updates' },
-    { name: 'Notifications', path: '/microsoft-365/notifications' },
     { name: 'M365 DSC', path: '/microsoft-365/dsc' },
-    { name: 'Reports', path: '/microsoft-365/reports' }
+    { name: 'Reports', path: '/microsoft-365/reports' },
+    { name: 'Notifications', path: '/microsoft-365/notifications' }
   ];
 
   // Load tenants on component mount
