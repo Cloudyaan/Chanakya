@@ -26,10 +26,11 @@ const NavBar = () => {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-m365-600 rounded flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">CH</span>
-              </div>
-              <span className="text-foreground font-semibold text-lg">Chanakya</span>
+              <img 
+                src="/lovable-uploads/473de01b-dccf-4cb2-8f71-6cc0290460e7.png" 
+                alt="Crayon Logo" 
+                className="h-8" 
+              />
             </Link>
           </div>
           
@@ -74,22 +75,8 @@ const NavBar = () => {
             })}
           </div>
 
-          <div className="flex items-center space-x-2">
-            <button className="p-2 rounded-md focus-ring premium-transition hover:bg-gray-100">
-              <span className="sr-only">Notifications</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-m365-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-            
-            <div className="h-6 w-px bg-border"></div>
-            
-            <button className="flex items-center text-sm font-medium text-foreground premium-transition focus-ring rounded-full">
-              <div className="h-8 w-8 rounded-full bg-m365-100 flex items-center justify-center text-m365-700">
-                <span>AC</span>
-              </div>
-            </button>
-          </div>
+          {/* Removed user icon and notification icon section */}
+          <div className="w-16"></div> {/* Empty div to maintain layout spacing */}
         </div>
       </div>
     </nav>
