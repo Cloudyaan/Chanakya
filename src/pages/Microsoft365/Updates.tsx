@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -151,6 +152,17 @@ const Updates = () => {
     }
   };
 
+  const getBadgeVariant = (actionType: string | undefined) => {
+    if (actionType === 'Action Required') return 'destructive';
+    if (actionType === 'Plan for Change') return 'purple';
+    return 'default';
+  };
+
+  const getBadgeIcon = (actionType: string | undefined) => {
+    if (actionType === 'Action Required') return <AlertTriangle size={12} />;
+    return <InfoIcon size={12} />;
+  };
+
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
@@ -284,14 +296,10 @@ const Updates = () => {
                             <TableRow key={update.id} className="group hover:bg-muted/50">
                               <TableCell>
                                 <Badge 
-                                  variant={update.actionType === 'Action Required' ? 'destructive' : 'default'}
+                                  variant={getBadgeVariant(update.actionType)}
                                   className="flex gap-1 items-center"
                                 >
-                                  {update.actionType === 'Action Required' ? (
-                                    <AlertTriangle size={12} />
-                                  ) : (
-                                    <InfoIcon size={12} />
-                                  )}
+                                  {getBadgeIcon(update.actionType)}
                                   {update.actionType || 'Informational'}
                                 </Badge>
                               </TableCell>
