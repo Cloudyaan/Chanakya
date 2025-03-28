@@ -238,7 +238,7 @@ const Dashboard = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  <TenantInfo tenant={mockTenant} className="lg:col-span-1" />
+                  <TenantInfo tenant={tenant} className="lg:col-span-1" />
                   {licenseDistribution.length > 0 && (
                     <LicenseChart data={licenseDistribution} className="lg:col-span-2" />
                   )}
