@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -179,34 +178,40 @@ const Updates = () => {
     setIsDialogOpen(true);
   };
 
-  // Function to format description with headlines
   const formatDescription = (description: string) => {
     if (!description) return "";
     
-    // Split by common headline indicators
     const sections = description.split(/(?:\r?\n){2,}/);
     
     return sections.map((section, index) => {
-      // Check if section looks like a headline (short, all caps, or ends with colon)
-      if ((section.length < 100 && section.toUpperCase() === section) || 
-          (section.length < 100 && section.endsWith(':')) || 
-          (section.length < 100 && /^[A-Z][A-Za-z\s]+:/.test(section))) {
-        return <h3 key={index} className="text-base font-semibold mt-4 mb-2">{section}</h3>;
+      const isHeadline = (
+        (section.length < 100 && section.toUpperCase() === section) || 
+        (section.length < 100 && section.trim().endsWith(':')) || 
+        (section.length < 100 && /^[A-Z][A-Za-z\s\-,]+[:\.]?/.test(section))
+      );
+      
+      if (isHeadline) {
+        return <h3 key={index} className="text-base font-bold text-gray-800 mt-4 mb-2">{section}</h3>;
       }
       
-      // Check for bullet points
-      if (section.trim().startsWith('•') || section.trim().startsWith('-') || /^\s*[\-•]\s/.test(section)) {
+      if (
+        section.trim().startsWith('•') || 
+        section.trim().startsWith('-') || 
+        /^\s*[\-•]\s/.test(section) ||
+        section.includes('\n•') ||
+        section.includes('\n-')
+      ) {
         const listItems = section.split(/\r?\n/).filter(item => item.trim());
         return (
-          <ul key={index} className="list-disc pl-5 my-2">
+          <ul key={index} className="list-disc pl-5 my-2 space-y-1">
             {listItems.map((item, i) => (
-              <li key={i} className="mb-1">{item.replace(/^[•\-\s]+/, '')}</li>
+              <li key={i} className="mb-2">{item.replace(/^[•\-\s]+/, '').trim()}</li>
             ))}
           </ul>
         );
       }
       
-      return <p key={index} className="mb-3">{section}</p>;
+      return <p key={index} className="mb-3 text-gray-700">{section}</p>;
     });
   };
 
@@ -445,11 +450,11 @@ const Updates = () => {
                           </DialogDescription>
                         </DialogHeader>
                         
-                        <div className="mt-4 prose prose-sm max-w-none">
+                        <div className="mt-6 prose prose-sm max-w-none overflow-auto max-h-[60vh] px-2">
                           {formatDescription(selectedUpdate.description)}
                         </div>
                         
-                        <DialogFooter>
+                        <DialogFooter className="mt-4">
                           <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                             Close
                           </Button>
