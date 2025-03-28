@@ -5,8 +5,9 @@ import { getLicenseData } from '@/utils/database';
 import { License, LicenseMetric, LicenseDistribution } from '@/utils/types';
 import { tenant as mockTenant } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/licenseMetricsUtils';
 
-// Import new components
+// Import components
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import DashboardMetrics from '@/components/Dashboard/DashboardMetrics';
 import DashboardContent from '@/components/Dashboard/DashboardContent';
@@ -61,72 +62,11 @@ const Dashboard = () => {
         console.log("Received license data:", licenseData);
         setLicenses(licenseData);
         
-        // Calculate metrics based on real data
-        const totalLicenses = licenseData.reduce((sum, license) => sum + license.totalCount, 0);
-        const usedLicenses = licenseData.reduce((sum, license) => sum + license.usedCount, 0);
-        const availableLicenses = licenseData.reduce((sum, license) => sum + license.availableCount, 0);
-        const utilRate = totalLicenses > 0 ? Math.round((usedLicenses / totalLicenses) * 100) : 0;
+        // Use utility functions to calculate metrics and distribution
+        const newMetrics = calculateLicenseMetrics(licenseData);
+        const newDistribution = createLicenseDistribution(licenseData);
         
-        const newMetrics: LicenseMetric[] = [
-          {
-            name: "Total Licenses",
-            value: totalLicenses,
-            previousValue: totalLicenses - 10, // Simulated previous value
-            change: 3,
-            changeType: "increase"
-          },
-          {
-            name: "Assigned Licenses",
-            value: usedLicenses,
-            previousValue: usedLicenses - 5, // Simulated previous value
-            change: 2,
-            changeType: "increase"
-          },
-          {
-            name: "Available Licenses",
-            value: availableLicenses,
-            previousValue: availableLicenses + 5, // Simulated previous value
-            change: 8,
-            changeType: "decrease"
-          },
-          {
-            name: "Utilization Rate",
-            value: utilRate,
-            previousValue: utilRate - 1, // Simulated previous value
-            change: 1,
-            changeType: "increase"
-          }
-        ];
         setMetrics(newMetrics);
-        
-        // Create license distribution data
-        const colors = ["#4f46e5", "#06b6d4", "#0891b2", "#0e7490", "#155e75", "#164e63"];
-        
-        // Sort licenses by used count (descending) and take top 5, plus "Others"
-        const sortedLicenses = [...licenseData].sort((a, b) => b.usedCount - a.usedCount);
-        const topLicenses = sortedLicenses.slice(0, 5);
-        
-        // Calculate "Others" category if there are more than 5 licenses
-        let othersCount = 0;
-        if (sortedLicenses.length > 5) {
-          othersCount = sortedLicenses.slice(5).reduce((sum, license) => sum + license.usedCount, 0);
-        }
-        
-        const newDistribution: LicenseDistribution[] = topLicenses.map((license, index) => ({
-          name: license.displayName,
-          count: license.usedCount,
-          color: colors[index % colors.length]
-        }));
-        
-        // Add "Others" category if applicable
-        if (othersCount > 0) {
-          newDistribution.push({
-            name: "Others",
-            count: othersCount,
-            color: colors[5]
-          });
-        }
-        
         setLicenseDistribution(newDistribution);
       } else {
         // If no license data, reset to empty states
