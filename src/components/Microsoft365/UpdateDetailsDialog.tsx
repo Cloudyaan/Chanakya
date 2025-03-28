@@ -97,7 +97,7 @@ const UpdateDetailsDialog = ({ isOpen, onOpenChange, update }: UpdateDetailsDial
               {update.actionType || 'Informational'}
             </Badge>
             {update.actionType === 'Plan for Change' ? (
-              <Badge variant="purple" className="bg-purple-600 text-white hover:bg-purple-700">
+              <Badge className="bg-purple-600 text-white hover:bg-purple-700">
                 {update.category || 'General'}
               </Badge>
             ) : (
