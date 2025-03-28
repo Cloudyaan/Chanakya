@@ -29,7 +29,7 @@ const NavBar = () => {
               <img 
                 src="/lovable-uploads/473de01b-dccf-4cb2-8f71-6cc0290460e7.png" 
                 alt="Crayon Logo" 
-                className="h-8" 
+                className="h-12" 
               />
             </Link>
           </div>
