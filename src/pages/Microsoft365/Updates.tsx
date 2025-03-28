@@ -1,26 +1,31 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw } from 'lucide-react';
 import Microsoft365 from '../Microsoft365';
-import { getTenants, getTenantUpdates, fetchTenantUpdates } from '@/utils/database';
+import { getTenants } from '@/utils/database';
 import { TenantConfig, TenantUpdate } from '@/utils/types';
-import { useToast } from '@/hooks/use-toast';
-import SystemMessages from '@/components/Microsoft365/SystemMessages';
-import UpdatesTable from '@/components/Microsoft365/UpdatesTable';
-import UpdatesEmptyState from '@/components/Microsoft365/UpdatesEmptyState';
 import UpdateDetailsDialog from '@/components/Microsoft365/UpdateDetailsDialog';
 import UpdatesHeader from '@/components/Microsoft365/UpdatesHeader';
 import NoTenantsMessage from '@/components/Microsoft365/NoTenantsMessage';
+import UpdatesContent from '@/components/Microsoft365/UpdatesContent';
+import { useUpdates } from '@/hooks/useUpdates';
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
-  const [updates, setUpdates] = useState<TenantUpdate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
+
+  // Use our custom hook for updates functionality
+  const {
+    regularUpdates,
+    systemMessages,
+    hasSystemMessage,
+    isLoading,
+    isFetching,
+    refreshData,
+    fetchUpdateData
+  } = useUpdates(selectedTenant);
 
   useEffect(() => {
     async function loadTenants() {
@@ -39,12 +44,6 @@ const Updates = () => {
         }
       } catch (error) {
         console.error("Error loading tenants:", error);
-        toast({
-          title: "Error loading tenants",
-          description: "Could not load tenant information",
-          variant: "destructive",
-        });
-        setIsLoading(false);
       }
     }
     
@@ -60,73 +59,7 @@ const Updates = () => {
     return () => {
       window.removeEventListener('tenantChanged', handleTenantChange);
     };
-  }, [toast]);
-
-  useEffect(() => {
-    if (selectedTenant) {
-      fetchUpdates(selectedTenant);
-    }
-  }, [selectedTenant]);
-
-  const fetchUpdates = async (tenantId: string) => {
-    setIsLoading(true);
-    
-    try {
-      const updateData = await getTenantUpdates(tenantId);
-      setUpdates(updateData);
-    } catch (error) {
-      console.error("Error fetching updates:", error);
-      toast({
-        title: "Error loading updates",
-        description: "Could not load update information",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const refreshData = () => {
-    if (selectedTenant) {
-      fetchUpdates(selectedTenant);
-    }
-  };
-
-  const fetchUpdateData = async () => {
-    if (!selectedTenant) return;
-    
-    setIsFetching(true);
-    try {
-      const success = await fetchTenantUpdates(selectedTenant);
-      
-      if (success) {
-        toast({
-          title: "Fetching updates succeeded",
-          description: "Update data is being retrieved from Microsoft Graph API",
-          variant: "default",
-        });
-        
-        setTimeout(() => {
-          refreshData();
-        }, 2000);
-      } else {
-        toast({
-          title: "Fetching updates failed",
-          description: "Could not fetch update data from Microsoft Graph API",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error triggering update fetch:", error);
-      toast({
-        title: "Error",
-        description: "Failed to trigger update data fetch",
-        variant: "destructive",
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  };
+  }, []);
 
   const handleUpdateClick = (update: TenantUpdate) => {
     setSelectedUpdate(update);
@@ -134,24 +67,6 @@ const Updates = () => {
   };
 
   const activeTenants = tenants.filter(t => t.isActive);
-
-  const hasSystemMessage = updates.some(u => 
-    u.id === 'db-init' || 
-    u.id === 'msal-error' || 
-    u.tenantName === 'System Message'
-  );
-
-  const regularUpdates = updates.filter(u => 
-    u.id !== 'db-init' && 
-    u.id !== 'msal-error' && 
-    u.tenantName !== 'System Message'
-  );
-
-  const systemMessages = updates.filter(u => 
-    u.id === 'db-init' || 
-    u.id === 'msal-error' || 
-    u.tenantName === 'System Message'
-  );
 
   return (
     <Microsoft365>
@@ -180,42 +95,21 @@ const Updates = () => {
           <NoTenantsMessage />
         ) : (
           <div className="space-y-6">
-            {isLoading ? (
-              <div className="p-12 flex justify-center">
-                <div className="flex flex-col items-center">
-                  <RefreshCw size={40} className="animate-spin text-m365-600 mb-4" />
-                  <p className="text-m365-gray-500">Loading updates...</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {hasSystemMessage && (
-                  <SystemMessages 
-                    messages={systemMessages} 
-                    onFetchUpdates={fetchUpdateData}
-                    isFetching={isFetching}
-                  />
-                )}
-                
-                {regularUpdates.length > 0 ? (
-                  <UpdatesTable 
-                    updates={regularUpdates}
-                    onUpdateClick={handleUpdateClick}
-                  />
-                ) : !hasSystemMessage && (
-                  <UpdatesEmptyState
-                    onFetchUpdates={fetchUpdateData}
-                    isFetching={isFetching}
-                  />
-                )}
+            <UpdatesContent
+              isLoading={isLoading}
+              hasSystemMessage={hasSystemMessage}
+              systemMessages={systemMessages}
+              regularUpdates={regularUpdates}
+              isFetching={isFetching}
+              onFetchUpdates={fetchUpdateData}
+              onUpdateClick={handleUpdateClick}
+            />
 
-                <UpdateDetailsDialog 
-                  isOpen={isDialogOpen} 
-                  onOpenChange={setIsDialogOpen}
-                  update={selectedUpdate}
-                />
-              </>
-            )}
+            <UpdateDetailsDialog 
+              isOpen={isDialogOpen} 
+              onOpenChange={setIsDialogOpen}
+              update={selectedUpdate}
+            />
           </div>
         )}
       </main>
