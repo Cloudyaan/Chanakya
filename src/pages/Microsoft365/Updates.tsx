@@ -5,7 +5,7 @@ import Microsoft365 from '../Microsoft365';
 import { getTenants, getTenantUpdates, fetchTenantUpdates } from '@/utils/database';
 import { TenantConfig, TenantUpdate } from '@/utils/types';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Download, RefreshCw } from 'lucide-react';
+import { AlertCircle, Download, RefreshCw, InfoIcon, ClockIcon, AlertTriangle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -14,6 +14,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -263,49 +273,63 @@ const Updates = () => {
                 )}
                 
                 {regularUpdates.length > 0 ? (
-                  <div className="space-y-4">
-                    {regularUpdates.map((update) => (
-                      <div key={update.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex flex-wrap justify-between items-start">
-                          <div>
-                            <h3 className="text-lg font-medium">
-                              {update.title}
-                            </h3>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {update.category}
-                              </span>
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                update.severity === 'High' 
-                                  ? 'bg-red-100 text-red-800' 
-                                  : update.severity === 'Medium'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-green-100 text-green-800'
-                              }`}>
-                                {update.severity}
-                              </span>
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                update.actionType === 'Action Required' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {update.actionType}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {formatDate(update.publishedDate)}
-                          </div>
-                        </div>
-                        <p className="mt-3 text-gray-600">
-                          {update.description}
-                        </p>
-                        <div className="mt-2 text-xs text-gray-400">
-                          ID: {update.messageId || update.id}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle>Message Center Announcements</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[150px]">Action Type</TableHead>
+                            <TableHead className="w-[150px]">Category</TableHead>
+                            <TableHead className="w-[120px]">ID</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead className="w-[180px] text-right">Last Updated</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {regularUpdates.map((update) => (
+                            <TableRow key={update.id} className="group hover:bg-muted/50">
+                              <TableCell>
+                                <Badge 
+                                  variant={update.actionType === 'Action Required' ? 'destructive' : 'default'}
+                                  className="flex gap-1 items-center"
+                                >
+                                  {update.actionType === 'Action Required' ? (
+                                    <AlertTriangle size={12} />
+                                  ) : (
+                                    <InfoIcon size={12} />
+                                  )}
+                                  {update.actionType || 'Informational'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                  {update.category || 'General'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {update.messageId || update.id}
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">{update.title}</div>
+                                <div className="text-sm text-muted-foreground line-clamp-1 group-hover:line-clamp-2 transition-all duration-300">
+                                  {update.description}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1 text-muted-foreground">
+                                  <ClockIcon size={14} />
+                                  <span className="text-sm">{formatDate(update.publishedDate)}</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
                 ) : !hasSystemMessage && (
                   <div className="p-8 text-center border border-dashed rounded-lg">
                     <h2 className="text-xl text-gray-500 mb-2">No Updates Available</h2>
