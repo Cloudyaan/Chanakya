@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -22,8 +21,16 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -31,6 +38,8 @@ const Updates = () => {
   const [updates, setUpdates] = useState<TenantUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
+  const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -163,6 +172,11 @@ const Updates = () => {
     return <InfoIcon size={12} />;
   };
 
+  const handleUpdateClick = (update: TenantUpdate) => {
+    setSelectedUpdate(update);
+    setIsDialogOpen(true);
+  };
+
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
@@ -293,7 +307,11 @@ const Updates = () => {
                         </TableHeader>
                         <TableBody>
                           {regularUpdates.map((update) => (
-                            <TableRow key={update.id} className="group hover:bg-muted/50">
+                            <TableRow 
+                              key={update.id} 
+                              className="group hover:bg-muted/50 cursor-pointer"
+                              onClick={() => handleUpdateClick(update)}
+                            >
                               <TableCell>
                                 <Badge 
                                   variant={getBadgeVariant(update.actionType)}
@@ -350,6 +368,51 @@ const Updates = () => {
                     </Button>
                   </div>
                 )}
+
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogContent className="max-w-2xl">
+                    {selectedUpdate && (
+                      <>
+                        <DialogHeader>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge 
+                              variant={getBadgeVariant(selectedUpdate.actionType)}
+                              className="flex gap-1 items-center"
+                            >
+                              {getBadgeIcon(selectedUpdate.actionType)}
+                              {selectedUpdate.actionType || 'Informational'}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              {selectedUpdate.category || 'General'}
+                            </Badge>
+                          </div>
+                          <DialogTitle className="text-xl">
+                            {selectedUpdate.title}
+                          </DialogTitle>
+                          <DialogDescription className="flex justify-between items-center mt-2">
+                            <span className="font-mono text-xs">
+                              ID: {selectedUpdate.messageId || selectedUpdate.id}
+                            </span>
+                            <span className="text-sm flex items-center gap-1">
+                              <ClockIcon size={14} />
+                              Last updated: {formatDate(selectedUpdate.publishedDate)}
+                            </span>
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="mt-4 prose prose-sm max-w-none">
+                          <p className="whitespace-pre-line">{selectedUpdate.description}</p>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                            Close
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </>
