@@ -31,8 +31,7 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     { name: 'Updates', path: '/microsoft-365/updates' },
     { name: 'Notifications', path: '/microsoft-365/notifications' },
     { name: 'M365 DSC', path: '/microsoft-365/dsc' },
-    { name: 'Reports', path: '/microsoft-365/reports' },
-    { name: 'Email Notifications', path: '/microsoft-365/email-notifications' }
+    { name: 'Reports', path: '/microsoft-365/reports' }
   ];
 
   // Load tenants on component mount
