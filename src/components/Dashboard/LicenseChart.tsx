@@ -22,12 +22,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 const LicenseChart: React.FC<LicenseChartProps> = ({ data, className }) => {
   return (
-    <motion.div 
-      className={`bg-white rounded-xl p-6 shadow-soft border border-border ${className}`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
-    >
+    <div className={className}>
       <h3 className="text-lg font-semibold mb-4">License Distribution</h3>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -59,7 +54,7 @@ const LicenseChart: React.FC<LicenseChartProps> = ({ data, className }) => {
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

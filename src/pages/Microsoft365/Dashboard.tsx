@@ -12,7 +12,6 @@ import DashboardHeader from '@/components/Dashboard/DashboardHeader';
 import DashboardMetrics from '@/components/Dashboard/DashboardMetrics';
 import TenantInfo from '@/components/Dashboard/TenantInfo';
 import LicenseChart from '@/components/Dashboard/LicenseChart';
-import LicenseOverview from '@/components/Dashboard/LicenseOverview';
 import LoadingIndicator from '@/components/Dashboard/LoadingIndicator';
 import EmptyState from '@/components/Dashboard/EmptyState';
 
@@ -121,17 +120,18 @@ const Dashboard = () => {
                   <TenantInfo tenant={mockTenant} />
                 </div>
                 
-                <DashboardMetrics metrics={metrics} />
-                
-                <div className="grid grid-cols-1 gap-6">
-                  {licenses.length > 0 && licenseDistribution.length > 0 && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                      <LicenseChart data={licenseDistribution} className="lg:col-span-3" />
-                    </div>
-                  )}
+                {/* License Overview Section - Combined Container */}
+                <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
+                  <h2 className="text-xl font-semibold mb-6">License Overview</h2>
                   
-                  {licenses.length > 0 && (
-                    <LicenseOverview licenses={licenses} className="lg:col-span-3" />
+                  {/* Metrics Cards */}
+                  <DashboardMetrics metrics={metrics} />
+                  
+                  {/* License Distribution Chart */}
+                  {licenses.length > 0 && licenseDistribution.length > 0 && (
+                    <div className="mt-6">
+                      <LicenseChart data={licenseDistribution} />
+                    </div>
                   )}
                 </div>
               </>
