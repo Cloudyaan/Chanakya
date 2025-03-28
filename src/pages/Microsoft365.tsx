@@ -29,6 +29,7 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     { name: 'Dashboard', path: '/microsoft-365/dashboard' },
     { name: 'Licenses', path: '/microsoft-365/licenses' },
     { name: 'Updates', path: '/microsoft-365/updates' },
+    { name: 'Notifications', path: '/microsoft-365/notifications' },
     { name: 'M365 DSC', path: '/microsoft-365/dsc' },
     { name: 'Reports', path: '/microsoft-365/reports' }
   ];
@@ -153,4 +154,3 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
 };
 
 export default Microsoft365;
-

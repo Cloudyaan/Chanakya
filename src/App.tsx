@@ -9,6 +9,7 @@ import Licenses from "./pages/Microsoft365/Licenses";
 import M365Dashboard from "./pages/Microsoft365/Dashboard";
 import M365DSC from "./pages/Microsoft365/M365DSC";
 import Updates from "./pages/Microsoft365/Updates";
+import Notifications from "./pages/Microsoft365/Notifications";
 import Reports from "./pages/Microsoft365/Reports";
 import Microsoft365 from "./pages/Microsoft365";
 import Azure from "./pages/Azure";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/microsoft-365/dashboard" element={<M365Dashboard />} />
           <Route path="/microsoft-365/licenses" element={<Licenses />} />
           <Route path="/microsoft-365/updates" element={<Updates />} />
+          <Route path="/microsoft-365/notifications" element={<Notifications />} />
           <Route path="/microsoft-365/dsc" element={<M365DSC />} />
           <Route path="/microsoft-365/reports" element={<Reports />} />
           <Route path="/azure" element={<Azure />} />
