@@ -163,9 +163,9 @@ const generateMockWindowsUpdates = (tenantId?: string): WindowsUpdate[] => {
       productName: "Windows 11",
       title: "May 2025 Cumulative Update for Windows 11",
       description: "This update includes quality improvements and security fixes.",
-      severity: "High",
+      webViewUrl: "https://support.microsoft.com/en-us/topic/may-2025-update",
       status: "Released",
-      firstOccurredDate: "2025-05-10T00:00:00Z",
+      startDate: "2025-05-10T00:00:00Z",
       resolvedDate: null
     },
     {
@@ -175,9 +175,9 @@ const generateMockWindowsUpdates = (tenantId?: string): WindowsUpdate[] => {
       productName: "Windows 10",
       title: "April 2025 Security Update for Windows 10",
       description: "Critical security patches for Windows 10 devices.",
-      severity: "Critical",
+      webViewUrl: "https://support.microsoft.com/en-us/topic/april-2025-update",
       status: "Released",
-      firstOccurredDate: "2025-04-12T00:00:00Z",
+      startDate: "2025-04-12T00:00:00Z",
       resolvedDate: null
     },
     {
@@ -187,9 +187,9 @@ const generateMockWindowsUpdates = (tenantId?: string): WindowsUpdate[] => {
       productName: "Windows Server 2022",
       title: "Known Issue: Printing problems after update KB5025885",
       description: "After installing KB5025885, some users may experience issues with network printing.",
-      severity: "Medium",
+      webViewUrl: "https://support.microsoft.com/en-us/topic/kb5025885-issue",
       status: "Investigating",
-      firstOccurredDate: "2025-03-15T00:00:00Z",
+      startDate: "2025-03-15T00:00:00Z",
       resolvedDate: null
     }
   ];

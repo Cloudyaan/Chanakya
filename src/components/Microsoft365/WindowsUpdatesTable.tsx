@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { WindowsUpdate } from '@/utils/types';
-import { RefreshCw, AlertTriangle, CheckCircle2, HelpCircle } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, HelpCircle, ExternalLink } from 'lucide-react';
 import { 
   Table,
   TableBody,
@@ -22,44 +22,7 @@ interface WindowsUpdatesTableProps {
 }
 
 const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTableProps) => {
-  const getSeverityBadge = (severity: string | null | undefined) => {
-    // Handle null or undefined severity
-    if (!severity) {
-      return <Badge variant="secondary" className="flex gap-1 items-center">
-        <HelpCircle size={12} />
-        Unknown
-      </Badge>;
-    }
-    
-    switch (severity.toLowerCase()) {
-      case 'critical':
-        return <Badge variant="destructive" className="flex gap-1 items-center">
-          <AlertTriangle size={12} />
-          Critical
-        </Badge>;
-      case 'high':
-        return <Badge variant="destructive" className="flex gap-1 items-center bg-red-500">
-          <AlertTriangle size={12} />
-          High
-        </Badge>;
-      case 'medium':
-        return <Badge variant="default" className="flex gap-1 items-center bg-orange-500">
-          <AlertTriangle size={12} />
-          Medium
-        </Badge>;
-      case 'low':
-        return <Badge variant="default" className="flex gap-1 items-center bg-yellow-500">
-          <HelpCircle size={12} />
-          Low
-        </Badge>;
-      default:
-        return <Badge variant="secondary" className="flex gap-1 items-center">
-          <HelpCircle size={12} />
-          {severity || 'Unknown'}
-        </Badge>;
-    }
-  };
-
+  // We don't have severity data directly, so we'll determine it based on status
   const getStatusBadge = (status: string | null | undefined) => {
     // Handle null or undefined status
     if (!status) {
@@ -97,6 +60,12 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
     }
   };
 
+  const openExternalLink = (url: string | null) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -120,7 +89,6 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
           <TableHeader>
             <TableRow>
               <TableHead className="w-[150px]">Product</TableHead>
-              <TableHead className="w-[120px]">Severity</TableHead>
               <TableHead className="w-[120px]">Status</TableHead>
               <TableHead>Title</TableHead>
               <TableHead className="w-[120px] text-right">Date</TableHead>
@@ -132,29 +100,27 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
                 key={update.id} 
                 className={cn(
                   "group hover:bg-muted/50 cursor-pointer",
-                  update.severity === 'Critical' && "bg-red-50/30",
-                  update.severity === 'High' && "bg-orange-50/30"
+                  update.webViewUrl && "hover:underline"
                 )}
+                onClick={() => update.webViewUrl && openExternalLink(update.webViewUrl)}
               >
                 <TableCell>
                   <span className="font-medium">{update.productName || 'Unknown Product'}</span>
                 </TableCell>
                 <TableCell>
-                  {getSeverityBadge(update.severity)}
-                </TableCell>
-                <TableCell>
                   {getStatusBadge(update.status)}
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">
+                  <div className="font-medium flex items-center gap-1">
                     {update.title || 'No Title'}
+                    {update.webViewUrl && <ExternalLink size={14} className="text-blue-500" />}
                   </div>
                   <div className="text-sm text-muted-foreground line-clamp-1">
                     {update.description || 'No description available'}
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatDate(update.firstOccurredDate)}
+                  {formatDate(update.startDate)}
                 </TableCell>
               </TableRow>
             ))}
