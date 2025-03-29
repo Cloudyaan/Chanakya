@@ -70,7 +70,7 @@ const Updates = () => {
       }} className="mb-6 flex flex-wrap justify-between items-center">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
-            <p className="text-m365-gray-500">View all service announcements from Microsoft</p>
+            <p className="text-m365-gray-500">View all updates from Microsoft 365 and Windows</p>
           </div>
           
           <UpdatesHeader onRefresh={refreshData} onFetch={fetchUpdateData} isLoading={isLoading} isFetching={isFetching} selectedTenant={selectedTenant} />
