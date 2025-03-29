@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/updatesOperations';
 import WindowsUpdatesTable from './WindowsUpdatesTable';
+import { useToast } from '@/hooks/use-toast';
 
 interface UpdatesContentProps {
   isLoading: boolean;
@@ -33,6 +34,7 @@ const UpdatesContent = ({
   const [isLoadingWindows, setIsLoadingWindows] = useState(false);
   const [isFetchingWindows, setIsFetchingWindows] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Get the selected tenant ID from localStorage
@@ -59,9 +61,16 @@ const UpdatesContent = ({
     setIsLoadingWindows(true);
     try {
       const data = await getWindowsUpdates(tenantId);
+      console.log('Windows updates loaded:', data);
       setWindowsUpdates(data);
     } catch (error) {
       console.error('Error loading Windows updates:', error);
+      toast({
+        title: "Error loading Windows updates",
+        description: "Could not load Windows update information",
+        variant: "destructive",
+      });
+      setWindowsUpdates([]);
     } finally {
       setIsLoadingWindows(false);
     }
@@ -72,11 +81,30 @@ const UpdatesContent = ({
     
     setIsFetchingWindows(true);
     try {
-      await fetchWindowsUpdates(selectedTenant);
-      // Reload the data after fetching
-      setTimeout(() => loadWindowsUpdates(selectedTenant), 2000);
+      const success = await fetchWindowsUpdates(selectedTenant);
+      
+      if (success) {
+        toast({
+          title: "Fetching Windows updates succeeded",
+          description: "Windows update data is being retrieved from Microsoft Graph API",
+          variant: "default",
+        });
+        // Reload the data after fetching
+        setTimeout(() => loadWindowsUpdates(selectedTenant), 2000);
+      } else {
+        toast({
+          title: "Fetching Windows updates failed",
+          description: "Could not fetch Windows update data from Microsoft Graph API",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error fetching Windows updates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger Windows update data fetch",
+        variant: "destructive",
+      });
     } finally {
       setIsFetchingWindows(false);
     }

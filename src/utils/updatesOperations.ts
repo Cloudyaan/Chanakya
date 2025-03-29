@@ -116,17 +116,38 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.warn(`Windows updates service returned an error: ${response.status} ${response.statusText}`);
-      // Don't use mock data, return empty array to show "No updates available"
+      console.error(`Windows updates service returned an error: ${response.status} ${response.statusText}`);
+      
+      try {
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      } catch (e) {
+        console.error('Could not parse error response');
+      }
+      
+      // Return empty array to show "No updates available" instead of using mock data
       return [];
     }
     
     const data = await response.json();
     console.log(`Received ${data.length} Windows updates for tenant ID: ${tenantId || 'all'}`);
-    return data;
+    
+    // Map the data to ensure all fields are properly handled
+    return data.map((update: any) => ({
+      id: update.id || '',
+      tenantId: tenantId || update.tenantId || '',
+      productId: update.product_id || update.productId || '',
+      productName: update.product_name || update.productName || null,
+      title: update.title || null,
+      description: update.description || null,
+      webViewUrl: update.web_view_url || update.webViewUrl || null,
+      status: update.status || null,
+      startDate: update.start_date || update.startDate || update.startDateTime || null,
+      resolvedDate: update.resolved_date || update.resolvedDate || update.resolvedDateTime || null
+    }));
   } catch (error) {
     console.error('Error fetching Windows updates:', error);
-    // Don't use mock data, return empty array to show "No updates available"
+    // Return empty array to show "No updates available" instead of using mock data
     return [];
   }
 };

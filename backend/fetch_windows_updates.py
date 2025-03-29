@@ -117,9 +117,9 @@ def store_known_issues(db_path, product_id, known_issues):
             product_id,
             issue.get("title"),
             issue.get("description"),
-            issue.get("webViewUrl"),
+            issue.get("webViewUrl"),  # Changed from severity to webViewUrl
             issue.get("status"),
-            issue.get("startDateTime"),  # Changed from severity to correct API response field
+            issue.get("startDateTime"),  # Changed from firstOccurredDateTime to startDateTime
             issue.get("resolvedDateTime"))
         )
     
@@ -176,7 +176,7 @@ def main():
     if len(sys.argv) > 1:
         tenant_id = sys.argv[1]
         tenants = fetch_tenants()
-        matching_tenant = next((t for t in tenants if t['id'] == tenant_id), None)
+        matching_tenant = next((t for t in tenants if t['tenantId'] == tenant_id), None)
         
         if matching_tenant:
             print(f"Processing single tenant: {matching_tenant['name']}")
