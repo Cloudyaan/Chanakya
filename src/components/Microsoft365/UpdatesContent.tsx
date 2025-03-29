@@ -6,7 +6,7 @@ import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
 import UpdatesLoading from './UpdatesLoading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Windows, Newspaper } from 'lucide-react';
+import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 
 interface UpdatesContentProps {
   isLoading: boolean;
@@ -49,7 +49,7 @@ const UpdatesContent = ({
             Message Center
           </TabsTrigger>
           <TabsTrigger value="windows-updates" className="flex items-center gap-2">
-            <Windows className="h-4 w-4" />
+            <Monitor className="h-4 w-4" />
             Windows Updates
           </TabsTrigger>
           <TabsTrigger value="news" className="flex items-center gap-2">
