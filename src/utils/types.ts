@@ -1,3 +1,4 @@
+
 export interface License {
   id: string;
   name: string;
@@ -81,11 +82,11 @@ export interface WindowsUpdate {
   id: string;
   tenantId: string;
   productId: string;
-  productName: string;
-  title: string;
-  description: string;
-  severity: string;
-  status: string;
-  firstOccurredDate: string;
+  productName: string | null;
+  title: string | null;
+  description: string | null;
+  severity: string | null;
+  status: string | null;
+  firstOccurredDate: string | null;
   resolvedDate: string | null;
 }

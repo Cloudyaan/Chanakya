@@ -22,7 +22,15 @@ interface WindowsUpdatesTableProps {
 }
 
 const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTableProps) => {
-  const getSeverityBadge = (severity: string) => {
+  const getSeverityBadge = (severity: string | null | undefined) => {
+    // Handle null or undefined severity
+    if (!severity) {
+      return <Badge variant="secondary" className="flex gap-1 items-center">
+        <HelpCircle size={12} />
+        Unknown
+      </Badge>;
+    }
+    
     switch (severity.toLowerCase()) {
       case 'critical':
         return <Badge variant="destructive" className="flex gap-1 items-center">
@@ -52,7 +60,15 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null | undefined) => {
+    // Handle null or undefined status
+    if (!status) {
+      return <Badge variant="outline" className="flex gap-1 items-center">
+        <HelpCircle size={12} />
+        Unknown
+      </Badge>;
+    }
+    
     switch (status.toLowerCase()) {
       case 'released':
         return <Badge variant="outline" className="flex gap-1 items-center bg-green-100 text-green-800 border-green-300">
@@ -71,7 +87,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
@@ -121,7 +137,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
                 )}
               >
                 <TableCell>
-                  <span className="font-medium">{update.productName}</span>
+                  <span className="font-medium">{update.productName || 'Unknown Product'}</span>
                 </TableCell>
                 <TableCell>
                   {getSeverityBadge(update.severity)}
@@ -131,10 +147,10 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
                 </TableCell>
                 <TableCell>
                   <div className="font-medium">
-                    {update.title}
+                    {update.title || 'No Title'}
                   </div>
                   <div className="text-sm text-muted-foreground line-clamp-1">
-                    {update.description}
+                    {update.description || 'No description available'}
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
