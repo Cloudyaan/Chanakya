@@ -85,8 +85,8 @@ export interface WindowsUpdate {
   productName: string | null;
   title: string | null;
   description: string | null;
-  webViewUrl: string | null;
+  severity: string | null;
   status: string | null;
-  startDateTime: string | null;
-  resolvedDateTime: string | null;
+  firstOccurredDate: string | null;
+  resolvedDate: string | null;
 }

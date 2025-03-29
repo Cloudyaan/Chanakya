@@ -39,10 +39,10 @@ def create_windows_updates_tables(db_path):
             product_id TEXT,
             title TEXT,
             description TEXT,
-            web_view_url TEXT,
+            severity TEXT,
             status TEXT,
-            start_date_time TEXT,
-            resolved_date_time TEXT,
+            first_occurred_date TEXT,
+            resolved_date TEXT,
             FOREIGN KEY (product_id) REFERENCES windows_products(id)
         )
     """)
@@ -110,16 +110,16 @@ def store_known_issues(db_path, product_id, known_issues):
     for issue in known_issues:
         cursor.execute("""
             INSERT OR REPLACE INTO windows_known_issues 
-            (id, product_id, title, description, web_view_url, status, start_date_time, resolved_date_time) 
+            (id, product_id, title, description, severity, status, first_occurred_date, resolved_date) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             issue.get("id"),
             product_id,
             issue.get("title"),
             issue.get("description"),
-            issue.get("webViewUrl"),
+            issue.get("severity"),
             issue.get("status"),
-            issue.get("startDateTime"),
+            issue.get("firstOccurredDateTime"),
             issue.get("resolvedDateTime"))
         )
     

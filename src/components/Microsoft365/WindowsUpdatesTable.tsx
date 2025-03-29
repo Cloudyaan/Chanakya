@@ -120,6 +120,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
           <TableHeader>
             <TableRow>
               <TableHead className="w-[150px]">Product</TableHead>
+              <TableHead className="w-[120px]">Severity</TableHead>
               <TableHead className="w-[120px]">Status</TableHead>
               <TableHead>Title</TableHead>
               <TableHead className="w-[120px] text-right">Date</TableHead>
@@ -130,11 +131,16 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
               <TableRow 
                 key={update.id} 
                 className={cn(
-                  "group hover:bg-muted/50 cursor-pointer"
+                  "group hover:bg-muted/50 cursor-pointer",
+                  update.severity === 'Critical' && "bg-red-50/30",
+                  update.severity === 'High' && "bg-orange-50/30"
                 )}
               >
                 <TableCell>
                   <span className="font-medium">{update.productName || 'Unknown Product'}</span>
+                </TableCell>
+                <TableCell>
+                  {getSeverityBadge(update.severity)}
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(update.status)}
@@ -148,7 +154,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatDate(update.startDateTime)}
+                  {formatDate(update.firstOccurredDate)}
                 </TableCell>
               </TableRow>
             ))}
