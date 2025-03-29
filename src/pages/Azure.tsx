@@ -39,10 +39,7 @@ const Azure = ({ children }: AzureProps) => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <div className={cn(
-        "border-b z-10 bg-background transition-all duration-200",
-        isScrolled && "sticky top-0 shadow-sm"
-      )}>
+      <div className="sticky top-16 border-b z-10 bg-background transition-all duration-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           <div className="flex overflow-x-auto scrollbar-hide space-x-1">
             {subNavItems.map((item) => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -92,10 +91,7 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <div className={cn(
-        "border-b z-10 bg-background transition-all duration-200",
-        isScrolled && "sticky top-0 shadow-sm"
-      )}>
+      <div className="sticky top-16 border-b z-10 bg-background transition-all duration-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           <div className="flex justify-between items-center">
             <div className="flex overflow-x-auto scrollbar-hide space-x-1">
