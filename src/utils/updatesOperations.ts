@@ -131,21 +131,24 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     
     const data = await response.json();
     console.log(`Received ${data.length} Windows updates for tenant ID: ${tenantId || 'all'}`);
-    console.log('Sample Windows update data:', data[0]); // Debug: log the first item to see structure
+    console.log('Raw Windows update data from API:', data); // Debug: log all data
+    if (data.length > 0) {
+      console.log('Sample Windows update item fields:', Object.keys(data[0])); // Debug: log the fields
+    }
     
     // Map the data to ensure all fields are properly handled
     // This handles different field naming conventions from the API or database
     return data.map((update: any) => ({
       id: update.id || '',
       tenantId: tenantId || update.tenantId || update.tenant_id || '',
-      productId: update.product_id || update.productId || '',
-      productName: update.product_name || update.productName || update.name || '',
+      productId: update.productId || update.product_id || '',
+      productName: update.productName || update.product_name || update.name || '',
       title: update.title || '',
       description: update.description || '',
-      webViewUrl: update.web_view_url || update.webViewUrl || '',
+      webViewUrl: update.webViewUrl || update.web_view_url || '',
       status: update.status || '',
-      startDate: update.start_date || update.startDate || update.startDateTime || '',
-      resolvedDate: update.resolved_date || update.resolvedDate || update.resolvedDateTime || ''
+      startDate: update.startDate || update.start_date || update.startDateTime || '',
+      resolvedDate: update.resolvedDate || update.resolved_date || update.resolvedDateTime || ''
     }));
   } catch (error) {
     console.error('Error fetching Windows updates:', error);

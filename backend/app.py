@@ -772,22 +772,67 @@ def get_windows_updates():
             if not cursor.fetchone():
                 return jsonify([])  # Return empty array if table doesn't exist
             
-            # Join windows_known_issues with windows_products to get product names
-            cursor.execute("""
+            # First check the table structure to get column names
+            cursor.execute("PRAGMA table_info(windows_known_issues)")
+            columns = cursor.fetchall()
+            column_names = [col['name'] for col in columns]
+            print(f"Available columns in windows_known_issues: {column_names}")
+            
+            # Dynamically build query based on available columns
+            select_fields = [
+                "wi.id", 
+                "wi.product_id as productId"
+            ]
+            
+            # Add optional fields if they exist
+            if 'title' in column_names:
+                select_fields.append("wi.title")
+            else:
+                select_fields.append("'No title available' as title")
+                
+            if 'description' in column_names:
+                select_fields.append("wi.description")
+            else:
+                select_fields.append("'No description available' as description")
+                
+            if 'webViewUrl' in column_names:
+                select_fields.append("wi.webViewUrl")
+            elif 'web_view_url' in column_names:
+                select_fields.append("wi.web_view_url as webViewUrl")
+                
+            if 'status' in column_names:
+                select_fields.append("wi.status")
+            else:
+                select_fields.append("'Unknown' as status")
+                
+            if 'start_date' in column_names:
+                select_fields.append("wi.start_date as startDate")
+            elif 'startDateTime' in column_names:
+                select_fields.append("wi.startDateTime as startDate")
+            elif 'first_occurred_date' in column_names:
+                select_fields.append("wi.first_occurred_date as startDate")
+            else:
+                select_fields.append("NULL as startDate")
+                
+            if 'resolved_date' in column_names:
+                select_fields.append("wi.resolved_date as resolvedDate")
+            elif 'resolvedDateTime' in column_names:
+                select_fields.append("wi.resolvedDateTime as resolvedDate")
+            else:
+                select_fields.append("NULL as resolvedDate")
+                
+            # Build the query
+            query = f"""
                 SELECT 
-                    wi.id,
-                    wi.product_id as productId,
-                    wp.name as productName,
-                    wi.title,
-                    wi.description,
-                    wi.severity,
-                    wi.status,
-                    wi.first_occurred_date as firstOccurredDate,
-                    wi.resolved_date as resolvedDate
+                    {', '.join(select_fields)},
+                    wp.name as productName
                 FROM windows_known_issues wi
                 LEFT JOIN windows_products wp ON wi.product_id = wp.id
-                ORDER BY wi.first_occurred_date DESC
-            """)
+                ORDER BY wi.id DESC
+            """
+            
+            print(f"Executing query: {query}")
+            cursor.execute(query)
             
             updates = []
             for row in cursor.fetchall():
@@ -803,12 +848,14 @@ def get_windows_updates():
             return jsonify(updates)
             
         except sqlite3.Error as e:
+            print(f"Database error in get_windows_updates: {e}")
             return jsonify({
                 'error': 'Database error',
                 'message': str(e)
             }), 500
             
     except Exception as e:
+        print(f"Server error in get_windows_updates: {e}")
         return jsonify({
             'error': 'Server error',
             'message': str(e)

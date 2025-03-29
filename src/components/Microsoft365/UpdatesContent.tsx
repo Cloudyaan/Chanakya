@@ -90,7 +90,7 @@ const UpdatesContent = ({
           description: "Windows update data is being retrieved from Microsoft Graph API",
           variant: "default",
         });
-        // Reload the data after fetching
+        // Reload the data after fetching with a small delay
         setTimeout(() => loadWindowsUpdates(selectedTenant), 2000);
       } else {
         toast({
