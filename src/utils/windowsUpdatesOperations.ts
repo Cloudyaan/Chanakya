@@ -48,7 +48,7 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     
     // Map the data to ensure all fields are properly handled
     // This handles different field naming conventions from the API or database
-    return data.map((update: any) => ({
+    const mappedUpdates = data.map((update: any) => ({
       id: update.id || '',
       tenantId: tenantId || update.tenantId || update.tenant_id || '',
       productId: update.productId || update.product_id || '',
@@ -60,6 +60,16 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
       startDate: update.startDate || update.start_date || update.startDateTime || '',
       resolvedDate: update.resolvedDate || update.resolved_date || update.resolvedDateTime || ''
     }));
+    
+    // Sort updates by startDate in descending order (newest first)
+    return mappedUpdates.sort((a, b) => {
+      // Convert dates to timestamps for comparison
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+      
+      // Sort in descending order (newest first)
+      return dateB - dateA;
+    });
   } catch (error) {
     console.error('Error fetching Windows updates:', error);
     // Return empty array to show "No updates available" instead of using mock data
