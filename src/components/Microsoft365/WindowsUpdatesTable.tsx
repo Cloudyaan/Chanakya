@@ -45,7 +45,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
         </Badge>;
       default:
         return <Badge variant="outline" className="flex gap-1 items-center">
-          {status}
+          {status || 'Unknown'}
         </Badge>;
     }
   };
@@ -56,15 +56,17 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
       const date = new Date(dateString);
       return date.toLocaleDateString();
     } catch (e) {
-      return dateString;
+      return dateString || 'N/A';
     }
   };
 
-  const openExternalLink = (url: string | null) => {
+  const openExternalLink = (url: string | null | undefined) => {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
+  console.log('Updates array in WindowsUpdatesTable:', updates); // Debug log
 
   if (!Array.isArray(updates) || updates.length === 0) {
     return (

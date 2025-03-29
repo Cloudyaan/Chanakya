@@ -81,6 +81,7 @@ const UpdatesContent = ({
     
     setIsFetchingWindows(true);
     try {
+      console.log(`Triggering fetch Windows updates for tenant: ${selectedTenant}`);
       const success = await fetchWindowsUpdates(selectedTenant);
       
       if (success) {
