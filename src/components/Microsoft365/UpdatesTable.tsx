@@ -60,6 +60,7 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
           <TableBody>
             {updates.map((update) => {
               const isPlanForChange = update.actionType === 'Plan for Change';
+              const isNotStayInformed = update.category !== 'Stay Informed';
               
               return (
                 <TableRow 
@@ -84,6 +85,10 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                       <Badge className="bg-purple-600 text-white hover:bg-purple-700">
                         {update.category || 'General'}
                       </Badge>
+                    ) : isNotStayInformed ? (
+                      <Badge className="bg-blue-600 text-white hover:bg-blue-700">
+                        {update.category || 'General'}
+                      </Badge>
                     ) : (
                       <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
                         {update.category || 'General'}
@@ -96,7 +101,8 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                   <TableCell>
                     <div className={cn(
                       "font-medium",
-                      isPlanForChange && "text-purple-800"
+                      isPlanForChange && "text-purple-800",
+                      isNotStayInformed && !isPlanForChange && "text-blue-800"
                     )}>
                       {update.title}
                     </div>
