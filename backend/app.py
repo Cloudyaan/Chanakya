@@ -269,11 +269,131 @@ def create_fetch_licenses_batch():
             f.write('python fetch_licenses.py %*\n')
         print(f"Created {batch_file}")
 
+# Create batch file for fetch_windows_updates if not exists
+def create_fetch_windows_updates_batch():
+    batch_file = 'fetch_windows_updates.bat'
+    if not os.path.exists(batch_file):
+        with open(batch_file, 'w') as f:
+            f.write('@echo off\n')
+            f.write('echo Running Windows Updates Fetcher\n')
+            f.write('echo ====================================================\n')
+            f.write('echo.\n\n')
+            f.write('REM Check if pandas is installed\n')
+            f.write('python -c "import pandas" 2>NUL\n')
+            f.write('if %ERRORLEVEL% NEQ 0 (\n')
+            f.write('    echo Error: pandas package is not installed.\n')
+            f.write('    echo Installing pandas...\n')
+            f.write('    pip install pandas\n')
+            f.write('    if %ERRORLEVEL% NEQ 0 (\n')
+            f.write('        echo Failed to install pandas. Please install it manually: pip install pandas\n')
+            f.write('        exit /b 1\n')
+            f.write('    )\n')
+            f.write(')\n\n')
+            f.write('python fetch_windows_updates.py %*\n\n')
+            f.write('echo.\n')
+            f.write('echo Done!\n')
+        print(f"Created {batch_file}")
+
 # Ensure batch files exist
 create_fetch_licenses_batch()
+create_fetch_windows_updates_batch()
 
-# Routes for Azure accounts and other API endpoints
-# ... keep existing code (remaining api routes)
+# Routes for Azure accounts
+@app.route('/api/azure-accounts', methods=['GET'])
+def get_azure_accounts():
+    conn = get_db_connection()
+    accounts = conn.execute('SELECT * FROM azure_accounts').fetchall()
+    conn.close()
+    
+    # Convert rows to dictionaries
+    result = []
+    for account in accounts:
+        result.append({
+            'id': account['id'],
+            'name': account['name'],
+            'subscriptionId': account['subscriptionId'],
+            'tenantId': account['tenantId'],
+            'clientId': account['clientId'],
+            'clientSecret': account['clientSecret'],
+            'isActive': bool(account['isActive']),
+            'dateAdded': account['dateAdded']
+        })
+    
+    return jsonify(result)
+
+@app.route('/api/azure-accounts', methods=['POST'])
+def add_azure_account():
+    data = request.json
+    
+    # Generate a new ID and add current timestamp
+    account_id = str(uuid.uuid4())
+    date_added = datetime.now().isoformat()
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO azure_accounts (id, name, subscriptionId, tenantId, clientId, clientSecret, isActive, dateAdded)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        account_id,
+        data['name'],
+        data['subscriptionId'],
+        data['tenantId'],
+        data['clientId'],
+        data['clientSecret'],
+        1 if data['isActive'] else 0,
+        date_added
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    # Return the newly created account with its ID
+    return jsonify({
+        'id': account_id,
+        'name': data['name'],
+        'subscriptionId': data['subscriptionId'],
+        'tenantId': data['tenantId'],
+        'clientId': data['clientId'],
+        'clientSecret': data['clientSecret'],
+        'isActive': data['isActive'],
+        'dateAdded': date_added
+    })
+
+@app.route('/api/azure-accounts/<string:id>', methods=['PUT'])
+def update_azure_account(id):
+    data = request.json
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    UPDATE azure_accounts
+    SET name = ?, subscriptionId = ?, tenantId = ?, clientId = ?, clientSecret = ?, isActive = ?
+    WHERE id = ?
+    ''', (
+        data['name'],
+        data['subscriptionId'],
+        data['tenantId'],
+        data['clientId'],
+        data['clientSecret'],
+        1 if data['isActive'] else 0,
+        id
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/azure-accounts/<string:id>', methods=['DELETE'])
+def delete_azure_account(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM azure_accounts WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
 
 # New endpoint for tenant updates
 @app.route('/api/updates', methods=['GET'])
@@ -599,6 +719,147 @@ def trigger_fetch_licenses():
         return jsonify({
             'error': 'Fetch licenses failed',
             'message': f'Error running fetch_licenses script: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
+
+# Add a new endpoint for Windows updates
+@app.route('/api/windows-updates', methods=['GET'])
+def get_windows_updates():
+    tenant_id = request.args.get('tenantId')
+    
+    # If no tenant ID is specified, return an error
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId parameter'
+        }), 400
+    
+    # Try to find the tenant
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    try:
+        # Find the tenant database
+        tenant_db_path = find_tenant_database(tenant['tenantId'])
+        
+        # If the database doesn't exist yet, return a helpful message
+        if not tenant_db_path:
+            return jsonify({
+                'error': 'Database not found',
+                'message': f'No Windows updates database found for this tenant. Run the fetch_windows_updates.py script with the tenant ID: python fetch_windows_updates.py {tenant_id}'
+            }), 404
+        
+        # If the database exists, read from it
+        try:
+            conn = sqlite3.connect(tenant_db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Check if the windows_known_issues table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
+            if not cursor.fetchone():
+                return jsonify([])  # Return empty array if table doesn't exist
+            
+            # Join windows_known_issues with windows_products to get product names
+            cursor.execute("""
+                SELECT 
+                    wi.id,
+                    wi.product_id as productId,
+                    wp.name as productName,
+                    wi.title,
+                    wi.description,
+                    wi.severity,
+                    wi.status,
+                    wi.first_occurred_date as firstOccurredDate,
+                    wi.resolved_date as resolvedDate
+                FROM windows_known_issues wi
+                LEFT JOIN windows_products wp ON wi.product_id = wp.id
+                ORDER BY wi.first_occurred_date DESC
+            """)
+            
+            updates = []
+            for row in cursor.fetchall():
+                # Convert SQLite row to dictionary
+                update = dict(row)
+                
+                # Add tenant information
+                update['tenantId'] = tenant['tenantId']
+                
+                updates.append(update)
+            
+            conn.close()
+            return jsonify(updates)
+            
+        except sqlite3.Error as e:
+            return jsonify({
+                'error': 'Database error',
+                'message': str(e)
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'error': 'Server error',
+            'message': str(e)
+        }), 500
+
+# New endpoint to trigger the fetch_windows_updates.py script
+@app.route('/api/fetch-windows-updates', methods=['POST'])
+def trigger_fetch_windows_updates():
+    tenant_id = request.json.get('tenantId')
+    
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId in the request body'
+        }), 400
+    
+    # Check if the tenant exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    # Ensure dependencies are installed
+    if not check_dependencies():
+        return jsonify({
+            'error': 'Missing dependencies',
+            'message': 'Required packages are not installed. Please install them manually.'
+        }), 503
+    
+    try:
+        # On Windows, run the batch file
+        if os.name == 'nt':
+            subprocess.run(['fetch_windows_updates.bat', tenant_id], check=True)
+        else:
+            # On non-Windows, run the Python script directly
+            subprocess.run(['python', 'fetch_windows_updates.py', tenant_id], check=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully fetched Windows updates for tenant {tenant["name"]}'
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'error': 'Fetch Windows updates failed',
+            'message': f'Error running fetch_windows_updates script: {str(e)}'
         }), 500
     except Exception as e:
         return jsonify({
