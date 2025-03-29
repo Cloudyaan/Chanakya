@@ -33,12 +33,12 @@ const NavBar = () => {
             </Link>
           </div>
           
-          {/* Centered navigation */}
+          {/* Centered navigation with evenly distributed items */}
           <div className="flex-grow flex justify-center">
-            <div className="inline-flex items-center space-x-8">
+            <div className="flex items-center justify-center w-full max-w-md">
               {navItems.map(item => {
                 const isActive = currentTopLevel?.path === item.path;
-                return <Link key={item.path} to={item.path} className={cn("relative px-4 py-2 text-sm font-medium premium-transition whitespace-nowrap rounded-md", isActive ? "text-foreground bg-secondary/50" : "text-muted-foreground hover:text-foreground hover:bg-secondary/30")} onMouseEnter={() => setIsHovering(item.path)} onMouseLeave={() => setIsHovering(null)}>
+                return <Link key={item.path} to={item.path} className={cn("relative px-4 py-2 text-sm font-medium premium-transition whitespace-nowrap rounded-md flex-1 text-center", isActive ? "text-foreground bg-secondary/50" : "text-muted-foreground hover:text-foreground hover:bg-secondary/30")} onMouseEnter={() => setIsHovering(item.path)} onMouseLeave={() => setIsHovering(null)}>
                     {item.name}
                     
                     {isActive && <motion.div className="absolute bottom-0 left-0 right-0 h-0.5 bg-m365-600 mx-3" layoutId="navbar-indicator" initial={false} transition={{
