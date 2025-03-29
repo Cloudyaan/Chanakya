@@ -118,7 +118,6 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                   </TableCell>
                   <TableCell>
                     <div className={cn(
-                      "font-medium",
                       isPlanForChange && "text-purple-800",
                       isNotStayInformed && !isPlanForChange && "text-purple-700"
                     )}>
