@@ -117,9 +117,9 @@ def store_known_issues(db_path, product_id, known_issues):
             product_id,
             issue.get("title"),
             issue.get("description"),
-            issue.get("webViewUrl"),  # Changed from severity to webViewUrl
+            issue.get("webViewUrl"),
             issue.get("status"),
-            issue.get("startDateTime"),  # Changed from firstOccurredDateTime to startDateTime
+            issue.get("startDateTime"),
             issue.get("resolvedDateTime"))
         )
     

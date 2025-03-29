@@ -45,7 +45,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
         </Badge>;
       default:
         return <Badge variant="outline" className="flex gap-1 items-center">
-          {status || 'Unknown'}
+          {status}
         </Badge>;
     }
   };
@@ -66,7 +66,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
     }
   };
 
-  if (updates.length === 0) {
+  if (!Array.isArray(updates) || updates.length === 0) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">

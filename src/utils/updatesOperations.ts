@@ -133,11 +133,12 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     console.log(`Received ${data.length} Windows updates for tenant ID: ${tenantId || 'all'}`);
     
     // Map the data to ensure all fields are properly handled
+    // This handles different field naming conventions from the API or database
     return data.map((update: any) => ({
       id: update.id || '',
-      tenantId: tenantId || update.tenantId || '',
+      tenantId: tenantId || update.tenantId || update.tenant_id || '',
       productId: update.product_id || update.productId || '',
-      productName: update.product_name || update.productName || null,
+      productName: update.product_name || update.productName || update.name || null,
       title: update.title || null,
       description: update.description || null,
       webViewUrl: update.web_view_url || update.webViewUrl || null,
