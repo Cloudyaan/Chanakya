@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TenantUpdate } from '@/utils/types';
 import { ClockIcon, InfoIcon, AlertTriangle } from 'lucide-react';
@@ -46,11 +45,15 @@ const UpdateDetailsDialog = ({ isOpen, onOpenChange, update }: UpdateDetailsDial
   const formatDescription = (description: string) => {
     if (!description) return "";
     
-    // Split by common headline indicators
+    const isHtml = /<[a-z][\s\S]*>/i.test(description);
+    
+    if (isHtml) {
+      return <div dangerouslySetInnerHTML={{ __html: description }} className="prose prose-sm max-w-none" />;
+    }
+    
     const sections = description.split(/(?:\r?\n){2,}/);
     
     return sections.map((section, index) => {
-      // Enhanced headline detection
       const isHeadline = (
         (section.length < 100 && section.toUpperCase() === section) || 
         (section.length < 100 && section.trim().endsWith(':')) || 
@@ -61,7 +64,6 @@ const UpdateDetailsDialog = ({ isOpen, onOpenChange, update }: UpdateDetailsDial
         return <h3 key={index} className="text-base font-bold text-gray-800 mt-4 mb-2">{section}</h3>;
       }
       
-      // Enhanced bullet point detection and formatting
       if (
         section.trim().startsWith('•') || 
         section.trim().startsWith('-') || 
@@ -79,7 +81,6 @@ const UpdateDetailsDialog = ({ isOpen, onOpenChange, update }: UpdateDetailsDial
         );
       }
       
-      // Regular paragraph
       return <p key={index} className="mb-3 text-gray-700">{section}</p>;
     });
   };
