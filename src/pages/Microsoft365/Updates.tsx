@@ -7,8 +7,9 @@ import { TenantConfig, TenantUpdate } from '@/utils/types';
 import UpdateDetailsDialog from '@/components/Microsoft365/UpdateDetailsDialog';
 import UpdatesHeader from '@/components/Microsoft365/UpdatesHeader';
 import NoTenantsMessage from '@/components/Microsoft365/NoTenantsMessage';
-import UpdatesContent from '@/components/Microsoft365/UpdatesContent';
 import { useUpdates } from '@/hooks/useUpdates';
+import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
+import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -16,16 +17,24 @@ const Updates = () => {
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Use our custom hook for updates functionality
+  // Use our custom hook for message center updates
   const {
     regularUpdates,
     systemMessages,
     hasSystemMessage,
-    isLoading,
-    isFetching,
+    isLoading: messageIsLoading,
+    isFetching: messageIsFetching,
     refreshData,
     fetchUpdateData
   } = useUpdates(selectedTenant);
+  
+  // Use our custom hook for Windows updates
+  const {
+    windowsUpdates,
+    isLoading: windowsIsLoading,
+    isFetching: windowsIsFetching,
+    handleFetchWindowsUpdates
+  } = useWindowsUpdates(selectedTenant);
 
   useEffect(() => {
     async function loadTenants() {
@@ -101,8 +110,8 @@ const Updates = () => {
           <UpdatesHeader 
             onRefresh={refreshData} 
             onFetch={fetchUpdateData} 
-            isLoading={isLoading} 
-            isFetching={isFetching} 
+            isLoading={messageIsLoading} 
+            isFetching={messageIsFetching} 
             selectedTenant={selectedTenant} 
           />
         </motion.div>
@@ -111,14 +120,21 @@ const Updates = () => {
           <NoTenantsMessage />
         ) : (
           <div className="space-y-6">
-            <UpdatesContent 
-              isLoading={isLoading}
+            <UpdateTabsContent 
+              // Message Center Props
+              regularUpdates={regularUpdates}
               hasSystemMessage={hasSystemMessage}
               systemMessages={systemMessages}
-              regularUpdates={regularUpdates}
-              isFetching={isFetching}
-              onFetchUpdates={fetchUpdateData}
+              messageCenterIsLoading={messageIsLoading}
+              messageCenterIsFetching={messageIsFetching}
+              onFetchMessageCenter={fetchUpdateData}
               onUpdateClick={handleUpdateClick}
+              
+              // Windows Updates Props
+              windowsUpdates={windowsUpdates}
+              windowsIsLoading={windowsIsLoading}
+              windowsIsFetching={windowsIsFetching}
+              onFetchWindows={handleFetchWindowsUpdates}
             />
 
             <UpdateDetailsDialog 

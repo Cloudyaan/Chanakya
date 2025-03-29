@@ -1,56 +1,51 @@
 
 import React from 'react';
-import { TenantUpdate } from '@/utils/types';
+import { TenantUpdate, WindowsUpdate } from '@/utils/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 import SystemMessages from './SystemMessages';
 import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
-import UpdatesLoading from './UpdatesLoading';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 import WindowsUpdatesContent from './WindowsUpdatesContent';
-import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 
-interface UpdatesContentProps {
-  isLoading: boolean;
+interface UpdateTabsContentProps {
+  // Message Center Props
+  regularUpdates: TenantUpdate[];
   hasSystemMessage: boolean;
   systemMessages: TenantUpdate[];
-  regularUpdates: TenantUpdate[];
-  isFetching: boolean;
-  onFetchUpdates: () => Promise<void>;
+  messageCenterIsLoading: boolean;
+  messageCenterIsFetching: boolean;
+  onFetchMessageCenter: () => Promise<void>;
   onUpdateClick: (update: TenantUpdate) => void;
+  
+  // Windows Updates Props
+  windowsUpdates: WindowsUpdate[];
+  windowsIsLoading: boolean;
+  windowsIsFetching: boolean;
+  onFetchWindows: () => void;
 }
 
-const UpdatesContent = ({
-  isLoading,
+const UpdateTabsContent = ({
+  regularUpdates,
   hasSystemMessage,
   systemMessages,
-  regularUpdates,
-  isFetching,
-  onFetchUpdates,
-  onUpdateClick
-}: UpdatesContentProps) => {
-  // Get selected tenant ID from localStorage
-  const savedTenant = localStorage.getItem('selectedTenant');
-  
-  // Use our custom hook for Windows updates
-  const {
-    windowsUpdates,
-    isLoading: windowsIsLoading,
-    isFetching: windowsIsFetching,
-    handleFetchWindowsUpdates
-  } = useWindowsUpdates(savedTenant);
-  
-  if (isLoading) {
-    return <UpdatesLoading />;
-  }
+  messageCenterIsLoading,
+  messageCenterIsFetching,
+  onFetchMessageCenter,
+  onUpdateClick,
+  windowsUpdates,
+  windowsIsLoading,
+  windowsIsFetching,
+  onFetchWindows
+}: UpdateTabsContentProps) => {
   
   return (
     <>
       {hasSystemMessage && (
         <SystemMessages 
           messages={systemMessages} 
-          onFetchUpdates={onFetchUpdates}
-          isFetching={isFetching}
+          onFetchUpdates={onFetchMessageCenter}
+          isFetching={messageCenterIsFetching}
         />
       )}
       
@@ -78,8 +73,8 @@ const UpdatesContent = ({
             />
           ) : !hasSystemMessage && (
             <UpdatesEmptyState
-              onFetchUpdates={onFetchUpdates}
-              isFetching={isFetching}
+              onFetchUpdates={onFetchMessageCenter}
+              isFetching={messageCenterIsFetching}
             />
           )}
         </TabsContent>
@@ -89,7 +84,7 @@ const UpdatesContent = ({
             isLoading={windowsIsLoading}
             windowsUpdates={windowsUpdates}
             isFetching={windowsIsFetching}
-            onFetch={handleFetchWindowsUpdates}
+            onFetch={onFetchWindows}
           />
         </TabsContent>
         
@@ -106,4 +101,4 @@ const UpdatesContent = ({
   );
 };
 
-export default UpdatesContent;
+export default UpdateTabsContent;
