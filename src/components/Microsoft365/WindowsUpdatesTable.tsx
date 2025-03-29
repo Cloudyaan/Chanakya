@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { WindowsUpdate } from '@/utils/types';
-import { RefreshCw, AlertTriangle, CheckCircle2, HelpCircle, ExternalLink } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, HelpCircle, ExternalLink, Database } from 'lucide-react';
 import { 
   Table,
   TableBody,
@@ -88,7 +88,7 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
           </Button>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+          <Database className="h-12 w-12 text-yellow-500 mb-4" />
           <h3 className="text-xl font-medium mb-2">No Windows Updates Available</h3>
           <p className="text-muted-foreground mb-4 max-w-md">
             There are no Windows updates or known issues in the database. Click the button below to fetch updates from Microsoft Graph API.

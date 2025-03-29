@@ -40,6 +40,7 @@ const UpdatesContent = ({
     // Get the selected tenant ID from localStorage
     const savedTenant = localStorage.getItem('selectedTenant');
     if (savedTenant) {
+      console.log('Tenant ID from localStorage:', savedTenant);
       setSelectedTenant(savedTenant);
       loadWindowsUpdates(savedTenant);
     }
@@ -47,6 +48,7 @@ const UpdatesContent = ({
     // Listen for tenant change events
     const handleTenantChange = (event: Event) => {
       const customEvent = event as CustomEvent;
+      console.log('Tenant changed event received:', customEvent.detail.tenantId);
       setSelectedTenant(customEvent.detail.tenantId);
       loadWindowsUpdates(customEvent.detail.tenantId);
     };
@@ -60,6 +62,7 @@ const UpdatesContent = ({
   const loadWindowsUpdates = async (tenantId: string) => {
     setIsLoadingWindows(true);
     try {
+      console.log('Loading Windows updates for tenant ID:', tenantId);
       const data = await getWindowsUpdates(tenantId);
       console.log('Windows updates loaded:', data);
       setWindowsUpdates(data);
@@ -77,7 +80,15 @@ const UpdatesContent = ({
   };
   
   const handleFetchWindowsUpdates = async () => {
-    if (!selectedTenant) return;
+    if (!selectedTenant) {
+      console.error('No tenant selected');
+      toast({
+        title: "Error",
+        description: "No tenant selected. Please select a tenant first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsFetchingWindows(true);
     try {
