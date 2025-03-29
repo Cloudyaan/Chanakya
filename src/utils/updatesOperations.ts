@@ -116,8 +116,9 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.warn('Windows updates service not available or returned an error, using mock data');
-      return generateMockWindowsUpdates(tenantId);
+      console.warn(`Windows updates service returned an error: ${response.status} ${response.statusText}`);
+      // Don't use mock data, return empty array to show "No updates available"
+      return [];
     }
     
     const data = await response.json();
@@ -125,7 +126,8 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     return data;
   } catch (error) {
     console.error('Error fetching Windows updates:', error);
-    return generateMockWindowsUpdates(tenantId);
+    // Don't use mock data, return empty array to show "No updates available"
+    return [];
   }
 };
 
@@ -151,46 +153,4 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
     console.error('Error triggering Windows update fetch:', error);
     return false;
   }
-};
-
-// Helper function to generate mock Windows updates data for testing
-const generateMockWindowsUpdates = (tenantId?: string): WindowsUpdate[] => {
-  return [
-    {
-      id: "win-update-1",
-      tenantId: tenantId || "default-tenant",
-      productId: "windows-11",
-      productName: "Windows 11",
-      title: "May 2025 Cumulative Update for Windows 11",
-      description: "This update includes quality improvements and security fixes.",
-      webViewUrl: "https://support.microsoft.com/en-us/topic/may-2025-update",
-      status: "Released",
-      startDate: "2025-05-10T00:00:00Z",
-      resolvedDate: null
-    },
-    {
-      id: "win-update-2",
-      tenantId: tenantId || "default-tenant",
-      productId: "windows-10",
-      productName: "Windows 10",
-      title: "April 2025 Security Update for Windows 10",
-      description: "Critical security patches for Windows 10 devices.",
-      webViewUrl: "https://support.microsoft.com/en-us/topic/april-2025-update",
-      status: "Released",
-      startDate: "2025-04-12T00:00:00Z",
-      resolvedDate: null
-    },
-    {
-      id: "win-update-3",
-      tenantId: tenantId || "default-tenant",
-      productId: "windows-server-2022",
-      productName: "Windows Server 2022",
-      title: "Known Issue: Printing problems after update KB5025885",
-      description: "After installing KB5025885, some users may experience issues with network printing.",
-      webViewUrl: "https://support.microsoft.com/en-us/topic/kb5025885-issue",
-      status: "Investigating",
-      startDate: "2025-03-15T00:00:00Z",
-      resolvedDate: null
-    }
-  ];
 };

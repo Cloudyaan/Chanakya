@@ -119,7 +119,7 @@ def store_known_issues(db_path, product_id, known_issues):
             issue.get("description"),
             issue.get("webViewUrl"),
             issue.get("status"),
-            issue.get("startDateTime"),
+            issue.get("startDateTime"),  # Changed from severity to correct API response field
             issue.get("resolvedDateTime"))
         )
     

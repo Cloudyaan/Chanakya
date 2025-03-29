@@ -129,26 +129,12 @@ const UpdatesContent = ({
         <TabsContent value="windows-updates">
           {isLoadingWindows ? (
             <UpdatesLoading />
-          ) : windowsUpdates.length > 0 ? (
+          ) : (
             <WindowsUpdatesTable 
               updates={windowsUpdates} 
               onFetch={handleFetchWindowsUpdates}
               isFetching={isFetchingWindows}
             />
-          ) : (
-            <div className="p-8 text-center border rounded-lg">
-              <h2 className="text-xl text-gray-700 mb-2">No Windows Updates Available</h2>
-              <p className="text-gray-500 mb-4">
-                Click the button below to fetch Windows updates from Microsoft Graph API.
-              </p>
-              <button
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
-                onClick={handleFetchWindowsUpdates}
-                disabled={isFetchingWindows}
-              >
-                {isFetchingWindows ? 'Fetching...' : 'Fetch Windows Updates'}
-              </button>
-            </div>
           )}
         </TabsContent>
         

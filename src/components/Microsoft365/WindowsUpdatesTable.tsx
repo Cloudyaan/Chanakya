@@ -66,6 +66,44 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
     }
   };
 
+  if (updates.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle>Windows Updates</CardTitle>
+            <CardDescription>Recent Windows updates and known issues</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onFetch}
+            disabled={isFetching}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+            {isFetching ? 'Fetching...' : 'Refresh'}
+          </Button>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+          <h3 className="text-xl font-medium mb-2">No Windows Updates Available</h3>
+          <p className="text-muted-foreground mb-4 max-w-md">
+            There are no Windows updates or known issues in the database. Click the button below to fetch updates from Microsoft Graph API.
+          </p>
+          <Button 
+            onClick={onFetch} 
+            disabled={isFetching}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+            {isFetching ? 'Fetching Updates...' : 'Fetch Windows Updates'}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
