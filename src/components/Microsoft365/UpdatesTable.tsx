@@ -88,9 +88,6 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                 </TableCell>
                 <TableCell>
                   <div className="font-medium">{update.title}</div>
-                  <div className="text-sm text-muted-foreground line-clamp-1 group-hover:line-clamp-2 transition-all duration-300">
-                    {update.description}
-                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1 text-muted-foreground">
