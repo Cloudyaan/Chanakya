@@ -41,6 +41,23 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
     }
   };
 
+  const formatCategory = (category: string | undefined): string => {
+    if (!category) return 'General';
+    
+    // Handle specific category formatting
+    switch(category) {
+      case 'stayInformed':
+        return 'Stay Informed';
+      case 'planForChange':
+        return 'Plan For Change';
+      case 'preventOrFixIssue':
+        return 'Prevent Or Fix Issue';
+      default:
+        // For any other categories, add spaces before capital letters
+        return category.replace(/([A-Z])/g, ' $1').trim();
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -83,15 +100,15 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                   <TableCell>
                     {isPlanForChange ? (
                       <Badge className="bg-purple-600 text-white hover:bg-purple-700">
-                        {update.category || 'General'}
+                        {formatCategory(update.category)}
                       </Badge>
                     ) : isNotStayInformed ? (
                       <Badge className="bg-blue-600 text-white hover:bg-blue-700">
-                        {update.category || 'General'}
+                        {formatCategory(update.category)}
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                        {update.category || 'General'}
+                        {formatCategory(update.category)}
                       </Badge>
                     )}
                   </TableCell>
