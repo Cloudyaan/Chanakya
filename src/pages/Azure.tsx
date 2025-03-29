@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,19 @@ interface AzureProps {
 
 const Azure = ({ children }: AzureProps) => {
   const location = useLocation();
-  const [isHovering, setIsHovering] = React.useState<string | null>(null);
+  const [isHovering, setIsHovering] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Add scroll event listener to detect when the page is scrolled
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   // Subnav items for Azure
   const subNavItems = [
@@ -27,7 +39,10 @@ const Azure = ({ children }: AzureProps) => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <div className="border-b">
+      <div className={cn(
+        "border-b z-10 bg-background transition-all duration-200",
+        isScrolled && "sticky top-0 shadow-sm"
+      )}>
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           <div className="flex overflow-x-auto scrollbar-hide space-x-1">
             {subNavItems.map((item) => {

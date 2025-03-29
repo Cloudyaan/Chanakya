@@ -23,6 +23,7 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
   const [isHovering, setIsHovering] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   // Subnav items for Microsoft 365 - Notifications moved to the end after Reports
   const subNavItems = [
@@ -33,6 +34,17 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     { name: 'Reports', path: '/microsoft-365/reports' },
     { name: 'Notifications', path: '/microsoft-365/notifications' }
   ];
+
+  // Add scroll event listener to detect when the page is scrolled
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Load tenants on component mount
   useEffect(() => {
@@ -80,7 +92,10 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <div className="border-b">
+      <div className={cn(
+        "border-b z-10 bg-background transition-all duration-200",
+        isScrolled && "sticky top-0 shadow-sm"
+      )}>
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           <div className="flex justify-between items-center">
             <div className="flex overflow-x-auto scrollbar-hide space-x-1">
