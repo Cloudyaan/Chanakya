@@ -1,11 +1,15 @@
 
 // Mock data for tenant information
 export const tenant = {
+  id: "tenant-001",
   name: "Contoso Ltd",
   domain: "contoso.onmicrosoft.com",
-  activationDate: "2022-01-15",
-  licenseCount: 250,
-  contactEmail: "admin@contoso.com"
+  countryCode: "US",
+  subscriptionStatus: "Active" as const,
+  adminEmail: "admin@contoso.com",
+  creationDate: "2022-01-15",
+  totalUsers: 250,
+  activeUsers: 230
 };
 
 // Mock data for monthly license trend chart
