@@ -85,7 +85,7 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                   className={cn(
                     "group hover:bg-muted/50 cursor-pointer",
                     isPlanForChange && "bg-purple-50",
-                    isNotStayInformed && !isPlanForChange && "bg-blue-50"
+                    isNotStayInformed && !isPlanForChange && "bg-purple-50/70"
                   )}
                   onClick={() => onUpdateClick(update)}
                 >
@@ -104,7 +104,7 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                         {formatCategory(update.category)}
                       </Badge>
                     ) : isNotStayInformed ? (
-                      <Badge className="bg-blue-600 text-white hover:bg-blue-700 font-medium">
+                      <Badge className="bg-purple-500 text-white hover:bg-purple-600 font-medium">
                         {formatCategory(update.category)}
                       </Badge>
                     ) : (
@@ -120,7 +120,7 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
                     <div className={cn(
                       "font-medium",
                       isPlanForChange && "text-purple-800",
-                      isNotStayInformed && !isPlanForChange && "text-blue-800"
+                      isNotStayInformed && !isPlanForChange && "text-purple-700"
                     )}>
                       {update.title}
                     </div>
