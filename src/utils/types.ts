@@ -1,3 +1,4 @@
+
 export interface License {
   id: string;
   name: string;
@@ -75,4 +76,17 @@ export interface TenantUpdate {
   publishedDate: string;
   lastModifiedDate?: string;
   isRead?: boolean;
+}
+
+export interface WindowsUpdate {
+  id: string;
+  tenantId: string;
+  productId: string;
+  productName: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  firstOccurredDate: string;
+  resolvedDate: string | null;
 }

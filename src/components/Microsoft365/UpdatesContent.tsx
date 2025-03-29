@@ -1,12 +1,14 @@
 
-import React from 'react';
-import { TenantUpdate } from '@/utils/types';
+import React, { useState, useEffect } from 'react';
+import { TenantUpdate, WindowsUpdate } from '@/utils/types';
 import SystemMessages from './SystemMessages';
 import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
 import UpdatesLoading from './UpdatesLoading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
+import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/updatesOperations';
+import WindowsUpdatesTable from './WindowsUpdatesTable';
 
 interface UpdatesContentProps {
   isLoading: boolean;
@@ -27,6 +29,58 @@ const UpdatesContent = ({
   onFetchUpdates,
   onUpdateClick
 }: UpdatesContentProps) => {
+  const [windowsUpdates, setWindowsUpdates] = useState<WindowsUpdate[]>([]);
+  const [isLoadingWindows, setIsLoadingWindows] = useState(false);
+  const [isFetchingWindows, setIsFetchingWindows] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Get the selected tenant ID from localStorage
+    const savedTenant = localStorage.getItem('selectedTenant');
+    if (savedTenant) {
+      setSelectedTenant(savedTenant);
+      loadWindowsUpdates(savedTenant);
+    }
+    
+    // Listen for tenant change events
+    const handleTenantChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      setSelectedTenant(customEvent.detail.tenantId);
+      loadWindowsUpdates(customEvent.detail.tenantId);
+    };
+    
+    window.addEventListener('tenantChanged', handleTenantChange);
+    return () => {
+      window.removeEventListener('tenantChanged', handleTenantChange);
+    };
+  }, []);
+  
+  const loadWindowsUpdates = async (tenantId: string) => {
+    setIsLoadingWindows(true);
+    try {
+      const data = await getWindowsUpdates(tenantId);
+      setWindowsUpdates(data);
+    } catch (error) {
+      console.error('Error loading Windows updates:', error);
+    } finally {
+      setIsLoadingWindows(false);
+    }
+  };
+  
+  const handleFetchWindowsUpdates = async () => {
+    if (!selectedTenant) return;
+    
+    setIsFetchingWindows(true);
+    try {
+      await fetchWindowsUpdates(selectedTenant);
+      // Reload the data after fetching
+      setTimeout(() => loadWindowsUpdates(selectedTenant), 2000);
+    } catch (error) {
+      console.error('Error fetching Windows updates:', error);
+    } finally {
+      setIsFetchingWindows(false);
+    }
+  };
   
   if (isLoading) {
     return <UpdatesLoading />;
@@ -73,38 +127,41 @@ const UpdatesContent = ({
         </TabsContent>
         
         <TabsContent value="windows-updates">
-          <WindowsUpdatesTable />
+          {isLoadingWindows ? (
+            <UpdatesLoading />
+          ) : windowsUpdates.length > 0 ? (
+            <WindowsUpdatesTable 
+              updates={windowsUpdates} 
+              onFetch={handleFetchWindowsUpdates}
+              isFetching={isFetchingWindows}
+            />
+          ) : (
+            <div className="p-8 text-center border rounded-lg">
+              <h2 className="text-xl text-gray-700 mb-2">No Windows Updates Available</h2>
+              <p className="text-gray-500 mb-4">
+                Click the button below to fetch Windows updates from Microsoft Graph API.
+              </p>
+              <button
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
+                onClick={handleFetchWindowsUpdates}
+                disabled={isFetchingWindows}
+              >
+                {isFetchingWindows ? 'Fetching...' : 'Fetch Windows Updates'}
+              </button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="news">
-          <NewsTable />
+          <div className="p-8 text-center border rounded-lg">
+            <h2 className="text-xl text-gray-700 mb-2">Microsoft 365 News</h2>
+            <p className="text-gray-500 mb-4">
+              Latest news and announcements from Microsoft 365 will be displayed here. This feature is coming soon.
+            </p>
+          </div>
         </TabsContent>
       </Tabs>
     </>
-  );
-};
-
-// Windows Updates Tab Content Component
-const WindowsUpdatesTable = () => {
-  return (
-    <div className="p-8 text-center border rounded-lg">
-      <h2 className="text-xl text-gray-700 mb-2">Windows Updates</h2>
-      <p className="text-gray-500 mb-4">
-        Windows updates information will be displayed here. This feature is coming soon.
-      </p>
-    </div>
-  );
-};
-
-// News Tab Content Component
-const NewsTable = () => {
-  return (
-    <div className="p-8 text-center border rounded-lg">
-      <h2 className="text-xl text-gray-700 mb-2">Microsoft 365 News</h2>
-      <p className="text-gray-500 mb-4">
-        Latest news and announcements from Microsoft 365 will be displayed here. This feature is coming soon.
-      </p>
-    </div>
   );
 };
 

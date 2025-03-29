@@ -20,7 +20,9 @@ export {
 
 export {
   getTenantUpdates,
-  fetchTenantUpdates
+  fetchTenantUpdates,
+  getWindowsUpdates,
+  fetchWindowsUpdates
 } from './updatesOperations';
 
 export {
