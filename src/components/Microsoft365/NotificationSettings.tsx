@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -54,7 +53,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   tenants: z.array(z.string()).min(1, { message: 'Select at least one tenant' }),
   update_types: z.array(z.string()).min(1, { message: 'Select at least one update type' }),
-  frequency: z.enum(['Daily', 'Weekly', 'Monthly'])
+  frequency: z.enum(['Daily', 'Weekly'])
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -83,7 +82,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   });
 
-  // Load notification settings
   const loadSettings = async () => {
     setIsLoading(true);
     try {
@@ -98,19 +96,15 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   };
 
-  // Load settings when the component mounts or the selected tenant changes
   useEffect(() => {
     loadSettings();
-    // Update form default tenants when selected tenant changes
     if (selectedTenant) {
       form.setValue('tenants', [selectedTenant]);
     }
   }, [selectedTenant]);
 
-  // Handle form submission for creating a new notification setting
   const onSubmit = async (data: FormValues) => {
     try {
-      // Ensuring all required properties are explicitly passed
       const settingData = {
         name: data.name,
         email: data.email,
@@ -133,7 +127,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   };
 
-  // Handle editing a notification setting
   const handleEdit = (setting: NotificationSetting) => {
     setIsEditing(setting.id);
     setEditValues({
@@ -143,7 +136,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     });
   };
 
-  // Handle sending a notification now
   const handleSendNow = async (id: string) => {
     setIsSending(id);
     try {
@@ -160,7 +152,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   };
 
-  // Handle saving an edited notification setting
   const handleSaveEdit = async (id: string) => {
     if (!editValues) return;
 
@@ -179,7 +170,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   };
 
-  // Handle deleting a notification setting
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this notification setting?')) {
       return;
@@ -198,14 +188,12 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     }
   };
 
-  // The update types for checkboxes
   const updateTypes = [
     { id: 'message-center', label: 'Message Center' },
     { id: 'windows-updates', label: 'Windows Updates' },
     { id: 'news', label: 'Microsoft 365 News' }
   ];
 
-  // Helper function to ensure tenants is always an array
   const ensureArray = (value: any): string[] => {
     if (Array.isArray(value)) return value;
     if (typeof value === 'string') {
@@ -396,7 +384,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           <SelectContent>
                             <SelectItem value="Daily">Daily</SelectItem>
                             <SelectItem value="Weekly">Weekly</SelectItem>
-                            <SelectItem value="Monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>
@@ -530,7 +517,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           value={editValues?.frequency || setting.frequency}
                           onValueChange={(value) => setEditValues({
                             ...editValues,
-                            frequency: value as 'Daily' | 'Weekly' | 'Monthly'
+                            frequency: value as 'Daily' | 'Weekly'
                           })}
                         >
                           <SelectTrigger className="w-28">
@@ -539,14 +526,12 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           <SelectContent>
                             <SelectItem value="Daily">Daily</SelectItem>
                             <SelectItem value="Weekly">Weekly</SelectItem>
-                            <SelectItem value="Monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="flex items-center gap-2">
                           {setting.frequency === 'Daily' && <Clock size={14} />}
                           {setting.frequency === 'Weekly' && <Calendar size={14} />}
-                          {setting.frequency === 'Monthly' && <Calendar size={14} />}
                           <span className="inline-block bg-green-100 px-2 py-1 rounded text-xs">
                             {setting.frequency}
                           </span>

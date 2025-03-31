@@ -134,22 +134,26 @@ def generate_sample_entries():
         def __init__(self):
             self.entries = []
             
-            # Add some sample entries
-            for i in range(1, 6):
+            # Add some sample entries with dates spread across the last 15 days
+            for i in range(1, 16):
+                # Create entry with date i days ago
+                days_ago = i
+                entry_date = datetime.now() - timedelta(days=days_ago)
+                
                 entry = {
                     'id': f'sample-{i}',
-                    'title': f'Sample Microsoft 365 News {i}',
-                    'published': datetime.now().isoformat(),
+                    'title': f'Sample Microsoft 365 News {i} ({days_ago} days ago)',
+                    'published': entry_date.isoformat(),
                     'link': 'https://www.microsoft.com/en-us/microsoft-365',
-                    'summary': f'This is a sample news entry {i} to verify that the system is working correctly.',
-                    'tags': [{'term': 'Sample'}, {'term': 'Test'}],
-                    'all_categories': ['Sample', 'Test']
+                    'summary': f'This is a sample news entry {i} created {days_ago} days ago to verify that the system is working correctly and date filtering is applied.',
+                    'tags': [{'term': 'Sample'}, {'term': 'Test'}, {'term': f'Day-{days_ago}'}],
+                    'all_categories': ['Sample', 'Test', f'Day-{days_ago}']
                 }
                 self.entries.append(entry)
     
     return SampleFeed()
 
-def filter_recent_entries(entries, days=30):  # Increased to 30 days for testing
+def filter_recent_entries(entries, days=10):  # Changed to 10 days to match requirements
     cutoff_date = (datetime.now() - timedelta(days=days)).date()
     recent_entries = []
     
@@ -176,47 +180,7 @@ def filter_recent_entries(entries, days=30):  # Increased to 30 days for testing
     print(f"Found {len(recent_entries)} recent entries from the last {days} days")
     return recent_entries
 
-def store_news(conn, entries):
-    """Store news entries in the database"""
-    cursor = conn.cursor()
-    stored_count = 0
-    
-    for entry in entries:
-        entry_id = entry.get('id', entry.get('link', None))
-        if not entry_id:
-            # Use a hash of the title and published date if no ID
-            import hashlib
-            entry_id = hashlib.md5(f"{entry.get('title', '')}-{entry.get('published', '')}".encode()).hexdigest()
-        
-        # Check if entry already exists
-        existing = cursor.execute('SELECT id FROM m365_news WHERE id = ?', (entry_id,)).fetchone()
-        if existing:
-            continue  # Skip existing entries
-        
-        # Convert categories to JSON
-        categories_json = json.dumps(entry.get('all_categories', []))
-        
-        # Extract description or summary
-        description = entry.get('description', entry.get('summary', 'No summary'))
-        
-        # Store the entry
-        cursor.execute('''
-            INSERT INTO m365_news (
-                id, title, published_date, link, summary, categories, fetch_date
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            entry_id,
-            entry.get('title', 'No title'),
-            entry.get('published', datetime.now().isoformat()),
-            entry.get('link', ''),
-            description,
-            categories_json,
-            datetime.now().isoformat()
-        ))
-        stored_count += 1
-    
-    conn.commit()
-    return stored_count
+# ... keep existing code (store_news function)
 
 def main():
     if len(sys.argv) < 2:
@@ -238,15 +202,16 @@ def main():
     
     if count == 0:
         print("Adding some test news entries for debugging")
-        # Add multiple test entries with different dates
-        for i in range(1, 6):
+        # Add multiple test entries with different dates (spread across the last 20 days)
+        for i in range(1, 21):
+            days_ago = i
             test_entry = {
                 'id': f'test-news-entry-{i}',
-                'title': f'Test Microsoft 365 News Entry {i}',
-                'published_date': (datetime.now() - timedelta(days=i)).isoformat(),
+                'title': f'Test Microsoft 365 News Entry {i} ({days_ago} days ago)',
+                'published_date': (datetime.now() - timedelta(days=days_ago)).isoformat(),
                 'link': f'https://www.microsoft.com/en-us/microsoft-365/features/{i}',
-                'summary': f'This is test news entry {i} to verify that the system is working correctly.',
-                'categories': json.dumps(['Test', 'Debug', f'Category {i}']),
+                'summary': f'This is test news entry {i} created {days_ago} days ago to verify that filtering is working correctly.',
+                'categories': json.dumps(['Test', 'Debug', f'Day-{days_ago}']),
                 'fetch_date': datetime.now().isoformat()
             }
             

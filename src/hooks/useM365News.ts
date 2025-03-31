@@ -32,16 +32,16 @@ export const useM365News = (tenantId: string | null) => {
     }
   }, [newsItems, error]);
 
-  // Filter to get only items from the last 30 days (increased from 10)
+  // Filter to get only items from the last 10 days (changed from 30)
   const recentNewsItems = newsItems.filter(item => {
     if (!item.published_date) return false;
     
     try {
       const publishedDate = new Date(item.published_date);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
       
-      return publishedDate >= thirtyDaysAgo;
+      return publishedDate >= tenDaysAgo;
     } catch (e) {
       console.error("Error parsing date:", e, item);
       return false;
