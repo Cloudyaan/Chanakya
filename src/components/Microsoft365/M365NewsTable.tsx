@@ -26,6 +26,9 @@ interface M365NewsTableProps {
 }
 
 const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
+  // Add debugging console logs
+  console.log('M365NewsTable received news:', news);
+  
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
@@ -118,7 +121,7 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {item.categories?.map((category, index) => (
+                  {Array.isArray(item.categories) && item.categories.map((category, index) => (
                     <Badge key={index} variant="outline" className="flex gap-1 items-center bg-blue-50 text-blue-700 border-blue-200">
                       <Tag size={10} />
                       {category}

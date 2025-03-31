@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { M365News } from '@/utils/types';
-import { getM365News, fetchM365News } from '@/utils/database';
+import { getM365News, fetchM365News } from '@/utils/m365NewsOperations';
 
 export const useM365News = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);

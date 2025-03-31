@@ -10,6 +10,7 @@ from dateutil import parser
 
 # Configuration
 RSS_FEEDS = [
+    "https://www.microsoft.com/en-us/microsoft-365/roadmap/rss",
     "https://www.microsoft.com/releasecommunications/api/v2/m365/rss",
 ]
 
@@ -22,6 +23,8 @@ COMMON_HEADERS = {
 
 def get_db_connection(tenant_id):
     """Connect to the tenant's database"""
+    # Add the backend directory to the Python path
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from app.database import find_tenant_database, get_db_connection
     
     # First get connection to main database
@@ -84,9 +87,9 @@ def fetch_rss_feed(url):
             
         feed = feedparser.parse(response.content)
         
-        if feed.bozo:
-            print(f"Parse warning for {url}: {feed.bozo_exception}")
-            if not feed.entries:
+        if hasattr(feed, 'bozo') and feed.bozo:
+            print(f"Parse warning for {url}: {feed.bozo_exception if hasattr(feed, 'bozo_exception') else 'Unknown error'}")
+            if not hasattr(feed, 'entries') or not feed.entries:
                 return None
                 
         return feed
@@ -107,11 +110,11 @@ def filter_recent_entries(entries, days=10):
                 if published_date >= cutoff_date:
                     # Extract all categories for this entry
                     entry_categories = entry.get('tags', [])
-                    categories = [tag.term if hasattr(tag, 'term') else tag for tag in entry_categories]
+                    categories = [tag.term if hasattr(tag, 'term') else str(tag) for tag in entry_categories]
                     
                     # If no tags, try getting categories from the 'category' field
                     if not categories and hasattr(entry, 'category'):
-                        categories = entry.category if isinstance(entry.category, list) else [entry.category]
+                        categories = [entry.category] if isinstance(entry.category, str) else entry.category
                     
                     # Add the categories to the entry for display
                     entry['all_categories'] = categories
@@ -137,6 +140,9 @@ def store_news(conn, entries):
         if existing:
             continue  # Skip existing entries
         
+        # Convert categories to JSON
+        categories_json = json.dumps(entry.get('all_categories', []))
+        
         # Store the entry
         cursor.execute('''
             INSERT INTO m365_news (
@@ -148,7 +154,7 @@ def store_news(conn, entries):
             entry.get('published', datetime.now().isoformat()),
             entry.get('link', ''),
             entry.get('description', entry.get('summary', 'No summary')),
-            json.dumps(entry.get('all_categories', [])),
+            categories_json,
             datetime.now().isoformat()
         ))
         stored_count += 1
@@ -174,7 +180,7 @@ def main():
     for feed_url in RSS_FEEDS:
         print(f"\nFetching updates from: {feed_url}")
         feed = fetch_rss_feed(feed_url)
-        if feed and feed.entries:
+        if feed and hasattr(feed, 'entries'):
             recent_entries = filter_recent_entries(feed.entries, days=10)
             all_updates.extend(recent_entries)
 
@@ -189,6 +195,4 @@ def main():
     print("Completed successfully")
 
 if __name__ == "__main__":
-    # Add the backend directory to the Python path
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     main()

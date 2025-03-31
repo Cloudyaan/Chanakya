@@ -65,9 +65,12 @@ def get_m365_news():
             # Parse categories from JSON
             if 'categories' in news_item and news_item['categories']:
                 try:
-                    news_item['categories'] = json.loads(news_item['categories'])
+                    if isinstance(news_item['categories'], str):
+                        news_item['categories'] = json.loads(news_item['categories'])
                 except json.JSONDecodeError:
                     news_item['categories'] = []
+            else:
+                news_item['categories'] = []
             
             # Add tenant information
             news_item['tenantId'] = tenant['tenantId']
@@ -76,14 +79,17 @@ def get_m365_news():
             news.append(news_item)
         
         conn.close()
+        print(f"Returning {len(news)} news items for tenant {tenant_id}")
         return jsonify(news)
         
     except sqlite3.Error as e:
+        print(f"Database error: {str(e)}")
         return jsonify({
             'error': 'Database error',
             'message': str(e)
         }), 500
     except Exception as e:
+        print(f"Server error: {str(e)}")
         return jsonify({
             'error': 'Server error',
             'message': str(e)
