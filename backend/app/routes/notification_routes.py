@@ -3,13 +3,11 @@ from flask import Blueprint, request, jsonify
 import sqlite3
 import json
 from datetime import datetime, timedelta
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
 import time
 import threading
-import schedule
+import msal
+import requests
 
 from app.database import get_db_connection, init_db, find_tenant_database
 
@@ -566,42 +564,87 @@ def create_email_html(setting, updates_data):
     
     return html
 
-def send_email(recipient, subject, html_content):
-    """Send an email using SMTP"""
-    # Use environment variables for email settings
-    smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-    smtp_port = int(os.environ.get('SMTP_PORT', 587))
-    smtp_user = os.environ.get('SMTP_USER', '')
-    smtp_password = os.environ.get('SMTP_PASSWORD', '')
-    sender_email = os.environ.get('SENDER_EMAIL', 'noreply@example.com')
+def get_ms_graph_token():
+    """Get a Microsoft Graph API access token using MSAL"""
+    # Get settings from environment variables
+    client_id = os.environ.get('MS_CLIENT_ID')
+    client_secret = os.environ.get('MS_CLIENT_SECRET')
+    tenant_id = os.environ.get('MS_TENANT_ID')
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    scope = ["https://graph.microsoft.com/.default"]
     
-    # Check if SMTP credentials are available
-    if not all([smtp_server, smtp_port, smtp_user, smtp_password]):
-        print("SMTP settings are not configured properly. Email not sent.")
+    # Create MSAL app
+    app = msal.ConfidentialClientApplication(
+        client_id,
+        authority=authority,
+        client_credential=client_secret
+    )
+    
+    # Get token
+    result = app.acquire_token_for_client(scopes=scope)
+    
+    if "access_token" in result:
+        return result["access_token"]
+    else:
+        print(f"Error getting token: {result.get('error')}")
+        print(f"Error description: {result.get('error_description')}")
+        return None
+
+def send_email_with_ms_graph(recipient, subject, html_content):
+    """Send an email using Microsoft Graph API"""
+    token = get_ms_graph_token()
+    if not token:
+        print("Failed to get Microsoft Graph access token")
         return False
     
-    # Create email message
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = sender_email
-    msg['To'] = recipient
+    # Get sender email from environment variable
+    sender_email = os.environ.get('MS_FROM_EMAIL')
     
-    # Attach HTML content
-    msg.attach(MIMEText(html_content, 'html'))
+    # Prepare the email message
+    email_message = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": html_content
+            },
+            "toRecipients": [
+                {
+                    "emailAddress": {
+                        "address": recipient
+                    }
+                }
+            ],
+            "from": {
+                "emailAddress": {
+                    "address": sender_email
+                }
+            }
+        }
+    }
+    
+    # Send the email using Microsoft Graph API
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
     
     try:
-        # Connect to SMTP server
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_user, smtp_password)
+        response = requests.post(
+            'https://graph.microsoft.com/v1.0/users/' + sender_email + '/sendMail',
+            headers=headers,
+            json=email_message
+        )
         
-        # Send email
-        server.sendmail(sender_email, recipient, msg.as_string())
-        server.quit()
-        print(f"Email sent successfully to {recipient}")
-        return True
+        if response.status_code >= 200 and response.status_code < 300:
+            print(f"Email sent successfully to {recipient}")
+            return True
+        else:
+            print(f"Failed to send email. Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Error sending email with Microsoft Graph: {e}")
         return False
 
 def process_and_send_notification(setting_id=None):
@@ -682,9 +725,9 @@ def process_and_send_notification(setting_id=None):
         # Create email content
         email_html = create_email_html(setting_dict, updates_data)
         
-        # Send email
+        # Send email using Microsoft Graph API
         subject = f"Microsoft 365 {setting_dict['frequency']} Update"
-        success = send_email(setting_dict['email'], subject, email_html)
+        success = send_email_with_ms_graph(setting_dict['email'], subject, email_html)
         
         if success:
             results.append({

@@ -84,6 +84,18 @@ if %ERRORLEVEL% NEQ 0 (
     )
 )
 
+REM Check if MSAL is installed
+python -c "import msal" 2>NUL
+if %ERRORLEVEL% NEQ 0 (
+    echo Error: msal package is not installed.
+    echo Installing msal...
+    pip install msal
+    if %ERRORLEVEL% NEQ 0 (
+        echo Failed to install msal. Please install it manually: pip install msal
+        exit /b 1
+    )
+)
+
 python fetch_m365_news.py %*
 
 echo.
@@ -97,4 +109,3 @@ echo Done!
             with open(filename, 'w') as f:
                 f.write(content)
             print(f"Created {filename}")
-
