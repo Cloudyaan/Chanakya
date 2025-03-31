@@ -9,7 +9,6 @@ import UpdatesHeader from '@/components/Microsoft365/UpdatesHeader';
 import NoTenantsMessage from '@/components/Microsoft365/NoTenantsMessage';
 import { useUpdates } from '@/hooks/useUpdates';
 import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
-import { useM365News } from '@/hooks/useM365News';
 import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
 
 const Updates = () => {
@@ -36,14 +35,6 @@ const Updates = () => {
     isFetching: windowsIsFetching,
     handleFetchWindowsUpdates
   } = useWindowsUpdates(selectedTenant);
-  
-  // Use our custom hook for M365 news
-  const {
-    newsItems,
-    isLoading: newsIsLoading,
-    isFetching: newsIsFetching,
-    handleFetchM365News
-  } = useM365News(selectedTenant);
 
   useEffect(() => {
     async function loadTenants() {
@@ -144,12 +135,6 @@ const Updates = () => {
               windowsIsLoading={windowsIsLoading}
               windowsIsFetching={windowsIsFetching}
               onFetchWindows={handleFetchWindowsUpdates}
-              
-              // M365 News Props
-              newsItems={newsItems}
-              newsIsLoading={newsIsLoading}
-              newsIsFetching={newsIsFetching}
-              onFetchNews={handleFetchM365News}
             />
 
             <UpdateDetailsDialog 
