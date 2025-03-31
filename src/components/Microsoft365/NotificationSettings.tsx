@@ -44,7 +44,7 @@ import {
   addNotificationSetting, 
   updateNotificationSetting,
   deleteNotificationSetting,
-  sendNotificationNow
+  sendNotification
 } from '@/utils/notificationOperations';
 import { TenantConfig, NotificationSetting } from '@/utils/types';
 
@@ -118,13 +118,13 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
       };
       
       const result = await addNotificationSetting(settingData);
-      if (result.success) {
+      if (result) {
         toast.success('Notification setting created successfully');
         form.reset();
         setIsCreating(false);
         loadSettings();
       } else {
-        toast.error(result.message || 'Failed to create notification setting');
+        toast.error('Failed to create notification setting');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred while creating the notification setting');
@@ -143,11 +143,11 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
   const handleSendNow = async (id: string) => {
     setIsSending(id);
     try {
-      const result = await sendNotificationNow(id);
-      if (result.success) {
+      const result = await sendNotification(id);
+      if (result) {
         toast.success('Notification sent successfully');
       } else {
-        toast.error(result.message || 'Failed to send notification');
+        toast.error('Failed to send notification');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred while sending the notification');
@@ -161,13 +161,13 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
 
     try {
       const result = await updateNotificationSetting(id, editValues);
-      if (result.success) {
+      if (result) {
         toast.success('Notification setting updated successfully');
         setIsEditing(null);
         setEditValues(null);
         loadSettings();
       } else {
-        toast.error(result.message || 'Failed to update notification setting');
+        toast.error('Failed to update notification setting');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred while updating the notification setting');
@@ -181,11 +181,11 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
 
     try {
       const result = await deleteNotificationSetting(id);
-      if (result.success) {
+      if (result) {
         toast.success('Notification setting deleted successfully');
         loadSettings();
       } else {
-        toast.error(result.message || 'Failed to delete notification setting');
+        toast.error('Failed to delete notification setting');
       }
     } catch (error: any) {
       toast.error(error.message || 'An error occurred while deleting the notification setting');
