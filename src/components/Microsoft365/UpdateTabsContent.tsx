@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { TenantUpdate, WindowsUpdate } from '@/utils/types';
+import { TenantUpdate, WindowsUpdate, M365News } from '@/utils/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 import SystemMessages from './SystemMessages';
 import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
 import WindowsUpdatesContent from './WindowsUpdatesContent';
+import M365NewsContent from './M365NewsContent';
 
 interface UpdateTabsContentProps {
   // Message Center Props
@@ -23,6 +24,12 @@ interface UpdateTabsContentProps {
   windowsIsLoading: boolean;
   windowsIsFetching: boolean;
   onFetchWindows: () => void;
+  
+  // M365 News Props
+  newsItems: M365News[];
+  newsIsLoading: boolean;
+  newsIsFetching: boolean;
+  onFetchNews: () => void;
 }
 
 const UpdateTabsContent = ({
@@ -36,7 +43,11 @@ const UpdateTabsContent = ({
   windowsUpdates,
   windowsIsLoading,
   windowsIsFetching,
-  onFetchWindows
+  onFetchWindows,
+  newsItems,
+  newsIsLoading,
+  newsIsFetching,
+  onFetchNews
 }: UpdateTabsContentProps) => {
   
   return (
@@ -89,12 +100,12 @@ const UpdateTabsContent = ({
         </TabsContent>
         
         <TabsContent value="news">
-          <div className="p-8 text-center border rounded-lg">
-            <h2 className="text-xl text-gray-700 mb-2">Microsoft 365 News</h2>
-            <p className="text-gray-500 mb-4">
-              Latest news and announcements from Microsoft 365 will be displayed here. This feature is coming soon.
-            </p>
-          </div>
+          <M365NewsContent 
+            isLoading={newsIsLoading}
+            newsItems={newsItems}
+            isFetching={newsIsFetching}
+            onFetch={onFetchNews}
+          />
         </TabsContent>
       </Tabs>
     </>

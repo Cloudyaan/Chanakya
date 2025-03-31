@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Monitor, Newspaper } from 'lucide-react';
 import WindowsUpdatesContent from './WindowsUpdatesContent';
 import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
+import { useM365News } from '@/hooks/useM365News';
+import M365NewsContent from './M365NewsContent';
 
 interface UpdatesContentProps {
   isLoading: boolean;
@@ -39,6 +41,14 @@ const UpdatesContent = ({
     isFetching: windowsIsFetching,
     handleFetchWindowsUpdates
   } = useWindowsUpdates(savedTenant);
+  
+  // Use our custom hook for M365 news
+  const {
+    newsItems,
+    isLoading: newsIsLoading,
+    isFetching: newsIsFetching,
+    handleFetchM365News
+  } = useM365News(savedTenant);
   
   if (isLoading) {
     return <UpdatesLoading />;
@@ -94,12 +104,12 @@ const UpdatesContent = ({
         </TabsContent>
         
         <TabsContent value="news">
-          <div className="p-8 text-center border rounded-lg">
-            <h2 className="text-xl text-gray-700 mb-2">Microsoft 365 News</h2>
-            <p className="text-gray-500 mb-4">
-              Latest news and announcements from Microsoft 365 will be displayed here. This feature is coming soon.
-            </p>
-          </div>
+          <M365NewsContent 
+            isLoading={newsIsLoading}
+            newsItems={newsItems}
+            isFetching={newsIsFetching}
+            onFetch={handleFetchM365News}
+          />
         </TabsContent>
       </Tabs>
     </>
