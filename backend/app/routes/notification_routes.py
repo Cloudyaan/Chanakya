@@ -547,7 +547,8 @@ def fetch_m365_news(tenant_id, days=1):
 
 def create_email_html(setting, updates_data):
     """Create HTML email content for the notification"""
-    tenant_names = {tenant_id: get_tenant_name(tenant_id) for tenant_id in setting['tenants']}
+    # Get frequency for the email header
+    frequency = setting.get('frequency', 'Regular')
     
     html = f"""
     <!DOCTYPE html>
@@ -572,10 +573,11 @@ def create_email_html(setting, updates_data):
                 background-color: #ffffff;
             }}
             .header {{
-                background-color: #0078d4;
+                background-color: #6E59A5;
                 color: white;
                 padding: 20px;
                 text-align: center;
+                border-radius: 6px 6px 0 0;
             }}
             .section {{
                 margin-bottom: 30px;
@@ -583,24 +585,32 @@ def create_email_html(setting, updates_data):
                 padding-bottom: 20px;
             }}
             .section h2 {{
-                color: #0078d4;
-                border-bottom: 2px solid #0078d4;
+                color: #6E59A5;
+                border-bottom: 2px solid #6E59A5;
                 padding-bottom: 8px;
+                margin-top: 30px;
             }}
             .update-item {{
                 padding: 15px;
                 margin-bottom: 15px;
                 background-color: #f5f5f5;
-                border-left: 4px solid #0078d4;
+                border-left: 4px solid #6E59A5;
+                border-radius: 4px;
             }}
             .update-title {{
                 font-weight: bold;
                 margin-bottom: 5px;
+                font-size: 16px;
             }}
             .update-meta {{
                 font-size: 0.9em;
                 color: #666;
                 margin-bottom: 10px;
+            }}
+            .update-id {{
+                font-family: monospace;
+                color: #666;
+                font-size: 0.85em;
             }}
             .update-desc {{
                 margin-top: 10px;
@@ -610,116 +620,212 @@ def create_email_html(setting, updates_data):
                 padding: 20px;
                 font-size: 0.8em;
                 color: #666;
+                background-color: #f5f5f5;
+                border-radius: 0 0 6px 6px;
             }}
-            .high {{
-                border-left-color: #d13438;
+            .badge {{
+                display: inline-block;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 0.75em;
+                font-weight: 500;
+                text-transform: uppercase;
+                margin-right: 5px;
             }}
-            .medium {{
-                border-left-color: #ff8c00;
+            .badge-action-required {{
+                background-color: #FDE1D3;
+                color: #F97316;
             }}
-            .low {{
-                border-left-color: #107c10;
+            .badge-plan-change {{
+                background-color: #E5DEFF;
+                color: #8B5CF6;
+            }}
+            .badge-info {{
+                background-color: #D3E4FD;
+                color: #0EA5E9;
+            }}
+            .badge-status {{
+                background-color: #F2FCE2;
+                color: #2E7D32;
+            }}
+            .badge-product {{
+                background-color: #FFDEE2;
+                color: #D946EF;
+            }}
+            .date-info {{
+                font-size: 0.85em;
+                color: #666;
+                text-align: right;
+            }}
+            .no-updates {{
+                padding: 15px;
+                text-align: center;
+                background-color: #f9f9f9;
+                border-radius: 4px;
+                color: #666;
             }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>Microsoft 365 Update Notification</h1>
-                <p>{setting['frequency']} Update for {setting['name']}</p>
+                <h1>Microsoft 365 Updates</h1>
+                <p>{frequency} Update Summary</p>
             </div>
     """
     
-    # Add tenant information
-    html += """
-            <div class="section">
-                <h2>Tenant Information</h2>
-    """
-    for tenant_id, tenant_name in tenant_names.items():
-        html += f"<p><strong>{tenant_name}</strong> - {tenant_id}</p>"
-    html += "</div>"
-    
     # Message Center Updates
-    if 'message-center' in setting['update_types'] and any(updates_data['message_center']):
+    if 'message-center' in setting['update_types']:
+        has_updates = False
+        
         html += """
             <div class="section">
-                <h2>Message Center Updates</h2>
+                <h2>Message Center Announcements</h2>
         """
         
         for tenant_id, updates in updates_data['message_center'].items():
-            tenant_name = tenant_names.get(tenant_id, "Unknown Tenant")
             if updates:
-                html += f"<h3>{tenant_name}</h3>"
+                has_updates = True
                 
                 for update in updates:
-                    severity_class = "medium"
-                    if update.get('severity') == 'High':
-                        severity_class = "high"
-                    elif update.get('severity') == 'Low':
-                        severity_class = "low"
+                    action_type = update.get('actionType', 'Informational')
+                    badge_class = "badge-info"
+                    
+                    if action_type == 'Action Required':
+                        badge_class = "badge-action-required"
+                    elif action_type == 'Plan for Change':
+                        badge_class = "badge-plan-change"
+                    
+                    category = update.get('category', 'General')
+                    formatted_category = category
+                    if category == 'stayInformed':
+                        formatted_category = 'Stay Informed'
+                    elif category == 'planForChange':
+                        formatted_category = 'Plan For Change'
+                    elif category == 'preventOrFixIssue':
+                        formatted_category = 'Prevent Or Fix Issue'
+                    
+                    # Try to format date nicely
+                    try:
+                        published_date = datetime.fromisoformat(update.get('publishedDate', '')).strftime('%Y-%m-%d')
+                    except (ValueError, TypeError):
+                        published_date = update.get('publishedDate', 'Unknown Date')
                     
                     html += f"""
-                    <div class="update-item {severity_class}">
+                    <div class="update-item">
                         <div class="update-title">{update.get('title', 'Untitled Update')}</div>
+                        <div class="update-id">ID: {update.get('messageId', update.get('id', 'Unknown'))}</div>
                         <div class="update-meta">
-                            Category: {update.get('category', 'Uncategorized')} | 
-                            Severity: {update.get('severity', 'Normal')} | 
-                            Published: {update.get('publishedDate', 'Unknown Date')}
+                            <span class="badge {badge_class}">{action_type}</span>
+                            <span class="badge badge-info">{formatted_category}</span>
+                            <div class="date-info">Last Updated: {published_date}</div>
                         </div>
-                        <div class="update-desc">{update.get('description', 'No description available.')[:300]}...</div>
+                        <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
                     </div>
                     """
+        
+        if not has_updates:
+            html += """
+                <div class="no-updates">
+                    No message center announcements found for the selected time period.
+                </div>
+            """
+        
         html += "</div>"
     
     # Windows Updates
-    if 'windows-updates' in setting['update_types'] and any(updates_data['windows_updates']):
+    if 'windows-updates' in setting['update_types']:
+        has_updates = False
+        
         html += """
             <div class="section">
                 <h2>Windows Updates</h2>
         """
         
         for tenant_id, updates in updates_data['windows_updates'].items():
-            tenant_name = tenant_names.get(tenant_id, "Unknown Tenant")
             if updates:
-                html += f"<h3>{tenant_name}</h3>"
+                has_updates = True
                 
                 for update in updates:
+                    # Try to format date nicely
+                    try:
+                        start_date = datetime.fromisoformat(update.get('startDate', '')).strftime('%Y-%m-%d')
+                    except (ValueError, TypeError):
+                        start_date = update.get('startDate', 'Unknown Date')
+                    
                     html += f"""
                     <div class="update-item">
                         <div class="update-title">{update.get('title', 'Untitled Update')}</div>
                         <div class="update-meta">
-                            Product: {update.get('productName', 'Unknown Product')} | 
-                            Status: {update.get('status', 'Unknown Status')} | 
-                            Start Date: {update.get('startDate', 'Unknown Date')}
+                            <span class="badge badge-product">{update.get('productName', 'Unknown Product')}</span>
+                            <span class="badge badge-status">{update.get('status', 'Unknown Status')}</span>
+                            <div class="date-info">Date: {start_date}</div>
                         </div>
-                        <div class="update-desc">{update.get('description', 'No description available.')[:300]}...</div>
+                        <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
                     </div>
                     """
+        
+        if not has_updates:
+            html += """
+                <div class="no-updates">
+                    No Windows updates found for the selected time period.
+                </div>
+            """
+        
         html += "</div>"
     
     # M365 News
-    if 'news' in setting['update_types'] and any(updates_data['m365_news']):
+    if 'news' in setting['update_types']:
+        has_updates = False
+        
         html += """
             <div class="section">
                 <h2>Microsoft 365 News</h2>
         """
         
         for tenant_id, news_items in updates_data['m365_news'].items():
-            tenant_name = tenant_names.get(tenant_id, "Unknown Tenant")
             if news_items:
-                html += f"<h3>{tenant_name}</h3>"
+                has_updates = True
                 
                 for item in news_items:
+                    # Try to format date nicely
+                    try:
+                        published_date = datetime.fromisoformat(item.get('published_date', '')).strftime('%Y-%m-%d')
+                    except (ValueError, TypeError):
+                        published_date = item.get('published_date', 'Unknown Date')
+                    
+                    # Get categories if available
+                    categories = item.get('categories', [])
+                    if isinstance(categories, str):
+                        try:
+                            categories = json.loads(categories)
+                        except:
+                            categories = []
+                    
+                    category_badges = ""
+                    if categories and len(categories) > 0:
+                        for category in categories[:3]:  # Limit to first 3 categories
+                            category_badges += f'<span class="badge badge-info">{category}</span> '
+                    
                     html += f"""
                     <div class="update-item">
                         <div class="update-title">{item.get('title', 'Untitled News')}</div>
                         <div class="update-meta">
-                            Published: {item.get('published_date', 'Unknown Date')}
+                            {category_badges}
+                            <div class="date-info">Published: {published_date}</div>
                         </div>
-                        <div class="update-desc">{item.get('summary', 'No summary available.')[:300]}...</div>
+                        <div class="update-desc">{item.get('summary', 'No summary available.')[:200]}...</div>
                         <div><a href="{item.get('link', '#')}">Read more</a></div>
                     </div>
                     """
+        
+        if not has_updates:
+            html += """
+                <div class="no-updates">
+                    No Microsoft 365 news found for the selected time period.
+                </div>
+            """
+        
         html += "</div>"
     
     # Footer
@@ -846,337 +952,4 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False)
         
         # Parse JSON fields
         try:
-            tenants = json.loads(setting_dict['tenants'])
-            update_types = json.loads(setting_dict['update_types'])
-        except json.JSONDecodeError:
-            print(f"Invalid JSON in notification setting {setting_dict['id']}")
-            results.append({"id": setting_dict['id'], "success": False, "message": "Invalid configuration"})
-            continue
-        
-        # Determine time range based on frequency
-        days = 1  # Default to daily (yesterday)
-        if setting_dict['frequency'] == 'Weekly' or setting_dict['frequency'] == 'Monthly':
-            days = 7
-        
-        # Collect updates for each tenant and type
-        updates_data = {
-            'message_center': {},
-            'windows_updates': {},
-            'm365_news': {}
-        }
-        
-        has_updates = False
-        
-        for tenant_id in tenants:
-            # Skip creating database files if use_existing_databases is True
-            if not use_existing_databases:
-                # Create/ensure database files exist
-                ensure_tenant_database(tenant_id)
-            
-            # Fetch message center updates if selected
-            if 'message-center' in update_types:
-                # Use prefer_service_announcements=True for message center
-                db_path = find_tenant_database(tenant_id, prefer_service_announcements=True)
-                if db_path:
-                    mc_updates = fetch_message_center_updates_from_db(db_path, days)
-                    updates_data['message_center'][tenant_id] = mc_updates
-                    has_updates |= bool(mc_updates)
-                else:
-                    print(f"No database found for tenant {tenant_id} when fetching message center updates")
-                    updates_data['message_center'][tenant_id] = []
-            
-            # Fetch Windows updates if selected
-            if 'windows-updates' in update_types:
-                # Regular tenant database for Windows updates
-                db_path = find_tenant_database(tenant_id, prefer_service_announcements=False)
-                if db_path:
-                    win_updates = fetch_windows_updates_from_db(db_path, days)
-                    updates_data['windows_updates'][tenant_id] = win_updates
-                    has_updates |= bool(win_updates)
-                else:
-                    print(f"No database found for tenant {tenant_id} when fetching Windows updates")
-                    updates_data['windows_updates'][tenant_id] = []
-            
-            # Fetch M365 news if selected
-            if 'news' in update_types:
-                # Regular tenant database for M365 news
-                db_path = find_tenant_database(tenant_id, prefer_service_announcements=False)
-                if db_path:
-                    news = fetch_m365_news_from_db(db_path, days)
-                    updates_data['m365_news'][tenant_id] = news
-                    has_updates |= bool(news)
-                else:
-                    print(f"No database found for tenant {tenant_id} when fetching M365 news")
-                    updates_data['m365_news'][tenant_id] = []
-        
-        # Generate test data if needed and if we're not using existing databases only
-        if not has_updates and not use_existing_databases:
-            print(f"No updates found for notification {setting_dict['id']}, generating test data")
-            add_test_data_notification(tenants, update_types, days, updates_data)
-            has_updates = True
-        elif not has_updates:
-            print(f"No updates found for notification {setting_dict['id']} and using existing databases only")
-        
-        if not has_updates:
-            print(f"No updates found for notification {setting_dict['id']}")
-            results.append({"id": setting_dict['id'], "success": False, "message": "No updates found"})
-            continue
-        
-        # Create email content
-        email_html = create_email_html(setting_dict, updates_data)
-        
-        # Send email using Microsoft Graph API
-        subject = f"Microsoft 365 {setting_dict['frequency']} Update"
-        success = send_email_with_ms_graph(setting_dict['email'], subject, email_html)
-        
-        if success:
-            results.append({
-                "id": setting_dict['id'], 
-                "success": True, 
-                "message": f"Email sent to {setting_dict['email']}"
-            })
-        else:
-            results.append({
-                "id": setting_dict['id'], 
-                "success": False, 
-                "message": "Failed to send email"
-            })
-    
-    return {"success": True, "results": results}
-
-def add_test_data_notification(tenants, update_types, days, updates_data):
-    """Add test data to the notification for demonstration purposes"""
-    for tenant_id in tenants:
-        # Add test message center updates
-        if 'message-center' in update_types:
-            test_updates = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_updates.append({
-                    'id': f'test-mc-{i}',
-                    'title': f'Test Message Center Update {i}',
-                    'category': 'Feature update',
-                    'severity': 'Medium',
-                    'publishedDate': date,
-                    'actionType': 'Stay Informed',
-                    'description': f'This is a test message center update for notification testing. Created {i} days ago.'
-                })
-            updates_data['message_center'][tenant_id] = test_updates
-            
-        # Add test Windows updates
-        if 'windows-updates' in update_types:
-            test_win_updates = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_win_updates.append({
-                    'id': f'test-win-{i}',
-                    'productId': 'win11',
-                    'productName': 'Windows 11',
-                    'title': f'Test Windows Update {i}',
-                    'description': f'This is a test Windows update for notification testing. Created {i} days ago.',
-                    'status': 'Active',
-                    'startDate': date
-                })
-            updates_data['windows_updates'][tenant_id] = test_win_updates
-            
-        # Add test M365 news
-        if 'news' in update_types:
-            test_news = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_news.append({
-                    'id': f'test-news-{i}',
-                    'title': f'Test Microsoft 365 News {i}',
-                    'published_date': date,
-                    'link': 'https://example.com',
-                    'summary': f'This is a test news item for notification testing. Created {i} days ago.'
-                })
-            updates_data['m365_news'][tenant_id] = test_news
-
-@notification_bp.route('/send-notification', methods=['POST'])
-def send_notification():
-    """API endpoint to manually trigger sending a notification"""
-    setting_id = request.json.get('id')
-    use_existing_databases = request.json.get('useExistingDatabases', False)
-    
-    if not setting_id:
-        return jsonify({
-            'error': 'Missing setting ID',
-            'message': 'Please provide a notification setting ID'
-        }), 400
-    
-    # Process and send the notification
-    results = process_and_send_notification(setting_id, use_existing_databases)
-    
-    if not results.get('success'):
-        return jsonify({
-            'success': False,
-            'message': results.get('message', 'Failed to process notification')
-        }), 500
-    
-    return jsonify({
-        'success': True,
-        'message': 'Notification processed successfully',
-        'results': results.get('results', [])
-    })
-
-# Schedule runner
-def run_scheduled_notifications():
-    """Run notifications based on their schedule"""
-    now = datetime.now()
-    print(f"Running scheduled notifications at {now.isoformat()}")
-    
-    # Daily at 8:00 AM
-    if now.hour == 8 and now.minute < 5:
-        print("Running daily notifications")
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM notification_settings WHERE frequency = 'Daily'")
-        daily_settings = cursor.fetchall()
-        conn.close()
-        
-        if daily_settings:
-            for setting in daily_settings:
-                process_and_send_notification(setting['id'])
-    
-    # Weekly on Monday at 8:00 AM
-    if now.weekday() == 0 and now.hour == 8 and now.minute < 5:
-        print("Running weekly notifications")
-        conn = get_db_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM notification_settings WHERE frequency = 'Weekly'")
-        weekly_settings = cursor.fetchall()
-        conn.close()
-        
-        if weekly_settings:
-            for setting in weekly_settings:
-                process_and_send_notification(setting['id'])
-
-# Thread for running the scheduler
-scheduler_thread = None
-
-def start_scheduler():
-    """Start the scheduler in a separate thread"""
-    def run_scheduler():
-        while True:
-            run_scheduled_notifications()
-            time.sleep(60)  # Check every minute
-    
-    global scheduler_thread
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    print("Notification scheduler started")
-
-# Start the scheduler when the app starts
-start_scheduler()
-
-def fetch_message_center_updates_from_db(db_path, days=1):
-    """Fetch message center updates from a specific database file"""
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check which table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
-        table_result = cursor.fetchone()
-        
-        if not table_result:
-            return []
-            
-        table_name = table_result['name']
-        
-        # Calculate the date range
-        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-        
-        # Query based on which table exists
-        if table_name == 'updates':
-            cursor.execute(f"""
-                SELECT 
-                    id, title, category, severity, lastModifiedDateTime as publishedDate,
-                    isMajorChange as actionType, bodyContent as description
-                FROM updates
-                WHERE lastModifiedDateTime > ?
-                ORDER BY lastModifiedDateTime DESC
-            """, (cutoff_date,))
-        else:  # announcements
-            cursor.execute(f"""
-                SELECT 
-                    id, title, category, severity, lastModifiedDateTime as publishedDate,
-                    isMajorChange as actionType, bodyContent as description
-                FROM announcements
-                WHERE lastModifiedDateTime > ?
-                ORDER BY lastModifiedDateTime DESC
-            """, (cutoff_date,))
-        
-        updates = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return updates
-    except Exception as e:
-        print(f"Error fetching message center updates from {db_path}: {e}")
-        return []
-
-def fetch_windows_updates_from_db(db_path, days=1):
-    """Fetch Windows updates from a specific database file"""
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check if the windows_known_issues table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
-        if not cursor.fetchone():
-            return []
-        
-        # Calculate the date range
-        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-        
-        cursor.execute("""
-            SELECT 
-                wi.id, wi.product_id as productId, wi.title, wi.description, 
-                wi.webViewUrl, wi.status, wi.start_date as startDate, 
-                wi.resolved_date as resolvedDate, wp.name as productName
-            FROM windows_known_issues wi
-            LEFT JOIN windows_products wp ON wi.product_id = wp.id
-            WHERE wi.start_date > ?
-            ORDER BY wi.start_date DESC
-        """, (cutoff_date,))
-        
-        updates = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return updates
-    except Exception as e:
-        print(f"Error fetching Windows updates from {db_path}: {e}")
-        return []
-
-def fetch_m365_news_from_db(db_path, days=1):
-    """Fetch M365 news from a specific database file"""
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check if the m365_news table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='m365_news'")
-        if not cursor.fetchone():
-            return []
-        
-        # Calculate the date range
-        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-        
-        cursor.execute("""
-            SELECT * FROM m365_news
-            WHERE published_date > ?
-            ORDER BY published_date DESC
-        """, (cutoff_date,))
-        
-        news = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return news
-    except Exception as e:
-        print(f"Error fetching M365 news from {db_path}: {e}")
-        return []
+            tenants = json.loads(
