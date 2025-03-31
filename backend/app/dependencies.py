@@ -5,7 +5,7 @@ import sys
 
 def check_dependencies():
     """Check if required packages are installed and install them if missing."""
-    required_packages = ['msal', 'pandas', 'requests']
+    required_packages = ['msal', 'pandas', 'requests', 'feedparser', 'python-dateutil']
     missing_packages = []
     
     for package in required_packages:
@@ -55,6 +55,39 @@ python fetch_windows_updates.py %*
 
 echo.
 echo Done!
+''',
+        'fetch_m365_news.bat': '''@echo off
+echo Running Microsoft 365 News Fetcher
+echo ====================================================
+echo.
+
+REM Check if required packages are installed
+python -c "import feedparser" 2>NUL
+if %ERRORLEVEL% NEQ 0 (
+    echo Error: feedparser package is not installed.
+    echo Installing feedparser...
+    pip install feedparser
+    if %ERRORLEVEL% NEQ 0 (
+        echo Failed to install feedparser. Please install it manually: pip install feedparser
+        exit /b 1
+    )
+)
+
+python -c "import dateutil" 2>NUL
+if %ERRORLEVEL% NEQ 0 (
+    echo Error: python-dateutil package is not installed.
+    echo Installing python-dateutil...
+    pip install python-dateutil
+    if %ERRORLEVEL% NEQ 0 (
+        echo Failed to install python-dateutil. Please install it manually: pip install python-dateutil
+        exit /b 1
+    )
+)
+
+python fetch_m365_news.py %*
+
+echo.
+echo Done!
 '''
     }
     
@@ -64,3 +97,4 @@ echo Done!
             with open(filename, 'w') as f:
                 f.write(content)
             print(f"Created {filename}")
+
