@@ -2,7 +2,7 @@
 import os
 import sys
 from app.database import init_db
-from app.dependencies import check_dependencies, create_batch_files
+from app.dependencies import check_dependencies
 from app import create_app
 
 # Initialize database tables
@@ -10,9 +10,6 @@ init_db()
 
 # Check dependencies
 check_dependencies()
-
-# Create required batch files
-create_batch_files()
 
 # Set default Microsoft Graph API configuration if not provided
 if 'MS_CLIENT_ID' not in os.environ:
