@@ -23,7 +23,8 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
       summary: item.summary || '',
       categories: Array.isArray(item.categories) ? item.categories : [],
       tenantId: item.tenantId || tenantId,
-      tenantName: item.tenantName || 'Unknown Tenant'
+      tenantName: item.tenantName || 'Unknown Tenant',
+      fetch_date: item.fetch_date || new Date().toISOString() // Add the missing fetch_date property
     }));
   } catch (error) {
     console.error('Error in getM365News:', error);
