@@ -16,6 +16,9 @@ const M365NewsContent = ({
   isFetching,
   onFetch
 }: M365NewsContentProps) => {
+  // Log the news items for debugging
+  console.log('M365NewsContent received news items:', newsItems);
+  
   if (isLoading) {
     return (
       <div className="w-full h-48 flex items-center justify-center">

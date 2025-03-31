@@ -267,34 +267,25 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                             Select which tenants to receive updates from
                           </FormDescription>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                          {tenants.filter(t => t.isActive).map((tenant) => (
-                            <FormItem
-                              key={tenant.id}
-                              className="flex flex-row items-start space-x-3 space-y-0 p-2 border rounded-md"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={form.watch('tenants').includes(tenant.id)}
-                                  onCheckedChange={(checked) => {
-                                    const currentTenants = form.watch('tenants');
-                                    if (checked) {
-                                      form.setValue('tenants', [...currentTenants, tenant.id]);
-                                    } else {
-                                      form.setValue(
-                                        'tenants',
-                                        currentTenants.filter((id) => id !== tenant.id)
-                                      );
-                                    }
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
+                        <Select
+                          onValueChange={(value) => {
+                            form.setValue('tenants', [value]);
+                          }}
+                          defaultValue={selectedTenant || undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select tenant" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {tenants.filter(t => t.isActive).map((tenant) => (
+                              <SelectItem key={tenant.id} value={tenant.id}>
                                 {tenant.name}
-                              </FormLabel>
-                            </FormItem>
-                          ))}
-                        </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -564,13 +555,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
               <p className="text-muted-foreground mb-4">
                 You haven't created any notification settings yet. Click the "New Notification" button to create one.
               </p>
-              <Button
-                onClick={() => setIsCreating(true)}
-                className="flex items-center gap-1"
-              >
-                <Plus size={16} />
-                Create Notification Setting
-              </Button>
+              {/* Removed the "Create Notification Setting" button as requested */}
             </div>
           )}
         </CardContent>
