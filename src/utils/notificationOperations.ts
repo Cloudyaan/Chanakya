@@ -2,6 +2,20 @@
 import { API_URL } from './api';
 import { NotificationSetting } from './types';
 
+// Helper function to ensure arrays are properly handled
+const ensureArray = (value: any): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+};
+
 export const getNotificationSettings = async (tenantId?: string): Promise<NotificationSetting[]> => {
   try {
     const url = tenantId 
@@ -15,9 +29,15 @@ export const getNotificationSettings = async (tenantId?: string): Promise<Notifi
       throw new Error(`Error fetching notification settings: ${response.statusText}`);
     }
     
-    const settings: NotificationSetting[] = await response.json();
+    const settings = await response.json();
     console.log(`Retrieved ${settings.length} notification settings`);
-    return settings;
+    
+    // Ensure tenants and update_types are arrays
+    return settings.map((setting: any): NotificationSetting => ({
+      ...setting,
+      tenants: ensureArray(setting.tenants),
+      update_types: ensureArray(setting.update_types)
+    }));
   } catch (error) {
     console.error('Error in getNotificationSettings:', error);
     return [];

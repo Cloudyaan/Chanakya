@@ -45,7 +45,7 @@ import {
   addNotificationSetting, 
   updateNotificationSetting,
   deleteNotificationSetting
-} from '@/utils/database';
+} from '@/utils/notificationOperations';
 import { TenantConfig, NotificationSetting } from '@/utils/types';
 
 const formSchema = z.object({
@@ -86,6 +86,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     setIsLoading(true);
     try {
       const settings = await getNotificationSettings(selectedTenant || undefined);
+      console.log('Loaded notification settings:', settings);
       setNotificationSettings(settings);
     } catch (error) {
       console.error('Error loading notification settings:', error);
@@ -134,8 +135,8 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
   const handleEdit = (setting: NotificationSetting) => {
     setIsEditing(setting.id);
     setEditValues({
-      tenants: setting.tenants,
-      update_types: setting.update_types,
+      tenants: Array.isArray(setting.tenants) ? setting.tenants : [],
+      update_types: Array.isArray(setting.update_types) ? setting.update_types : [],
       frequency: setting.frequency
     });
   };
@@ -184,6 +185,20 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     { id: 'windows-updates', label: 'Windows Updates' },
     { id: 'news', label: 'Microsoft 365 News' }
   ];
+
+  // Helper function to ensure tenants is always an array
+  const ensureArray = (value: any): string[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
 
   return (
     <div className="space-y-6">
@@ -431,7 +446,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         </div>
                       ) : (
                         <div>
-                          {setting.tenants.map((tenantId) => {
+                          {ensureArray(setting.tenants).map((tenantId) => {
                             const tenant = tenants.find(t => t.id === tenantId);
                             return tenant ? (
                               <span key={tenantId} className="inline-block bg-gray-100 px-2 py-1 rounded text-xs mr-1 mb-1">
@@ -470,7 +485,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         </div>
                       ) : (
                         <div>
-                          {setting.update_types.map((typeId) => {
+                          {ensureArray(setting.update_types).map((typeId) => {
                             const type = updateTypes.find(t => t.id === typeId);
                             return type ? (
                               <span key={typeId} className="inline-block bg-blue-100 px-2 py-1 rounded text-xs mr-1 mb-1">
