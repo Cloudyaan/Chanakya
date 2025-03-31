@@ -1,19 +1,11 @@
 import React from 'react';
 import { TenantUpdate } from '@/utils/types';
 import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw } from 'lucide-react';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
 interface UpdatesTableProps {
   updates: TenantUpdate[];
   onUpdateClick: (update: TenantUpdate) => void;
@@ -22,12 +14,11 @@ interface UpdatesTableProps {
   isFetching: boolean;
   onFetch: () => void;
 }
-
-const UpdatesTable = ({ 
-  updates, 
-  onUpdateClick, 
-  onRefresh, 
-  isLoading, 
+const UpdatesTable = ({
+  updates,
+  onUpdateClick,
+  onRefresh,
+  isLoading,
   isFetching,
   onFetch
 }: UpdatesTableProps) => {
@@ -37,12 +28,10 @@ const UpdatesTable = ({
     if (actionType === 'Plan for Change') return 'purple';
     return 'default';
   };
-
   const getBadgeIcon = (actionType: string | undefined) => {
     if (actionType === 'Action Required') return <AlertTriangle size={12} />;
     return <InfoIcon size={12} />;
   };
-
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -51,11 +40,9 @@ const UpdatesTable = ({
       return dateString;
     }
   };
-
   const formatCategory = (category: string | undefined): string => {
     if (!category) return 'General';
-    
-    switch(category) {
+    switch (category) {
       case 'stayInformed':
         return 'Stay Informed';
       case 'planForChange':
@@ -66,31 +53,15 @@ const UpdatesTable = ({
         return category.replace(/([A-Z])/g, ' $1').trim();
     }
   };
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle>Message Center Announcements</CardTitle>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="flex items-center gap-1"
-          >
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="flex items-center gap-1">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
             Refresh
           </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            onClick={onFetch}
-            disabled={isFetching}
-            className="flex items-center gap-1"
-          >
-            {isFetching ? "Fetching..." : "Fetch Updates"}
-          </Button>
+          
         </div>
       </CardHeader>
       <CardContent>
@@ -105,52 +76,30 @@ const UpdatesTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {updates.map((update) => {
-              const isPlanForChange = update.actionType === 'Plan for Change';
-              const isNotStayInformed = update.category !== 'stayInformed';
-              
-              return (
-                <TableRow 
-                  key={update.id} 
-                  className={cn(
-                    "group hover:bg-muted/50 cursor-pointer",
-                    isPlanForChange && "bg-purple-50",
-                    isNotStayInformed && !isPlanForChange && "bg-purple-50/70"
-                  )}
-                  onClick={() => onUpdateClick(update)}
-                >
+            {updates.map(update => {
+            const isPlanForChange = update.actionType === 'Plan for Change';
+            const isNotStayInformed = update.category !== 'stayInformed';
+            return <TableRow key={update.id} className={cn("group hover:bg-muted/50 cursor-pointer", isPlanForChange && "bg-purple-50", isNotStayInformed && !isPlanForChange && "bg-purple-50/70")} onClick={() => onUpdateClick(update)}>
                   <TableCell>
-                    <Badge 
-                      variant={getBadgeVariant(update.actionType)}
-                      className="flex gap-1 items-center"
-                    >
+                    <Badge variant={getBadgeVariant(update.actionType)} className="flex gap-1 items-center">
                       {getBadgeIcon(update.actionType)}
                       {update.actionType || 'Informational'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {isPlanForChange ? (
-                      <Badge className="bg-purple-600 text-white hover:bg-purple-700 font-medium">
+                    {isPlanForChange ? <Badge className="bg-purple-600 text-white hover:bg-purple-700 font-medium">
                         {formatCategory(update.category)}
-                      </Badge>
-                    ) : isNotStayInformed ? (
-                      <Badge className="bg-purple-500 text-white hover:bg-purple-600 font-medium">
+                      </Badge> : isNotStayInformed ? <Badge className="bg-purple-500 text-white hover:bg-purple-600 font-medium">
                         {formatCategory(update.category)}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                      </Badge> : <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
                         {formatCategory(update.category)}
-                      </Badge>
-                    )}
+                      </Badge>}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {update.messageId || update.id}
                   </TableCell>
                   <TableCell>
-                    <div className={cn(
-                      isPlanForChange && "text-purple-800",
-                      isNotStayInformed && !isPlanForChange && "text-purple-700"
-                    )}>
+                    <div className={cn(isPlanForChange && "text-purple-800", isNotStayInformed && !isPlanForChange && "text-purple-700")}>
                       {update.title}
                     </div>
                   </TableCell>
@@ -160,14 +109,11 @@ const UpdatesTable = ({
                       <span className="text-sm">{formatDate(update.publishedDate)}</span>
                     </div>
                   </TableCell>
-                </TableRow>
-              );
-            })}
+                </TableRow>;
+          })}
           </TableBody>
         </Table>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default UpdatesTable;
