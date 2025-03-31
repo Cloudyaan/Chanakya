@@ -109,7 +109,7 @@ export interface NotificationSetting {
   email: string;
   tenants: string[];
   update_types: string[];
-  frequency: 'Daily' | 'Weekly';
+  frequency: 'Daily' | 'Weekly' | 'Monthly';
   created_at: string;
   updated_at: string;
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -515,7 +514,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                     <TableCell>
                       {isEditing === setting.id ? (
                         <Select
-                          value={editValues?.frequency || (setting.frequency === 'Monthly' ? 'Weekly' : setting.frequency)}
+                          value={editValues?.frequency || setting.frequency}
                           onValueChange={(value) => setEditValues({
                             ...editValues,
                             frequency: value as 'Daily' | 'Weekly'
@@ -533,10 +532,8 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         <div className="flex items-center gap-2">
                           {setting.frequency === 'Daily' && <Clock size={14} />}
                           {setting.frequency === 'Weekly' && <Calendar size={14} />}
-                          {/* If it's a legacy Monthly setting, display it as Weekly */}
-                          {setting.frequency === 'Monthly' && <Calendar size={14} />}
                           <span className="inline-block bg-green-100 px-2 py-1 rounded text-xs">
-                            {setting.frequency === 'Monthly' ? 'Weekly' : setting.frequency}
+                            {setting.frequency}
                           </span>
                         </div>
                       )}
