@@ -81,6 +81,10 @@ const UpdateTabsContent = ({
             <UpdatesTable 
               updates={regularUpdates}
               onUpdateClick={onUpdateClick}
+              onRefresh={onFetchMessageCenter}
+              isLoading={messageCenterIsLoading}
+              isFetching={messageCenterIsFetching}
+              onFetch={onFetchMessageCenter}
             />
           ) : !hasSystemMessage && (
             <UpdatesEmptyState

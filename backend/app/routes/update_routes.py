@@ -36,21 +36,34 @@ def get_updates():
     # Check if MSAL is installed
     msal_spec = importlib.util.find_spec('msal')
     if msal_spec is None:
-        return jsonify({
-            'error': 'MSAL package not installed',
-            'message': 'The MSAL package is required to fetch updates from Microsoft Graph. Please install it using "pip install msal".'
-        }), 503  # 503 Service Unavailable
+        # Return system message about MSAL not being installed
+        return jsonify([{
+            'id': 'msal-error',
+            'title': 'MSAL package not installed',
+            'description': 'The MSAL package is required to fetch updates from Microsoft Graph. Please install it using "pip install msal".',
+            'tenantId': tenant_id,
+            'tenantName': 'System Message',
+            'publishedDate': '2023-01-01T00:00:00Z',
+            'actionType': 'Action Required',
+            'category': 'preventOrFixIssue'
+        }]), 200
     
     try:
         # Find the tenant database - look for multiple patterns
         tenant_db_path = find_tenant_database(tenant['tenantId'])
         
-        # If the database doesn't exist yet, return a helpful message with instructions
+        # If the database doesn't exist yet, return a system message with instructions
         if not tenant_db_path:
-            return jsonify({
-                'error': 'Database not found',
-                'message': f'No updates database found for this tenant. Run the fetch_updates.py script with the tenant ID: python fetch_updates.py {tenant_id}'
-            }), 404
+            return jsonify([{
+                'id': 'db-init',
+                'title': 'No updates database found',
+                'description': f'No updates database found for this tenant. Click "Fetch Updates" to retrieve data from Microsoft Graph API.',
+                'tenantId': tenant_id,
+                'tenantName': 'System Message',
+                'publishedDate': '2023-01-01T00:00:00Z',
+                'actionType': 'Action Required',
+                'category': 'preventOrFixIssue'
+            }]), 200
         
         # If the database exists, read from it
         try:
@@ -124,16 +137,28 @@ def get_updates():
             return jsonify(updates)
             
         except sqlite3.Error as e:
-            return jsonify({
-                'error': 'Database error',
-                'message': str(e)
-            }), 500
+            return jsonify([{
+                'id': 'db-error',
+                'title': 'Database error',
+                'description': f'Error reading from database: {str(e)}',
+                'tenantId': tenant_id,
+                'tenantName': 'System Message',
+                'publishedDate': '2023-01-01T00:00:00Z',
+                'actionType': 'Action Required',
+                'category': 'preventOrFixIssue'
+            }]), 200
             
     except Exception as e:
-        return jsonify({
-            'error': 'Server error',
-            'message': str(e)
-        }), 500
+        return jsonify([{
+            'id': 'server-error',
+            'title': 'Server error',
+            'description': f'Unexpected error: {str(e)}',
+            'tenantId': tenant_id,
+            'tenantName': 'System Message',
+            'publishedDate': '2023-01-01T00:00:00Z',
+            'actionType': 'Action Required',
+            'category': 'preventOrFixIssue'
+        }]), 200
 
 @update_bp.route('/fetch-updates', methods=['POST'])
 def trigger_fetch_updates():
@@ -165,11 +190,34 @@ def trigger_fetch_updates():
         }), 503
     
     try:
+        print(f"Attempting to fetch updates for tenant ID: {tenant_id}")
+        
         # On Windows, run the batch file
         if os.name == 'nt':
-            subprocess.run(['fetch_updates.bat', tenant_id], check=True)
+            # Print the current directory for debugging
+            print(f"Current directory: {os.getcwd()}")
+            print(f"Running command: fetch_updates.bat {tenant_id}")
+            
+            # Use absolute paths or ensure the batch file is in the right directory
+            fetch_script = os.path.join(os.getcwd(), 'fetch_updates.bat')
+            if not os.path.exists(fetch_script):
+                print(f"Warning: fetch_updates.bat not found at {fetch_script}")
+                
+            # Try different ways to run the batch file
+            try:
+                subprocess.run(['fetch_updates.bat', tenant_id], check=True)
+            except Exception as batch_error:
+                print(f"Error running batch file directly: {str(batch_error)}")
+                try:
+                    # Try with cmd /c
+                    subprocess.run(['cmd', '/c', 'fetch_updates.bat', tenant_id], check=True)
+                except Exception as cmd_error:
+                    print(f"Error running with cmd /c: {str(cmd_error)}")
+                    # As a last resort, try with python
+                    subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
         else:
             # On non-Windows, run the Python script directly
+            print(f"Running command: python fetch_updates.py {tenant_id}")
             subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
         
         return jsonify({
@@ -177,11 +225,13 @@ def trigger_fetch_updates():
             'message': f'Successfully fetched updates for tenant {tenant["name"]}'
         })
     except subprocess.CalledProcessError as e:
+        print(f"Error running fetch_updates script: {str(e)}")
         return jsonify({
             'error': 'Fetch updates failed',
             'message': f'Error running fetch_updates script: {str(e)}'
         }), 500
     except Exception as e:
+        print(f"Unexpected error when fetching updates: {str(e)}")
         return jsonify({
             'error': 'Server error',
             'message': f'Unexpected error: {str(e)}'

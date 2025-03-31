@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { TenantUpdate } from '@/utils/types';
-import { InfoIcon, ClockIcon, AlertTriangle } from 'lucide-react';
+import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw } from 'lucide-react';
 import { 
   Table,
   TableBody,
@@ -12,14 +11,26 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface UpdatesTableProps {
   updates: TenantUpdate[];
   onUpdateClick: (update: TenantUpdate) => void;
+  onRefresh: () => void;
+  isLoading: boolean;
+  isFetching: boolean;
+  onFetch: () => void;
 }
 
-const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
+const UpdatesTable = ({ 
+  updates, 
+  onUpdateClick, 
+  onRefresh, 
+  isLoading, 
+  isFetching,
+  onFetch
+}: UpdatesTableProps) => {
   const getBadgeVariant = (actionType: string | undefined) => {
     if (!actionType) return 'default';
     if (actionType === 'Action Required') return 'destructive';
@@ -44,7 +55,6 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
   const formatCategory = (category: string | undefined): string => {
     if (!category) return 'General';
     
-    // Handle specific category formatting
     switch(category) {
       case 'stayInformed':
         return 'Stay Informed';
@@ -53,15 +63,35 @@ const UpdatesTable = ({ updates, onUpdateClick }: UpdatesTableProps) => {
       case 'preventOrFixIssue':
         return 'Prevent Or Fix Issue';
       default:
-        // For any other categories, add spaces before capital letters
         return category.replace(/([A-Z])/g, ' $1').trim();
     }
   };
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle>Message Center Announcements</CardTitle>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+            Refresh
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={onFetch}
+            disabled={isFetching}
+            className="flex items-center gap-1"
+          >
+            {isFetching ? "Fetching..." : "Fetch Updates"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>

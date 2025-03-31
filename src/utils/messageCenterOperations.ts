@@ -5,10 +5,13 @@ import { API_URL } from './api';
 // Message Center Updates Operations
 export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[]> => {
   try {
-    // Build the URL with the tenantId if provided
-    const url = tenantId 
-      ? `${API_URL}/updates?tenantId=${tenantId}` 
-      : `${API_URL}/updates`;
+    if (!tenantId) {
+      console.error('No tenant ID provided to getTenantUpdates');
+      return [];
+    }
+    
+    // Build the URL with the tenantId
+    const url = `${API_URL}/updates?tenantId=${tenantId}`;
     
     console.log(`Fetching tenant updates from: ${url}`);
     
@@ -18,13 +21,21 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
     if (!response.ok) {
       console.error('Error response status:', response.status);
       
+      // Try to get error message from response
+      try {
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      } catch (e) {
+        console.error('Error parsing error response');
+      }
+      
       // Return empty array if there's an error
       return [];
     }
     
     // If response is OK, parse and return the data
     const data = await response.json();
-    console.log(`Received ${data.length} updates for tenant ID: ${tenantId || 'all'}`);
+    console.log(`Received ${data.length} updates for tenant ID: ${tenantId}`);
     return data;
   } catch (error) {
     console.error('Error fetching tenant updates:', error);
@@ -36,6 +47,11 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
 // Function to fetch updates from Microsoft Graph for a specific tenant
 export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => {
   try {
+    if (!tenantId) {
+      console.error('No tenant ID provided to fetchTenantUpdates');
+      return false;
+    }
+    
     console.log(`Triggering fetch-updates for tenant: ${tenantId}`);
     const response = await fetch(`${API_URL}/fetch-updates`, {
       method: 'POST',
@@ -51,6 +67,8 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
       throw new Error(errorData.message || 'Failed to fetch updates');
     }
     
+    const result = await response.json();
+    console.log('Fetch updates response:', result);
     return true;
   } catch (error) {
     console.error('Error triggering update fetch:', error);
