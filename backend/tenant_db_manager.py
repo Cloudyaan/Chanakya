@@ -7,6 +7,7 @@ from datetime import datetime
 import pandas as pd
 import requests
 import io
+import glob
 
 # List of known trial SKUs
 TRIAL_SKUS = [
@@ -39,11 +40,44 @@ def get_tenant_database_path(tenant_name, tenant_id):
     safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
     return f"{safe_name}_{tenant_id}.db"
 
+def get_tenant_service_announcements_db_path(tenant_id):
+    """Get the path for a tenant-specific service announcements database."""
+    return f"service_announcements_{tenant_id}.db"
+
+def find_tenant_databases(tenant_id):
+    """Find all databases related to a specific tenant.
+    
+    Returns a dictionary mapping database types to paths.
+    """
+    databases = {}
+    
+    # Look for service announcements database
+    sa_path = get_tenant_service_announcements_db_path(tenant_id)
+    if os.path.exists(sa_path):
+        databases['service_announcements'] = sa_path
+    
+    # Look for tenant database
+    tenant_db_patterns = [f"*_{tenant_id}.db", f"*{tenant_id}*.db"]
+    for pattern in tenant_db_patterns:
+        for db_path in glob.glob(pattern):
+            if 'service_announcements' not in db_path and db_path not in databases.values():
+                databases['tenant'] = db_path
+                break
+        if 'tenant' in databases:
+            break
+    
+    print(f"Found databases for tenant {tenant_id}: {databases}")
+    return databases
+
 def initialize_tenant_database(tenant):
     """Create or update the database structure for a tenant."""
     tenant_name = tenant["name"]
     tenant_id = tenant["tenantId"]
     db_path = get_tenant_database_path(tenant_name, tenant_id)
+    
+    # Also initialize the service announcements database
+    sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
+    initialize_service_announcements_db(sa_db_path)
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -109,10 +143,79 @@ def initialize_tenant_database(tenant):
         )
     """)
     
+    # Create m365_news table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS m365_news (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            published_date TEXT,
+            link TEXT,
+            summary TEXT,
+            categories TEXT,
+            fetch_date TEXT
+        )
+    """)
+    
+    # Create windows_products table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS windows_products (
+            id TEXT PRIMARY KEY,
+            name TEXT
+        )
+    """)
+    
+    # Create windows_known_issues table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS windows_known_issues (
+            id TEXT PRIMARY KEY,
+            product_id TEXT,
+            title TEXT,
+            description TEXT,
+            status TEXT,
+            start_date TEXT,
+            resolved_date TEXT,
+            web_view_url TEXT,
+            FOREIGN KEY (product_id) REFERENCES windows_products (id)
+        )
+    """)
+    
     conn.commit()
     conn.close()
     
     print(f"Initialized database for tenant: {tenant_name} (ID: {tenant_id}) at {db_path}")
+    return db_path
+
+def initialize_service_announcements_db(db_path):
+    """Create or update the service announcements database structure."""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create updates table specifically for service announcements
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS updates (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            category TEXT,
+            severity TEXT,
+            startDateTime TEXT DEFAULT '',
+            lastModifiedDateTime TEXT DEFAULT '',
+            isMajorChange TEXT,
+            actionRequiredByDateTime TEXT DEFAULT '',
+            services TEXT DEFAULT '',
+            hasAttachments BOOLEAN,
+            roadmapId TEXT DEFAULT '',
+            platform TEXT DEFAULT '',
+            status TEXT DEFAULT '',
+            lastUpdateTime TEXT DEFAULT '',
+            bodyContent TEXT DEFAULT '',
+            tags TEXT DEFAULT ''
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+    
+    print(f"Initialized service announcements database at {db_path}")
     return db_path
 
 def get_access_token(tenant):
@@ -156,3 +259,14 @@ def get_translation_table():
     except Exception as e:
         print(f"Error fetching translation table: {e}")
         return pd.DataFrame(columns=['GUID', 'Product_Display_Name'])  # Return empty DataFrame
+
+def get_tenant_details(tenant_id):
+    """Get tenant details from the tenant configuration database."""
+    conn = get_tenant_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if tenant:
+        return dict(tenant)
+    return None

@@ -5,7 +5,7 @@ import os
 import subprocess
 import importlib.util
 
-from app.database import get_db_connection, find_tenant_database
+from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
 from app.dependencies import check_dependencies, check_numpy_pandas_compatibility
 
 update_bp = Blueprint('update', __name__, url_prefix='/api')
@@ -13,6 +13,7 @@ update_bp = Blueprint('update', __name__, url_prefix='/api')
 @update_bp.route('/updates', methods=['GET'])
 def get_updates():
     tenant_id = request.args.get('tenantId')
+    source = request.args.get('source', 'message-center')  # Default to message-center
     
     # If no tenant ID is specified, return an error
     if not tenant_id:
@@ -49,11 +50,20 @@ def get_updates():
         }]), 200
     
     try:
-        # Find the tenant database - look for multiple patterns
-        tenant_db_path = find_tenant_database(tenant['tenantId'])
+        # Get all databases for this tenant
+        tenant_databases = get_all_tenant_databases(tenant['tenantId'])
         
-        # If the database doesn't exist yet, return a system message with instructions
+        # Determine which database to use based on the source parameter
+        if source == 'message-center' and 'service_announcements' in tenant_databases:
+            tenant_db_path = tenant_databases['service_announcements']
+            print(f"Using service_announcements database: {tenant_db_path}")
+        else:
+            # Fall back to the regular tenant database or any found database
+            tenant_db_path = find_tenant_database(tenant['tenantId'])
+        
+        # If no database found, return a system message
         if not tenant_db_path:
+            print(f"No database found for tenant: {tenant['name']} (ID: {tenant_id})")
             return jsonify([{
                 'id': 'db-init',
                 'title': 'No updates database found',
@@ -65,17 +75,18 @@ def get_updates():
                 'category': 'preventOrFixIssue'
             }]), 200
         
-        # If the database exists, read from it
+        # Connect to the database and fetch updates
         try:
             conn = sqlite3.connect(tenant_db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            # Check if the updates table exists - try both table names
+            # Check which table to use
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
             table_result = cursor.fetchone()
             
             if not table_result:
+                print(f"No updates or announcements table found in database: {tenant_db_path}")
                 return jsonify([])  # Return empty array if table doesn't exist
                 
             table_name = table_result['name']
@@ -137,10 +148,12 @@ def get_updates():
             return jsonify(updates)
             
         except sqlite3.Error as e:
+            error_msg = f"Database error reading from {tenant_db_path}: {str(e)}"
+            print(error_msg)
             return jsonify([{
                 'id': 'db-error',
                 'title': 'Database error',
-                'description': f'Error reading from database: {str(e)}',
+                'description': error_msg,
                 'tenantId': tenant_id,
                 'tenantName': 'System Message',
                 'publishedDate': '2023-01-01T00:00:00Z',
@@ -149,10 +162,12 @@ def get_updates():
             }]), 200
             
     except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        print(error_msg)
         return jsonify([{
             'id': 'server-error',
             'title': 'Server error',
-            'description': f'Unexpected error: {str(e)}',
+            'description': error_msg,
             'tenantId': tenant_id,
             'tenantName': 'System Message',
             'publishedDate': '2023-01-01T00:00:00Z',
@@ -160,6 +175,7 @@ def get_updates():
             'category': 'preventOrFixIssue'
         }]), 200
 
+# The rest of the API route implementations remain the same
 @update_bp.route('/fetch-updates', methods=['POST'])
 def trigger_fetch_updates():
     tenant_id = request.json.get('tenantId')
@@ -227,8 +243,7 @@ def trigger_fetch_updates():
             print(f"Running command: python fetch_updates.py {tenant_id}")
             
             # Use sys.executable to ensure we use the same Python interpreter
-            python_executable = sys.executable
-            subprocess.run([python_executable, 'fetch_updates.py', tenant_id], check=True)
+            subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
         
         return jsonify({
             'success': True,

@@ -4,7 +4,7 @@ import sqlite3
 import os
 import subprocess
 
-from app.database import get_db_connection, find_tenant_database
+from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
 from app.dependencies import check_dependencies
 
 windows_bp = Blueprint('windows', __name__, url_prefix='/api')
@@ -33,8 +33,16 @@ def get_windows_updates():
         }), 404
     
     try:
-        # Find the tenant database
-        tenant_db_path = find_tenant_database(tenant['tenantId'])
+        # Get all databases for this tenant
+        tenant_databases = get_all_tenant_databases(tenant['tenantId'])
+        
+        # Determine which database to use - prefer the tenant database for Windows updates
+        if 'tenant' in tenant_databases:
+            tenant_db_path = tenant_databases['tenant']
+            print(f"Using tenant database for Windows updates: {tenant_db_path}")
+        else:
+            # Fall back to any database found
+            tenant_db_path = find_tenant_database(tenant['tenantId'])
         
         # If the database doesn't exist yet, return a helpful message
         if not tenant_db_path:
@@ -103,15 +111,28 @@ def get_windows_updates():
             else:
                 select_fields.append("NULL as resolvedDate")
                 
+            # Check if windows_products table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_products'")
+            has_products_table = cursor.fetchone() is not None
+            
             # Build the query
-            query = f"""
-                SELECT 
-                    {', '.join(select_fields)},
-                    wp.name as productName
-                FROM windows_known_issues wi
-                LEFT JOIN windows_products wp ON wi.product_id = wp.id
-                ORDER BY wi.id DESC
-            """
+            if has_products_table:
+                query = f"""
+                    SELECT 
+                        {', '.join(select_fields)},
+                        wp.name as productName
+                    FROM windows_known_issues wi
+                    LEFT JOIN windows_products wp ON wi.product_id = wp.id
+                    ORDER BY wi.id DESC
+                """
+            else:
+                query = f"""
+                    SELECT 
+                        {', '.join(select_fields)},
+                        'Unknown Product' as productName
+                    FROM windows_known_issues wi
+                    ORDER BY wi.id DESC
+                """
             
             print(f"Executing query: {query}")
             cursor.execute(query)

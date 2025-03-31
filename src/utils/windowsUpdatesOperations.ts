@@ -1,90 +1,41 @@
 
-import { WindowsUpdate } from './types';
 import { API_URL } from './api';
+import { WindowsUpdate } from './types';
 
 // Windows Updates Operations
-export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdate[]> => {
-  if (!tenantId) {
-    console.error('No tenant ID provided for Windows updates');
-    return [];
-  }
-
+export const getWindowsUpdates = async (tenantId: string): Promise<WindowsUpdate[]> => {
   try {
-    const url = `${API_URL}/windows-updates?tenantId=${tenantId}`;
-    
-    console.log(`Fetching Windows updates from: ${url}`);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error(`Windows updates service returned an error: ${response.status} ${response.statusText}`);
-      
-      try {
-        const errorData = await response.json();
-        console.error('Error details:', errorData);
-        
-        // If the error is about missing tables or unknown columns, show a specific message
-        if (errorData.message && (
-            errorData.message.includes('no such table') || 
-            errorData.message.includes('no such column'))) {
-          console.warn('The Windows updates database tables might not exist yet. Try fetching updates first.');
-        }
-      } catch (e) {
-        console.error('Could not parse error response');
-      }
-      
-      // Return empty array to show "No updates available" instead of using mock data
+    if (!tenantId) {
+      console.error('No tenant ID provided to getWindowsUpdates');
       return [];
     }
     
-    const data = await response.json();
-    console.log(`Received ${data.length} Windows updates for tenant ID: ${tenantId}`);
-    console.log('Raw Windows update data from API:', data); // Debug: log all data
-    if (data.length > 0) {
-      console.log('Sample Windows update item fields:', Object.keys(data[0])); // Debug: log the fields
-    } else {
-      console.log('No Windows updates found in the response');
+    console.log(`Fetching Windows updates for tenant: ${tenantId}`);
+    const response = await fetch(`${API_URL}/windows-updates?tenantId=${tenantId}`);
+    
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      console.error(`Error fetching Windows updates: ${response.status} ${errorMessage}`);
+      return [];
     }
     
-    // Map the data to ensure all fields are properly handled
-    // This handles different field naming conventions from the API or database
-    const mappedUpdates = data.map((update: any) => ({
-      id: update.id || '',
-      tenantId: tenantId || update.tenantId || update.tenant_id || '',
-      productId: update.productId || update.product_id || '',
-      productName: update.productName || update.product_name || update.name || '',
-      title: update.title || '',
-      description: update.description || '',
-      webViewUrl: update.webViewUrl || update.web_view_url || '',
-      status: update.status || '',
-      startDate: update.startDate || update.start_date || update.startDateTime || '',
-      resolvedDate: update.resolvedDate || update.resolved_date || update.resolvedDateTime || ''
-    }));
-    
-    // Sort updates by startDate in descending order (newest first)
-    return mappedUpdates.sort((a, b) => {
-      // Convert dates to timestamps for comparison
-      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-      
-      // Sort in descending order (newest first)
-      return dateB - dateA;
-    });
+    const updates: WindowsUpdate[] = await response.json();
+    console.log(`Retrieved ${updates.length} Windows updates:`, updates);
+    return updates;
   } catch (error) {
-    console.error('Error fetching Windows updates:', error);
-    // Return empty array to show "No updates available" instead of using mock data
+    console.error('Error in getWindowsUpdates:', error);
     return [];
   }
 };
 
 export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> => {
-  if (!tenantId) {
-    console.error('No tenant ID provided for fetching Windows updates');
-    return false;
-  }
-  
   try {
-    console.log(`Triggering fetch-windows-updates for tenant: ${tenantId}`);
+    if (!tenantId) {
+      console.error('No tenant ID provided to fetchWindowsUpdates');
+      return false;
+    }
+    
+    console.log(`Triggering Windows updates fetch for tenant: ${tenantId}`);
     const response = await fetch(`${API_URL}/fetch-windows-updates`, {
       method: 'POST',
       headers: {
@@ -94,17 +45,16 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Error fetching Windows updates:', errorData);
-      throw new Error(errorData.message || 'Failed to fetch Windows updates');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error response:', errorData);
+      throw new Error(`Error triggering Windows updates fetch: ${response.statusText}`);
     }
     
     const result = await response.json();
-    console.log('Fetch Windows updates response:', result);
-    
+    console.log('Windows updates fetch result:', result);
     return true;
   } catch (error) {
-    console.error('Error triggering Windows update fetch:', error);
+    console.error('Error in fetchWindowsUpdates:', error);
     return false;
   }
 };

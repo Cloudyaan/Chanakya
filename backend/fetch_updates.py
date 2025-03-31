@@ -14,7 +14,10 @@ except ImportError:
 
 from tenant_db_manager import (
     fetch_tenants, initialize_tenant_database, 
-    get_access_token, get_tenant_database_path
+    get_access_token, get_tenant_database_path,
+    get_tenant_service_announcements_db_path,
+    initialize_service_announcements_db,
+    get_tenant_details
 )
 
 def fetch_data_for_tenant(tenant):
@@ -30,8 +33,12 @@ def fetch_data_for_tenant(tenant):
         print(f"Failed to get access token for tenant: {tenant_name}")
         return False
     
-    # Initialize the tenant database
+    # Initialize both databases
+    # 1. Regular tenant database
     db_path = initialize_tenant_database(tenant)
+    # 2. Service announcements database
+    sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
+    initialize_service_announcements_db(sa_db_path)
     
     # Endpoint for message center announcements
     ENDPOINT = "https://graph.microsoft.com/beta/admin/serviceAnnouncement/messages?$top=1000"
@@ -69,9 +76,9 @@ def fetch_data_for_tenant(tenant):
             print(f"Total messages retrieved: {len(messages)}")
             return messages
 
-        def insert_update(data):
-            """Inserts or updates data into SQLite updates table."""
-            conn = sqlite3.connect(db_path)
+        def insert_update(data, database_path):
+            """Inserts or updates data into SQLite updates table in the specified database."""
+            conn = sqlite3.connect(database_path)
             cursor = conn.cursor()
 
             # Transform isMajorChange to "MajorChange" or "Not MajorChange"
@@ -142,16 +149,19 @@ def fetch_data_for_tenant(tenant):
                                 announcement_data["status"] = feature.get("Status", "")
                                 announcement_data["lastUpdateTime"] = feature.get("LastUpdateTime", "")
 
-                                # Store each platform-status combination
-                                insert_update(announcement_data)
+                                # Store each platform-status combination in both databases
+                                insert_update(announcement_data, db_path)
+                                insert_update(announcement_data, sa_db_path)
                     except json.JSONDecodeError:
                         print(f"Error decoding FeatureStatusJson for message ID: {message.get('id', 'N/A')}")
                         # Insert the message anyway without the feature status data
-                        insert_update(announcement_data)
+                        insert_update(announcement_data, db_path)
+                        insert_update(announcement_data, sa_db_path)
 
             # Insert the base message even if FeatureStatusJson is missing
             if not any(detail["name"] == "FeatureStatusJson" for detail in message.get("details", [])):
-                insert_update(announcement_data)
+                insert_update(announcement_data, db_path)
+                insert_update(announcement_data, sa_db_path)
 
         print(f"Completed processing for tenant: {tenant_name}")
         return True
@@ -164,12 +174,11 @@ def main():
     # Process specific tenant if provided as argument
     if len(sys.argv) > 1:
         tenant_id = sys.argv[1]
-        tenants = fetch_tenants()
-        matching_tenant = next((t for t in tenants if t['id'] == tenant_id), None)
+        tenant = get_tenant_details(tenant_id)
         
-        if matching_tenant:
-            print(f"Processing single tenant: {matching_tenant['name']}")
-            fetch_data_for_tenant(matching_tenant)
+        if tenant:
+            print(f"Processing single tenant: {tenant['name']}")
+            fetch_data_for_tenant(tenant)
         else:
             print(f"No tenant found with ID: {tenant_id}")
     else:

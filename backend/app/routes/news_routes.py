@@ -5,7 +5,7 @@ import json
 import subprocess
 import os
 
-from app.database import get_db_connection, find_tenant_database
+from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
 
 news_bp = Blueprint('news', __name__, url_prefix='/api')
 
@@ -33,8 +33,16 @@ def get_m365_news():
         }), 404
     
     try:
-        # Find the tenant database
-        tenant_db_path = find_tenant_database(tenant['tenantId'])
+        # Get all databases for this tenant
+        tenant_databases = get_all_tenant_databases(tenant['tenantId'])
+        
+        # Determine which database to use - prefer the tenant database for news
+        if 'tenant' in tenant_databases:
+            tenant_db_path = tenant_databases['tenant']
+            print(f"Using tenant database for news: {tenant_db_path}")
+        else:
+            # Fall back to any database found
+            tenant_db_path = find_tenant_database(tenant['tenantId'])
         
         if not tenant_db_path:
             print(f"No database found for tenant {tenant['name']} (ID: {tenant_id})")

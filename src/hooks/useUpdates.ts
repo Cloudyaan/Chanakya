@@ -1,50 +1,52 @@
 
 import { useState, useEffect } from 'react';
-import { getTenantUpdates, fetchTenantUpdates } from '@/utils/database';
+import { getTenantUpdates, fetchTenantUpdates } from '@/utils/messageCenterOperations';
 import { TenantUpdate } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 export const useUpdates = (tenantId: string | null) => {
-  const [updates, setUpdates] = useState<TenantUpdate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
+  // Use React Query for better data fetching and caching
+  const {
+    data: updates = [],
+    isLoading,
+    refetch: refreshData,
+    error
+  } = useQuery<TenantUpdate[]>({
+    queryKey: ['updates', tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
+      console.log(`Fetching updates for tenant: ${tenantId}`);
+      return await getTenantUpdates(tenantId);
+    },
+    enabled: !!tenantId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    retry: 2
+  });
+
+  // Debugging log
   useEffect(() => {
-    if (tenantId) {
-      fetchUpdates(tenantId);
-    }
-  }, [tenantId]);
-
-  const fetchUpdates = async (tenantId: string) => {
-    setIsLoading(true);
-    
-    try {
-      const updateData = await getTenantUpdates(tenantId);
-      setUpdates(updateData);
-    } catch (error) {
+    console.log("useUpdates hook - received updates:", updates);
+    if (error) {
       console.error("Error fetching updates:", error);
-      toast({
-        title: "Error loading updates",
-        description: "Could not load update information",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  const refreshData = () => {
-    if (tenantId) {
-      fetchUpdates(tenantId);
-    }
-  };
+  }, [updates, error]);
 
   const fetchUpdateData = async () => {
     if (!tenantId) return;
     
     setIsFetching(true);
     try {
+      toast({
+        title: "Fetching updates...",
+        description: "Requesting update data from Microsoft Graph API",
+        variant: "default",
+      });
+      
       const success = await fetchTenantUpdates(tenantId);
       
       if (success) {
@@ -54,8 +56,10 @@ export const useUpdates = (tenantId: string | null) => {
           variant: "default",
         });
         
+        // Wait a moment to allow the backend to process the data
         setTimeout(() => {
           refreshData();
+          setIsFetching(false);
         }, 2000);
       } else {
         toast({
@@ -63,6 +67,7 @@ export const useUpdates = (tenantId: string | null) => {
           description: "Could not fetch update data from Microsoft Graph API",
           variant: "destructive",
         });
+        setIsFetching(false);
       }
     } catch (error) {
       console.error("Error triggering update fetch:", error);
@@ -71,7 +76,6 @@ export const useUpdates = (tenantId: string | null) => {
         description: "Failed to trigger update data fetch",
         variant: "destructive",
       });
-    } finally {
       setIsFetching(false);
     }
   };

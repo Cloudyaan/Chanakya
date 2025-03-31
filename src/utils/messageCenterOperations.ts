@@ -11,7 +11,7 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
     }
     
     // Build the URL with the tenantId
-    const url = `${API_URL}/updates?tenantId=${tenantId}`;
+    const url = `${API_URL}/updates?tenantId=${tenantId}&source=message-center`;
     
     console.log(`Fetching tenant updates from: ${url}`);
     
@@ -35,7 +35,7 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
     
     // If response is OK, parse and return the data
     const data = await response.json();
-    console.log(`Received ${data.length} updates for tenant ID: ${tenantId}`);
+    console.log(`Received ${data.length} message center updates for tenant ID: ${tenantId}`);
     return data;
   } catch (error) {
     console.error('Error fetching tenant updates:', error);
