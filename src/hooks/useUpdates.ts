@@ -37,7 +37,14 @@ export const useUpdates = (tenantId: string | null) => {
   }, [updates, error]);
 
   const fetchUpdateData = async () => {
-    if (!tenantId) return;
+    if (!tenantId) {
+      toast({
+        title: "Error",
+        description: "No tenant selected. Please select a tenant first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsFetching(true);
     try {
@@ -69,11 +76,11 @@ export const useUpdates = (tenantId: string | null) => {
         });
         setIsFetching(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error triggering update fetch:", error);
       toast({
         title: "Error",
-        description: "Failed to trigger update data fetch",
+        description: error.message || "Failed to trigger update data fetch",
         variant: "destructive",
       });
       setIsFetching(false);

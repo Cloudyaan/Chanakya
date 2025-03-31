@@ -167,6 +167,9 @@ def get_windows_updates():
 @windows_bp.route('/fetch-windows-updates', methods=['POST'])
 def trigger_fetch_windows_updates():
     tenant_id = request.json.get('tenantId')
+    skip_database_creation = request.json.get('skipDatabaseCreation', False)
+    force_use_existing_database = request.json.get('forceUseExistingDatabase', False)
+    use_existing_databases = request.json.get('useExistingDatabases', False)
     
     if not tenant_id:
         return jsonify({
@@ -196,10 +199,20 @@ def trigger_fetch_windows_updates():
     try:
         # On Windows, run the batch file
         if os.name == 'nt':
-            subprocess.run(['fetch_windows_updates.bat', tenant_id], check=True)
+            # Add flags to command line arguments
+            cmd_args = ['fetch_windows_updates.bat', tenant_id]
+            if skip_database_creation or force_use_existing_database or use_existing_databases:
+                cmd_args.append('--use-existing-db')
+                
+            subprocess.run(cmd_args, check=True)
         else:
             # On non-Windows, run the Python script directly
-            subprocess.run(['python', 'fetch_windows_updates.py', tenant_id], check=True)
+            # Add flags to command line arguments
+            cmd_args = ['python', 'fetch_windows_updates.py', tenant_id]
+            if skip_database_creation or force_use_existing_database or use_existing_databases:
+                cmd_args.append('--use-existing-db')
+                
+            subprocess.run(cmd_args, check=True)
         
         return jsonify({
             'success': True,

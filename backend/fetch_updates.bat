@@ -25,6 +25,7 @@ if %ERRORLEVEL% NEQ 0 (
     pip install --force-reinstall pandas
 )
 
+REM Pass all command line arguments to the Python script  
 python fetch_updates.py %*
 
 echo.
