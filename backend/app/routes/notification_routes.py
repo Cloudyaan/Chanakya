@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 import sqlite3
 import json
@@ -952,4 +953,151 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False)
         
         # Parse JSON fields
         try:
-            tenants = json.loads(
+            tenants = json.loads(setting_dict['tenants'])
+            update_types = json.loads(setting_dict['update_types'])
+            
+            setting_dict['tenants'] = tenants
+            setting_dict['update_types'] = update_types
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"Error parsing JSON fields: {e}")
+            results.append({
+                "id": setting_dict['id'],
+                "success": False,
+                "message": f"Error parsing notification settings: {str(e)}"
+            })
+            continue
+        
+        # Get updates for each tenant
+        all_updates = {
+            'message_center': {},
+            'windows_updates': {},
+            'm365_news': {}
+        }
+        
+        updates_found = False
+        
+        for tenant_id in tenants:
+            # Get appropriate updates based on update types
+            if 'message-center' in update_types:
+                message_center_updates = fetch_message_center_updates(tenant_id, days=7)
+                if message_center_updates:
+                    updates_found = True
+                    all_updates['message_center'][tenant_id] = message_center_updates
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching message center updates")
+                    all_updates['message_center'][tenant_id] = []
+            
+            if 'windows-updates' in update_types:
+                windows_updates = fetch_windows_updates(tenant_id, days=7)
+                if windows_updates:
+                    updates_found = True
+                    all_updates['windows_updates'][tenant_id] = windows_updates
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching Windows updates")
+                    all_updates['windows_updates'][tenant_id] = []
+            
+            if 'news' in update_types:
+                m365_news = fetch_m365_news(tenant_id, days=7)
+                if m365_news:
+                    updates_found = True
+                    all_updates['m365_news'][tenant_id] = m365_news
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching M365 news")
+                    all_updates['m365_news'][tenant_id] = []
+        
+        if use_existing_databases and not updates_found:
+            print(f"No updates found for notification {setting_dict['id']} and using existing databases only")
+            results.append({
+                "id": setting_dict['id'],
+                "success": False,
+                "message": "No updates found using existing databases only"
+            })
+            continue
+        
+        if not updates_found:
+            print(f"No updates found for notification {setting_dict['id']}")
+            results.append({
+                "id": setting_dict['id'],
+                "success": False,
+                "message": "No updates found"
+            })
+            continue
+        
+        # Create email content
+        email_html = create_email_html(setting_dict, all_updates)
+        
+        # Send email
+        subject = f"Microsoft 365 {setting_dict['frequency']} Update Summary"
+        
+        email_sent = send_email_with_ms_graph(
+            recipient=setting_dict['email'],
+            subject=subject,
+            html_content=email_html
+        )
+        
+        results.append({
+            "id": setting_dict['id'],
+            "success": email_sent,
+            "message": "Email sent successfully" if email_sent else "Failed to send email"
+        })
+    
+    return {"success": True, "results": results}
+
+@notification_bp.route('/send-notification', methods=['POST'])
+def send_notification():
+    """Send a notification immediately"""
+    data = request.json or {}
+    setting_id = data.get('id')
+    use_existing_databases = data.get('useExistingDatabases', False)
+    
+    if not setting_id:
+        return jsonify({"error": "No notification setting ID provided"}), 400
+    
+    result = process_and_send_notification(setting_id, use_existing_databases)
+    return jsonify(result)
+
+# Start the notification scheduler thread
+def run_notification_scheduler():
+    """Run the notification scheduler thread"""
+    print("Starting notification scheduler...")
+    
+    while True:
+        try:
+            # Check for notifications that need to be sent
+            now = datetime.now()
+            print(f"Running scheduled notifications at {now.isoformat()}")
+            
+            conn = get_db_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Get all notification settings
+            cursor.execute('SELECT * FROM notification_settings')
+            settings = cursor.fetchall()
+            
+            conn.close()
+            
+            # Process each setting
+            for setting in settings:
+                frequency = setting['frequency']
+                
+                # Send notifications based on frequency
+                if frequency == 'Daily' and now.hour == 9:  # 9 AM daily
+                    process_and_send_notification(setting['id'])
+                
+                elif frequency == 'Weekly' and now.weekday() == 0 and now.hour == 9:  # Monday at 9 AM
+                    process_and_send_notification(setting['id'])
+                
+                elif frequency == 'Monthly' and now.day == 1 and now.hour == 9:  # 1st day of month at 9 AM
+                    process_and_send_notification(setting['id'])
+            
+        except Exception as e:
+            print(f"Error in notification scheduler: {e}")
+        
+        # Sleep for an hour before checking again
+        time.sleep(3600)
+
+# Start the scheduler in a background thread
+scheduler_thread = threading.Thread(target=run_notification_scheduler)
+scheduler_thread.daemon = True
+scheduler_thread.start()

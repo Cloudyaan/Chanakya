@@ -2,65 +2,31 @@
 import { API_URL } from './api';
 import { NotificationSetting } from './types';
 
-// Helper function to ensure arrays are properly handled
-const ensureArray = (value: any): string[] => {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  return [];
-};
-
-// Helper to normalize legacy 'Monthly' frequency to 'Weekly'
-const normalizeFrequency = (frequency: string): 'Daily' | 'Weekly' => {
-  return (frequency === 'Monthly') ? 'Weekly' : (frequency as 'Daily' | 'Weekly');
-};
-
+// Function to get all notification settings
 export const getNotificationSettings = async (tenantId?: string): Promise<NotificationSetting[]> => {
   try {
-    const url = tenantId 
-      ? `${API_URL}/notification-settings?tenantId=${tenantId}`
-      : `${API_URL}/notification-settings`;
-      
-    console.log(`Fetching notification settings from: ${url}`);
+    let url = `${API_URL}/notification-settings`;
+    if (tenantId) {
+      url += `?tenantId=${tenantId}`;
+    }
+    
     const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`Error fetching notification settings: ${response.statusText}`);
     }
     
-    const settings = await response.json();
-    console.log(`Retrieved ${settings.length} notification settings`);
-    
-    // Ensure tenants, update_types, and frequency are properly normalized
-    return settings.map((setting: any): NotificationSetting => ({
-      ...setting,
-      tenants: ensureArray(setting.tenants),
-      update_types: ensureArray(setting.update_types),
-      frequency: normalizeFrequency(setting.frequency)
-    }));
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error in getNotificationSettings:', error);
     return [];
   }
 };
 
-export const addNotificationSetting = async (
-  setting: {
-    name: string;
-    email: string;
-    tenants: string[];
-    update_types: string[];
-    frequency: 'Daily' | 'Weekly';
-  }
-): Promise<{ success: boolean; id?: string; message: string }> => {
+// Function to add a new notification setting
+export const addNotificationSetting = async (setting: Omit<NotificationSetting, 'id' | 'created_at' | 'updated_at'>): Promise<{ id: string } | null> => {
   try {
-    console.log('Adding notification setting:', setting);
     const response = await fetch(`${API_URL}/notification-settings`, {
       method: 'POST',
       headers: {
@@ -69,92 +35,54 @@ export const addNotificationSetting = async (
       body: JSON.stringify(setting),
     });
     
-    const result = await response.json();
-    
     if (!response.ok) {
-      throw new Error(result.message || result.error || 'Failed to add notification setting');
+      throw new Error(`Error adding notification setting: ${response.statusText}`);
     }
     
-    console.log('Add notification setting result:', result);
-    return {
-      success: true,
-      id: result.id,
-      message: result.message
-    };
-  } catch (error: any) {
+    const data = await response.json();
+    return data;
+  } catch (error) {
     console.error('Error in addNotificationSetting:', error);
-    return {
-      success: false,
-      message: error.message || 'An error occurred while adding the notification setting'
-    };
+    return null;
   }
 };
 
-export const updateNotificationSetting = async (
-  id: string,
-  updates: Partial<Omit<NotificationSetting, 'id' | 'name' | 'email' | 'created_at' | 'updated_at'>>
-): Promise<{ success: boolean; message: string }> => {
+// Function to update an existing notification setting
+export const updateNotificationSetting = async (id: string, setting: Partial<NotificationSetting>): Promise<boolean> => {
   try {
-    console.log(`Updating notification setting ${id}:`, updates);
     const response = await fetch(`${API_URL}/notification-settings/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(setting),
     });
     
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.message || result.error || 'Failed to update notification setting');
-    }
-    
-    console.log('Update notification setting result:', result);
-    return {
-      success: true,
-      message: result.message
-    };
-  } catch (error: any) {
+    return response.ok;
+  } catch (error) {
     console.error('Error in updateNotificationSetting:', error);
-    return {
-      success: false,
-      message: error.message || 'An error occurred while updating the notification setting'
-    };
+    return false;
   }
 };
 
-export const deleteNotificationSetting = async (id: string): Promise<{ success: boolean; message: string }> => {
+// Function to delete a notification setting
+export const deleteNotificationSetting = async (id: string): Promise<boolean> => {
   try {
-    console.log(`Deleting notification setting ${id}`);
     const response = await fetch(`${API_URL}/notification-settings/${id}`, {
       method: 'DELETE',
     });
     
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.message || result.error || 'Failed to delete notification setting');
-    }
-    
-    console.log('Delete notification setting result:', result);
-    return {
-      success: true,
-      message: result.message
-    };
-  } catch (error: any) {
+    return response.ok;
+  } catch (error) {
     console.error('Error in deleteNotificationSetting:', error);
-    return {
-      success: false,
-      message: error.message || 'An error occurred while deleting the notification setting'
-    };
+    return false;
   }
 };
 
 // Function to send a notification immediately
-export const sendNotificationNow = async (id: string): Promise<{ success: boolean; message: string; results?: any[] }> => {
+export const sendNotification = async (id: string): Promise<boolean> => {
   try {
-    console.log(`Sending notification ${id} now`);
+    console.log(`Sending notification ${id} with useExistingDatabases=true`);
     const response = await fetch(`${API_URL}/send-notification`, {
       method: 'POST',
       headers: {
@@ -162,28 +90,19 @@ export const sendNotificationNow = async (id: string): Promise<{ success: boolea
       },
       body: JSON.stringify({ 
         id,
-        useExistingDatabases: true, // Flag to tell backend not to create new databases
-        skipDatabaseCreation: true  // Additional flag for legacy code support
+        useExistingDatabases: true 
       }),
     });
     
-    const result = await response.json();
-    
     if (!response.ok) {
-      throw new Error(result.message || result.error || 'Failed to send notification');
+      const errorText = await response.text();
+      console.error('Error response from send-notification:', errorText);
+      return false;
     }
     
-    console.log('Send notification result:', result);
-    return {
-      success: true,
-      message: result.message,
-      results: result.results
-    };
-  } catch (error: any) {
-    console.error('Error in sendNotificationNow:', error);
-    return {
-      success: false,
-      message: error.message || 'An error occurred while sending the notification'
-    };
+    return true;
+  } catch (error) {
+    console.error('Error in sendNotification:', error);
+    return false;
   }
 };
