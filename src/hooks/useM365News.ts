@@ -32,7 +32,7 @@ export const useM365News = (tenantId: string | null) => {
     }
   }, [newsItems, error]);
 
-  // Filter to get only items from the last 10 days (changed from 30)
+  // Filter to get only items from the last 10 days
   const recentNewsItems = newsItems.filter(item => {
     if (!item.published_date) return false;
     

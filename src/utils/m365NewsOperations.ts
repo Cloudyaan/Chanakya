@@ -12,7 +12,7 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
     }
     
     const news: M365News[] = await response.json();
-    console.log(`Retrieved ${news.length} M365 news items:`, news);
+    console.log(`Retrieved ${news.length} M365 news items`);
     
     // Handle possible issues with news item structure
     return news.map(item => ({
