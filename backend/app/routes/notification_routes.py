@@ -1,4 +1,3 @@
-
 from flask import Blueprint, request, jsonify
 import sqlite3
 import json
@@ -257,7 +256,54 @@ def fetch_message_center_updates(tenant_id, days=1):
     db_path = find_tenant_database(tenant_id)
     if not db_path:
         print(f"No database found for tenant ID: {tenant_id}")
-        return []
+        # Create an empty database file if it doesn't exist to prevent errors
+        tenant_conn = get_db_connection()
+        tenant_data = tenant_conn.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+        tenant_conn.close()
+        
+        if tenant_data:
+            tenant_name = tenant_data['name']
+            db_path = f"service_announcements_{tenant_id}.db"
+            print(f"Creating new empty database for tenant {tenant_name}: {db_path}")
+            
+            # Create a minimal database with required tables
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS updates (
+                    id TEXT PRIMARY KEY,
+                    title TEXT,
+                    category TEXT,
+                    severity TEXT,
+                    startDateTime TEXT,
+                    lastModifiedDateTime TEXT,
+                    isMajorChange TEXT,
+                    actionRequiredByDateTime TEXT,
+                    services TEXT,
+                    hasAttachments BOOLEAN,
+                    roadmapId TEXT,
+                    platform TEXT, 
+                    status TEXT,
+                    lastUpdateTime TEXT,
+                    bodyContent TEXT,
+                    tags TEXT
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS m365_news (
+                    id TEXT PRIMARY KEY,
+                    title TEXT,
+                    published_date TEXT,
+                    link TEXT,
+                    summary TEXT,
+                    categories TEXT,
+                    fetch_date TEXT
+                )
+            ''')
+            conn.commit()
+            conn.close()
+        else:
+            return []
     
     try:
         conn = sqlite3.connect(db_path)
@@ -308,7 +354,41 @@ def fetch_windows_updates(tenant_id, days=1):
     db_path = find_tenant_database(tenant_id)
     if not db_path:
         print(f"No database found for tenant ID: {tenant_id}")
-        return []
+        # Create an empty database file if it doesn't exist to prevent errors
+        tenant_conn = get_db_connection()
+        tenant_data = tenant_conn.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+        tenant_conn.close()
+        
+        if tenant_data:
+            tenant_name = tenant_data['name']
+            db_path = f"service_announcements_{tenant_id}.db"
+            print(f"Creating new empty database for tenant {tenant_name}: {db_path}")
+            
+            # Create a minimal database with required tables
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS windows_known_issues (
+                    id TEXT PRIMARY KEY,
+                    product_id TEXT,
+                    title TEXT,
+                    description TEXT,
+                    webViewUrl TEXT,
+                    status TEXT,
+                    start_date TEXT,
+                    resolved_date TEXT
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS windows_products (
+                    id TEXT PRIMARY KEY,
+                    name TEXT
+                )
+            ''')
+            conn.commit()
+            conn.close()
+        else:
+            return []
     
     try:
         conn = sqlite3.connect(db_path)
@@ -346,7 +426,34 @@ def fetch_m365_news(tenant_id, days=1):
     db_path = find_tenant_database(tenant_id)
     if not db_path:
         print(f"No database found for tenant ID: {tenant_id}")
-        return []
+        # Create an empty database file if it doesn't exist to prevent errors
+        tenant_conn = get_db_connection()
+        tenant_data = tenant_conn.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+        tenant_conn.close()
+        
+        if tenant_data:
+            tenant_name = tenant_data['name']
+            db_path = f"service_announcements_{tenant_id}.db"
+            print(f"Creating new empty database for tenant {tenant_name}: {db_path}")
+            
+            # Create a minimal database with required tables
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS m365_news (
+                    id TEXT PRIMARY KEY,
+                    title TEXT,
+                    published_date TEXT,
+                    link TEXT,
+                    summary TEXT,
+                    categories TEXT,
+                    fetch_date TEXT
+                )
+            ''')
+            conn.commit()
+            conn.close()
+        else:
+            return []
     
     try:
         conn = sqlite3.connect(db_path)

@@ -21,10 +21,12 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
       published_date: item.published_date || new Date().toISOString(),
       link: item.link || '',
       summary: item.summary || '',
-      categories: Array.isArray(item.categories) ? item.categories : [],
+      categories: Array.isArray(item.categories) ? item.categories : 
+                (typeof item.categories === 'string' ? 
+                  (JSON.parse(item.categories as any) || []) : []),
       tenantId: item.tenantId || tenantId,
       tenantName: item.tenantName || 'Unknown Tenant',
-      fetch_date: item.fetch_date || new Date().toISOString() // Add the missing fetch_date property
+      fetch_date: item.fetch_date || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error in getM365News:', error);
