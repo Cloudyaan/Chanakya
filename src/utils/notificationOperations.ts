@@ -72,7 +72,7 @@ export const addNotificationSetting = async (
     const result = await response.json();
     
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to add notification setting');
+      throw new Error(result.message || result.error || 'Failed to add notification setting');
     }
     
     console.log('Add notification setting result:', result);
@@ -107,7 +107,7 @@ export const updateNotificationSetting = async (
     const result = await response.json();
     
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to update notification setting');
+      throw new Error(result.message || result.error || 'Failed to update notification setting');
     }
     
     console.log('Update notification setting result:', result);
@@ -134,7 +134,7 @@ export const deleteNotificationSetting = async (id: string): Promise<{ success: 
     const result = await response.json();
     
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to delete notification setting');
+      throw new Error(result.message || result.error || 'Failed to delete notification setting');
     }
     
     console.log('Delete notification setting result:', result);
@@ -151,7 +151,7 @@ export const deleteNotificationSetting = async (id: string): Promise<{ success: 
   }
 };
 
-// New function to send a notification immediately
+// Function to send a notification immediately
 export const sendNotificationNow = async (id: string): Promise<{ success: boolean; message: string; results?: any[] }> => {
   try {
     console.log(`Sending notification ${id} now`);
@@ -166,7 +166,7 @@ export const sendNotificationNow = async (id: string): Promise<{ success: boolea
     const result = await response.json();
     
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to send notification');
+      throw new Error(result.message || result.error || 'Failed to send notification');
     }
     
     console.log('Send notification result:', result);
