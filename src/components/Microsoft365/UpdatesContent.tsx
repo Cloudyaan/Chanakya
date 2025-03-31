@@ -85,6 +85,10 @@ const UpdatesContent = ({
             <UpdatesTable 
               updates={regularUpdates}
               onUpdateClick={onUpdateClick}
+              onRefresh={onFetchUpdates}
+              isLoading={isLoading}
+              isFetching={isFetching}
+              onFetch={onFetchUpdates}
             />
           ) : !hasSystemMessage && (
             <UpdatesEmptyState
