@@ -18,7 +18,12 @@ export const useM365News = (tenantId: string | null) => {
     queryFn: () => (tenantId ? getM365News(tenantId) : Promise.resolve([])),
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    retry: 2,
   });
+
+  // Console log for debugging
+  console.log("useM365News hook - received news items:", newsItems);
 
   // Filter to get only items from the last 10 days
   const recentNewsItems = newsItems.filter(item => {
@@ -60,6 +65,7 @@ export const useM365News = (tenantId: string | null) => {
   // Refresh data when tenantId changes
   useEffect(() => {
     if (tenantId) {
+      console.log("Tenant ID changed, refreshing M365 news data");
       refreshData();
     }
   }, [tenantId, refreshData]);

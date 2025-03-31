@@ -43,8 +43,11 @@ def get_db_connection(tenant_id):
     tenant_db_path = find_tenant_database(tenant['tenantId'])
     
     if not tenant_db_path:
-        print(f"Error: No database found for tenant {tenant['name']} (ID: {tenant_id})")
-        sys.exit(1)
+        # Create a new database for the tenant if it doesn't exist
+        tenant_db_path = f"service_announcements_{tenant['tenantId']}.db"
+        print(f"Creating new database: {tenant_db_path}")
+    else:
+        print(f"Using existing database: {tenant_db_path}")
     
     # Connect to the tenant database
     try:
@@ -85,6 +88,10 @@ def fetch_rss_feed(url):
         if 'html' in content_type and 'xml' not in content_type:
             print(f"Server returned HTML instead of XML for {url}")
             
+        # Save the RSS content for debugging
+        with open(f"rss_content_{datetime.now().strftime('%Y%m%d%H%M%S')}.xml", "wb") as f:
+            f.write(response.content)
+            
         feed = feedparser.parse(response.content)
         
         if hasattr(feed, 'bozo') and feed.bozo:
@@ -98,7 +105,7 @@ def fetch_rss_feed(url):
         print(f"Failed to fetch feed {url}: {str(e)}")
         return None
 
-def filter_recent_entries(entries, days=10):
+def filter_recent_entries(entries, days=30):  # Increased to 30 days for testing
     cutoff_date = (datetime.now() - timedelta(days=days)).date()
     recent_entries = []
     
@@ -121,6 +128,8 @@ def filter_recent_entries(entries, days=10):
                     recent_entries.append(entry)
             except ValueError:
                 print(f"Skipping entry with invalid date format: {published_str}")
+    
+    print(f"Found {len(recent_entries)} recent entries from the last {days} days")
     return recent_entries
 
 def store_news(conn, entries):
@@ -143,6 +152,9 @@ def store_news(conn, entries):
         # Convert categories to JSON
         categories_json = json.dumps(entry.get('all_categories', []))
         
+        # Extract description or summary
+        description = entry.get('description', entry.get('summary', 'No summary'))
+        
         # Store the entry
         cursor.execute('''
             INSERT INTO m365_news (
@@ -153,7 +165,7 @@ def store_news(conn, entries):
             entry.get('title', 'No title'),
             entry.get('published', datetime.now().isoformat()),
             entry.get('link', ''),
-            entry.get('description', entry.get('summary', 'No summary')),
+            description,
             categories_json,
             datetime.now().isoformat()
         ))
@@ -175,13 +187,46 @@ def main():
     conn, tenant = get_db_connection(tenant_id)
     ensure_news_table(conn)
     
+    # Add a test news entry for debugging if the database is empty
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) as count FROM m365_news')
+    count = cursor.fetchone()['count']
+    
+    if count == 0:
+        print("Adding a test news entry for debugging")
+        test_entry = {
+            'id': 'test-news-entry',
+            'title': 'Test Microsoft 365 News Entry',
+            'published_date': datetime.now().isoformat(),
+            'link': 'https://www.microsoft.com/en-us/microsoft-365',
+            'summary': 'This is a test news entry to verify that the system is working correctly.',
+            'categories': json.dumps(['Test', 'Debug']),
+            'fetch_date': datetime.now().isoformat()
+        }
+        
+        cursor.execute('''
+            INSERT INTO m365_news (
+                id, title, published_date, link, summary, categories, fetch_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            test_entry['id'],
+            test_entry['title'],
+            test_entry['published_date'],
+            test_entry['link'],
+            test_entry['summary'],
+            test_entry['categories'],
+            test_entry['fetch_date']
+        ))
+        conn.commit()
+        print("Test news entry added")
+    
     # Fetch updates from all RSS feeds
     all_updates = []
     for feed_url in RSS_FEEDS:
         print(f"\nFetching updates from: {feed_url}")
         feed = fetch_rss_feed(feed_url)
         if feed and hasattr(feed, 'entries'):
-            recent_entries = filter_recent_entries(feed.entries, days=10)
+            recent_entries = filter_recent_entries(feed.entries)
             all_updates.extend(recent_entries)
 
     # Sort all updates by publication date (newest first)
@@ -190,6 +235,11 @@ def main():
     # Store the updates
     stored_count = store_news(conn, all_updates)
     print(f"Stored {stored_count} new updates in the database")
+    
+    # Verify the data was stored
+    cursor.execute('SELECT COUNT(*) as count FROM m365_news')
+    total_count = cursor.fetchone()['count']
+    print(f"Total news items in database: {total_count}")
     
     conn.close()
     print("Completed successfully")

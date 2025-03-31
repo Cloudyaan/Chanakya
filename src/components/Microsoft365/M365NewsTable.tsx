@@ -35,6 +35,7 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
       const date = new Date(dateString);
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (e) {
+      console.error('Error formatting date:', e);
       return dateString || 'N/A';
     }
   };
@@ -102,16 +103,16 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {news.map((item) => (
+        {news.map((item, index) => (
           <div 
-            key={item.id} 
+            key={item.id || `news-item-${index}`} 
             className="border p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => openExternalLink(item.link)}
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
                 <h3 className="text-lg font-medium flex items-center gap-1 text-blue-600 hover:underline">
-                  {item.title}
+                  {item.title || "Untitled News Item"}
                   <ExternalLink size={14} />
                 </h3>
                 
@@ -121,15 +122,22 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {Array.isArray(item.categories) && item.categories.map((category, index) => (
-                    <Badge key={index} variant="outline" className="flex gap-1 items-center bg-blue-50 text-blue-700 border-blue-200">
+                  {Array.isArray(item.categories) && item.categories.length > 0 ? (
+                    item.categories.map((category, i) => (
+                      <Badge key={i} variant="outline" className="flex gap-1 items-center bg-blue-50 text-blue-700 border-blue-200">
+                        <Tag size={10} />
+                        {category}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="flex gap-1 items-center bg-gray-50 text-gray-700 border-gray-200">
                       <Tag size={10} />
-                      {category}
+                      Uncategorized
                     </Badge>
-                  ))}
+                  )}
                 </div>
                 
-                <p className="mt-3 text-gray-700 line-clamp-3">{item.summary}</p>
+                <p className="mt-3 text-gray-700 line-clamp-3">{item.summary || "No description available."}</p>
               </div>
             </div>
           </div>

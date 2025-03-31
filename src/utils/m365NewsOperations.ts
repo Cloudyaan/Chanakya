@@ -12,8 +12,19 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
     }
     
     const news: M365News[] = await response.json();
-    console.log(`Retrieved ${news.length} M365 news items`);
-    return news;
+    console.log(`Retrieved ${news.length} M365 news items:`, news);
+    
+    // Handle possible issues with news item structure
+    return news.map(item => ({
+      id: item.id || `news-${Math.random().toString(36).substring(2, 11)}`,
+      title: item.title || 'Untitled',
+      published_date: item.published_date || new Date().toISOString(),
+      link: item.link || '',
+      summary: item.summary || '',
+      categories: Array.isArray(item.categories) ? item.categories : [],
+      tenantId: item.tenantId || tenantId,
+      tenantName: item.tenantName || 'Unknown Tenant'
+    }));
   } catch (error) {
     console.error('Error in getM365News:', error);
     return [];
@@ -32,6 +43,8 @@ export const fetchM365News = async (tenantId: string): Promise<boolean> => {
     });
     
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error response:', errorData);
       throw new Error(`Error triggering M365 news fetch: ${response.statusText}`);
     }
     

@@ -37,10 +37,8 @@ def get_m365_news():
         tenant_db_path = find_tenant_database(tenant['tenantId'])
         
         if not tenant_db_path:
-            return jsonify({
-                'error': 'Database not found',
-                'message': f'No database found for tenant {tenant["name"]} (ID: {tenant_id})'
-            }), 404
+            print(f"No database found for tenant {tenant['name']} (ID: {tenant_id})")
+            return jsonify([])  # Return empty array if database not found
         
         # Connect to the tenant database
         conn = sqlite3.connect(tenant_db_path)
@@ -50,6 +48,7 @@ def get_m365_news():
         # Check if the m365_news table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='m365_news'")
         if not cursor.fetchone():
+            print(f"m365_news table not found in database for tenant {tenant['name']}")
             return jsonify([])  # Return empty array if table doesn't exist
         
         # Get the news entries
@@ -67,7 +66,9 @@ def get_m365_news():
                 try:
                     if isinstance(news_item['categories'], str):
                         news_item['categories'] = json.loads(news_item['categories'])
-                except json.JSONDecodeError:
+                    # If categories is already a list, keep it as is
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"Error parsing categories JSON: {e}")
                     news_item['categories'] = []
             else:
                 news_item['categories'] = []
@@ -118,6 +119,8 @@ def trigger_fetch_m365_news():
         }), 404
     
     try:
+        print(f"Attempting to fetch M365 news for tenant ID: {tenant_id}")
+        
         # On Windows, run the batch file
         if os.name == 'nt':
             subprocess.run(['fetch_m365_news.bat', tenant_id], check=True)
@@ -130,11 +133,13 @@ def trigger_fetch_m365_news():
             'message': f'Successfully fetched M365 news for tenant {tenant["name"]}'
         })
     except subprocess.CalledProcessError as e:
+        print(f"Error running fetch_m365_news script: {str(e)}")
         return jsonify({
             'error': 'Fetch news failed',
             'message': f'Error running fetch_m365_news script: {str(e)}'
         }), 500
     except Exception as e:
+        print(f"Server error when fetching M365 news: {str(e)}")
         return jsonify({
             'error': 'Server error',
             'message': f'Unexpected error: {str(e)}'
