@@ -107,7 +107,16 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
   // Handle form submission for creating a new notification setting
   const onSubmit = async (data: FormValues) => {
     try {
-      const result = await addNotificationSetting(data);
+      // Ensuring all required properties are explicitly passed
+      const settingData = {
+        name: data.name,
+        email: data.email,
+        tenants: data.tenants,
+        update_types: data.update_types,
+        frequency: data.frequency
+      };
+      
+      const result = await addNotificationSetting(settingData);
       if (result.success) {
         toast.success('Notification setting created successfully');
         form.reset();
