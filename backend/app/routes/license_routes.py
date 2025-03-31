@@ -3,9 +3,10 @@ from flask import Blueprint, request, jsonify
 import sqlite3
 import os
 import subprocess
+import sys
 
 from app.database import get_db_connection, find_tenant_database
-from app.dependencies import check_dependencies
+from app.dependencies import check_dependencies, check_numpy_pandas_compatibility
 
 license_bp = Blueprint('license', __name__, url_prefix='/api')
 
@@ -135,14 +136,23 @@ def trigger_fetch_licenses():
             'error': 'Missing dependencies',
             'message': 'Required packages are not installed. Please install them manually.'
         }), 503
+        
+    # Check numpy/pandas compatibility
+    if not check_numpy_pandas_compatibility():
+        return jsonify({
+            'error': 'Compatibility issue',
+            'message': 'NumPy and pandas compatibility issue. Please reinstall these packages manually.'
+        }), 503
     
     try:
         # On Windows, run the batch file
         if os.name == 'nt':
             subprocess.run(['fetch_licenses.bat', tenant_id], check=True)
         else:
-            # On non-Windows, run the Python script directly
-            subprocess.run(['python', 'fetch_licenses.py', tenant_id], check=True)
+            # On non-Windows, run the Python script directly with the same Python interpreter
+            python_executable = sys.executable
+            print(f"Using Python interpreter: {python_executable}")
+            subprocess.run([python_executable, 'fetch_licenses.py', tenant_id], check=True)
         
         return jsonify({
             'success': True,

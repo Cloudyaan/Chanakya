@@ -4,8 +4,12 @@ import subprocess
 import sys
 
 def check_dependencies():
-    """Check if required packages are installed and install them if missing."""
-    required_packages = ['msal', 'pandas', 'requests', 'feedparser', 'python-dateutil']
+    """Check if required Python packages are installed."""
+    required_packages = [
+        "msal",
+        "python-dateutil"
+    ]
+    
     missing_packages = []
     
     for package in required_packages:
@@ -16,96 +20,39 @@ def check_dependencies():
     if missing_packages:
         print(f"Warning: Missing required packages: {', '.join(missing_packages)}")
         print("Installing missing packages...")
+        
         try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + missing_packages)
+            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_packages)
             print("Successfully installed missing packages")
             return True
-        except subprocess.CalledProcessError:
-            print("Error installing packages. Please install them manually:")
-            for package in missing_packages:
-                print(f"  pip install {package}")
+        except Exception as e:
+            print(f"Failed to install missing packages: {e}")
             return False
     
     return True
 
-def create_batch_files():
-    """Create necessary batch files for Windows compatibility."""
-    batch_files = {
-        'fetch_licenses.bat': '''@echo off
-python fetch_licenses.py %*
-''',
-        'fetch_windows_updates.bat': '''@echo off
-echo Running Windows Updates Fetcher
-echo ====================================================
-echo.
-
-REM Check if pandas is installed
-python -c "import pandas" 2>NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo Error: pandas package is not installed.
-    echo Installing pandas...
-    pip install pandas
-    if %ERRORLEVEL% NEQ 0 (
-        echo Failed to install pandas. Please install it manually: pip install pandas
-        exit /b 1
-    )
-)
-
-python fetch_windows_updates.py %*
-
-echo.
-echo Done!
-''',
-        'fetch_m365_news.bat': '''@echo off
-echo Running Microsoft 365 News Fetcher
-echo ====================================================
-echo.
-
-REM Check if required packages are installed
-python -c "import feedparser" 2>NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo Error: feedparser package is not installed.
-    echo Installing feedparser...
-    pip install feedparser
-    if %ERRORLEVEL% NEQ 0 (
-        echo Failed to install feedparser. Please install it manually: pip install feedparser
-        exit /b 1
-    )
-)
-
-python -c "import dateutil" 2>NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo Error: python-dateutil package is not installed.
-    echo Installing python-dateutil...
-    pip install python-dateutil
-    if %ERRORLEVEL% NEQ 0 (
-        echo Failed to install python-dateutil. Please install it manually: pip install python-dateutil
-        exit /b 1
-    )
-)
-
-REM Check if MSAL is installed
-python -c "import msal" 2>NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo Error: msal package is not installed.
-    echo Installing msal...
-    pip install msal
-    if %ERRORLEVEL% NEQ 0 (
-        echo Failed to install msal. Please install it manually: pip install msal
-        exit /b 1
-    )
-)
-
-python fetch_m365_news.py %*
-
-echo.
-echo Done!
-'''
-    }
-    
-    import os
-    for filename, content in batch_files.items():
-        if not os.path.exists(filename):
-            with open(filename, 'w') as f:
-                f.write(content)
-            print(f"Created {filename}")
+def check_numpy_pandas_compatibility():
+    """Check if numpy and pandas are compatible."""
+    try:
+        # Try importing pandas to check compatibility
+        import pandas as pd
+        return True
+    except ValueError as e:
+        if "numpy.dtype size changed" in str(e):
+            print("NumPy and pandas version incompatibility detected.")
+            print("Attempting to fix by reinstalling numpy and pandas...")
+            try:
+                # Reinstall numpy first, then pandas
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy"])
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "pandas"])
+                print("Successfully reinstalled numpy and pandas")
+                return True
+            except Exception as install_error:
+                print(f"Failed to fix numpy/pandas compatibility: {install_error}")
+                return False
+        else:
+            print(f"Unexpected error when importing pandas: {e}")
+            return False
+    except Exception as e:
+        print(f"Error importing pandas: {e}")
+        return False

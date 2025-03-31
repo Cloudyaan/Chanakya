@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface UpdatesHeaderProps {
@@ -9,7 +10,7 @@ const UpdatesHeader = ({
 }: UpdatesHeaderProps) => {
   return (
     <div className="flex items-center gap-3 mt-2 sm:mt-0">
-      {/* Buttons removed as requested */}
+      {/* All buttons removed as requested */}
     </div>
   );
 };

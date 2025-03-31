@@ -6,7 +6,7 @@ import subprocess
 import importlib.util
 
 from app.database import get_db_connection, find_tenant_database
-from app.dependencies import check_dependencies
+from app.dependencies import check_dependencies, check_numpy_pandas_compatibility
 
 update_bp = Blueprint('update', __name__, url_prefix='/api')
 
@@ -188,6 +188,13 @@ def trigger_fetch_updates():
             'error': 'Missing dependencies',
             'message': 'Required packages are not installed. Please install them manually.'
         }), 503
+        
+    # Check numpy/pandas compatibility
+    if not check_numpy_pandas_compatibility():
+        return jsonify({
+            'error': 'Compatibility issue',
+            'message': 'NumPy and pandas compatibility issue. Please reinstall these packages manually.'
+        }), 503
     
     try:
         print(f"Attempting to fetch updates for tenant ID: {tenant_id}")
@@ -218,7 +225,10 @@ def trigger_fetch_updates():
         else:
             # On non-Windows, run the Python script directly
             print(f"Running command: python fetch_updates.py {tenant_id}")
-            subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
+            
+            # Use sys.executable to ensure we use the same Python interpreter
+            python_executable = sys.executable
+            subprocess.run([python_executable, 'fetch_updates.py', tenant_id], check=True)
         
         return jsonify({
             'success': True,

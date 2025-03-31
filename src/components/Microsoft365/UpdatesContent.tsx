@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TenantUpdate } from '@/utils/types';
 import SystemMessages from './SystemMessages';
 import UpdatesTable from './UpdatesTable';
