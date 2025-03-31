@@ -16,6 +16,11 @@ const ensureArray = (value: any): string[] => {
   return [];
 };
 
+// Helper to normalize legacy 'Monthly' frequency to 'Weekly'
+const normalizeFrequency = (frequency: string): 'Daily' | 'Weekly' => {
+  return (frequency === 'Monthly') ? 'Weekly' : (frequency as 'Daily' | 'Weekly');
+};
+
 export const getNotificationSettings = async (tenantId?: string): Promise<NotificationSetting[]> => {
   try {
     const url = tenantId 
@@ -32,11 +37,12 @@ export const getNotificationSettings = async (tenantId?: string): Promise<Notifi
     const settings = await response.json();
     console.log(`Retrieved ${settings.length} notification settings`);
     
-    // Ensure tenants and update_types are arrays
+    // Ensure tenants, update_types, and frequency are properly normalized
     return settings.map((setting: any): NotificationSetting => ({
       ...setting,
       tenants: ensureArray(setting.tenants),
-      update_types: ensureArray(setting.update_types)
+      update_types: ensureArray(setting.update_types),
+      frequency: normalizeFrequency(setting.frequency)
     }));
   } catch (error) {
     console.error('Error in getNotificationSettings:', error);
@@ -44,14 +50,13 @@ export const getNotificationSettings = async (tenantId?: string): Promise<Notifi
   }
 };
 
-// Update the type definition to be more explicit and fix the type error
 export const addNotificationSetting = async (
   setting: {
     name: string;
     email: string;
     tenants: string[];
     update_types: string[];
-    frequency: 'Daily' | 'Weekly' | 'Monthly';
+    frequency: 'Daily' | 'Weekly';
   }
 ): Promise<{ success: boolean; id?: string; message: string }> => {
   try {
