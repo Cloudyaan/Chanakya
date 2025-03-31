@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -62,10 +63,6 @@ interface NotificationSettingsProps {
   tenants: TenantConfig[];
   selectedTenant: string | null;
 }
-
-const normalizeFrequency = (frequency: string): 'Daily' | 'Weekly' => {
-  return (frequency === 'Monthly') ? 'Weekly' : (frequency as 'Daily' | 'Weekly');
-};
 
 const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsProps) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -136,7 +133,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     setEditValues({
       tenants: Array.isArray(setting.tenants) ? setting.tenants : [],
       update_types: Array.isArray(setting.update_types) ? setting.update_types : [],
-      frequency: normalizeFrequency(setting.frequency)
+      frequency: setting.frequency
     });
   };
 
@@ -209,15 +206,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
       }
     }
     return [];
-  };
-
-  const getFrequencyIcon = (frequency: string) => {
-    if (frequency === 'Daily') return <Clock size={14} />;
-    return <Calendar size={14} />;
-  };
-
-  const getFrequencyLabel = (frequency: string) => {
-    return normalizeFrequency(frequency);
   };
 
   return (
@@ -527,7 +515,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                     <TableCell>
                       {isEditing === setting.id ? (
                         <Select
-                          value={editValues?.frequency || normalizeFrequency(setting.frequency)}
+                          value={editValues?.frequency || (setting.frequency === 'Monthly' ? 'Weekly' : setting.frequency)}
                           onValueChange={(value) => setEditValues({
                             ...editValues,
                             frequency: value as 'Daily' | 'Weekly'
@@ -543,9 +531,12 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         </Select>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {getFrequencyIcon(setting.frequency)}
+                          {setting.frequency === 'Daily' && <Clock size={14} />}
+                          {setting.frequency === 'Weekly' && <Calendar size={14} />}
+                          {/* If it's a legacy Monthly setting, display it as Weekly */}
+                          {setting.frequency === 'Monthly' && <Calendar size={14} />}
                           <span className="inline-block bg-green-100 px-2 py-1 rounded text-xs">
-                            {getFrequencyLabel(setting.frequency)}
+                            {setting.frequency === 'Monthly' ? 'Weekly' : setting.frequency}
                           </span>
                         </div>
                       )}

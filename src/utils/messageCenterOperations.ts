@@ -36,23 +36,7 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
     // If response is OK, parse and return the data
     const data = await response.json();
     console.log(`Received ${data.length} updates for tenant ID: ${tenantId}`);
-    
-    // Map the API response to the TenantUpdate type
-    return data.map((item: any) => ({
-      id: item.id || '',
-      title: item.title || 'Untitled',
-      messageId: item.messageId || item.id || '',
-      category: item.category || '',
-      severity: item.severity || '',
-      actionType: item.isMajorChange === 'MajorChange' ? 'Plan for Change' : '',
-      publishedDate: item.startDateTime || item.lastModifiedDateTime || new Date().toISOString(),
-      body: item.bodyContent || '',
-      tenantName: item.tenantName || '',
-      readDateTime: item.readDateTime || null,
-      recommendedAction: '',
-      actionRequired: item.actionRequiredByDateTime ? true : false,
-      links: []
-    }));
+    return data;
   } catch (error) {
     console.error('Error fetching tenant updates:', error);
     // Return empty array in case of any error

@@ -33,12 +33,18 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
         console.error('Could not parse error response');
       }
       
-      // Return empty array
+      // Return empty array to show "No updates available" instead of using mock data
       return [];
     }
     
     const data = await response.json();
     console.log(`Received ${data.length} Windows updates for tenant ID: ${tenantId}`);
+    console.log('Raw Windows update data from API:', data); // Debug: log all data
+    if (data.length > 0) {
+      console.log('Sample Windows update item fields:', Object.keys(data[0])); // Debug: log the fields
+    } else {
+      console.log('No Windows updates found in the response');
+    }
     
     // Map the data to ensure all fields are properly handled
     // This handles different field naming conventions from the API or database
@@ -66,6 +72,7 @@ export const getWindowsUpdates = async (tenantId?: string): Promise<WindowsUpdat
     });
   } catch (error) {
     console.error('Error fetching Windows updates:', error);
+    // Return empty array to show "No updates available" instead of using mock data
     return [];
   }
 };

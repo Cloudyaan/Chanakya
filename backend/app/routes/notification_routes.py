@@ -7,7 +7,6 @@ import time
 import threading
 import msal
 import requests
-import uuid
 
 from app.database import get_db_connection, init_db, find_tenant_database
 
@@ -33,192 +32,6 @@ def init_notification_table():
     
     conn.commit()
     conn.close()
-
-# Initialize the notification table
-init_notification_table()
-
-@notification_bp.route('/notification-settings', methods=['GET'])
-def get_notification_settings():
-    """Get all notification settings or filter by tenant ID"""
-    tenant_id = request.args.get('tenantId')
-    
-    conn = get_db_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    try:
-        if tenant_id:
-            # Get settings that include this tenant
-            cursor.execute('SELECT * FROM notification_settings')
-            all_settings = cursor.fetchall()
-            
-            # Filter settings that include the specified tenant
-            settings = []
-            for setting in all_settings:
-                try:
-                    tenants = json.loads(setting['tenants'])
-                    if tenant_id in tenants:
-                        settings.append(dict(setting))
-                except (json.JSONDecodeError, TypeError):
-                    continue
-        else:
-            # Get all settings
-            cursor.execute('SELECT * FROM notification_settings')
-            settings = [dict(row) for row in cursor.fetchall()]
-        
-        return jsonify(settings)
-    except Exception as e:
-        print(f"Error retrieving notification settings: {e}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
-
-@notification_bp.route('/notification-settings', methods=['POST'])
-def add_notification_setting():
-    """Add a new notification setting"""
-    data = request.json
-    
-    required_fields = ['name', 'email', 'tenants', 'update_types', 'frequency']
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"error": f"Missing required field: {field}"}), 400
-    
-    # Create a new notification setting
-    setting_id = str(uuid.uuid4())
-    now = datetime.now().isoformat()
-    
-    # Ensure tenants and update_types are JSON strings
-    tenants_json = json.dumps(data['tenants'])
-    update_types_json = json.dumps(data['update_types'])
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    try:
-        cursor.execute('''
-            INSERT INTO notification_settings (
-                id, name, email, tenants, update_types, frequency, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            setting_id,
-            data['name'],
-            data['email'],
-            tenants_json,
-            update_types_json,
-            data['frequency'],
-            now,
-            now
-        ))
-        
-        conn.commit()
-        return jsonify({
-            "id": setting_id,
-            "message": "Notification setting created successfully"
-        })
-    except Exception as e:
-        conn.rollback()
-        print(f"Error adding notification setting: {e}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
-
-@notification_bp.route('/notification-settings/<id>', methods=['PUT'])
-def update_notification_setting(id):
-    """Update an existing notification setting"""
-    data = request.json
-    now = datetime.now().isoformat()
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    try:
-        # Get current setting to update only provided fields
-        cursor.execute('SELECT * FROM notification_settings WHERE id = ?', (id,))
-        setting = cursor.fetchone()
-        
-        if not setting:
-            return jsonify({"error": "Notification setting not found"}), 404
-        
-        # Prepare update values
-        updates = {}
-        
-        if 'tenants' in data:
-            updates['tenants'] = json.dumps(data['tenants'])
-        
-        if 'update_types' in data:
-            updates['update_types'] = json.dumps(data['update_types'])
-        
-        if 'frequency' in data:
-            updates['frequency'] = data['frequency']
-        
-        if 'name' in data:
-            updates['name'] = data['name']
-        
-        if 'email' in data:
-            updates['email'] = data['email']
-        
-        updates['updated_at'] = now
-        
-        # Build the SQL update statement
-        sql_parts = []
-        values = []
-        
-        for key, value in updates.items():
-            sql_parts.append(f"{key} = ?")
-            values.append(value)
-        
-        values.append(id)  # For the WHERE clause
-        
-        cursor.execute(
-            f"UPDATE notification_settings SET {', '.join(sql_parts)} WHERE id = ?",
-            values
-        )
-        
-        conn.commit()
-        return jsonify({"message": "Notification setting updated successfully"})
-    except Exception as e:
-        conn.rollback()
-        print(f"Error updating notification setting: {e}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
-
-@notification_bp.route('/notification-settings/<id>', methods=['DELETE'])
-def delete_notification_setting(id):
-    """Delete a notification setting"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    try:
-        cursor.execute('DELETE FROM notification_settings WHERE id = ?', (id,))
-        conn.commit()
-        
-        if cursor.rowcount > 0:
-            return jsonify({"message": "Notification setting deleted successfully"})
-        else:
-            return jsonify({"error": "Notification setting not found"}), 404
-    except Exception as e:
-        conn.rollback()
-        print(f"Error deleting notification setting: {e}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
-
-# Helper function to ensure arrays are properly handled
-def ensureArray(value):
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        try:
-            parsed = json.loads(value)
-            return parsed if isinstance(parsed, list) else []
-        except json.JSONDecodeError:
-            return []
-    return []
-
-# Helper to normalize legacy 'Monthly' frequency to 'Weekly'
-def normalizeFrequency(frequency):
-    return 'Weekly' if frequency == 'Monthly' else frequency
 
 def get_tenant_name(tenant_id):
     """Get tenant name from its ID"""
@@ -855,7 +668,7 @@ def process_and_send_notification(setting_id=None):
         
         # Determine time range based on frequency
         days = 1  # Default to daily (yesterday)
-        if setting_dict['frequency'] == 'Weekly' or setting_dict['frequency'] == 'Monthly':
+        if setting_dict['frequency'] == 'Weekly':
             days = 7
         
         # Collect updates for each tenant and type
@@ -889,12 +702,6 @@ def process_and_send_notification(setting_id=None):
                 updates_data['m365_news'][tenant_id] = news
                 has_updates |= bool(news)
         
-        # Generate test data if needed
-        if not has_updates:
-            print(f"No updates found for notification {setting_dict['id']}, generating test data")
-            add_test_data_notification(tenants, update_types, days, updates_data)
-            has_updates = True
-        
         if not has_updates:
             print(f"No updates found for notification {setting_dict['id']}")
             results.append({"id": setting_dict['id'], "success": False, "message": "No updates found"})
@@ -921,55 +728,6 @@ def process_and_send_notification(setting_id=None):
             })
     
     return {"success": True, "results": results}
-
-def add_test_data_notification(tenants, update_types, days, updates_data):
-    """Add test data to the notification for demonstration purposes"""
-    for tenant_id in tenants:
-        # Add test message center updates
-        if 'message-center' in update_types:
-            test_updates = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_updates.append({
-                    'id': f'test-mc-{i}',
-                    'title': f'Test Message Center Update {i}',
-                    'category': 'Feature update',
-                    'severity': 'Medium',
-                    'publishedDate': date,
-                    'actionType': 'Stay Informed',
-                    'description': f'This is a test message center update for notification testing. Created {i} days ago.'
-                })
-            updates_data['message_center'][tenant_id] = test_updates
-            
-        # Add test Windows updates
-        if 'windows-updates' in update_types:
-            test_win_updates = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_win_updates.append({
-                    'id': f'test-win-{i}',
-                    'productId': 'win11',
-                    'productName': 'Windows 11',
-                    'title': f'Test Windows Update {i}',
-                    'description': f'This is a test Windows update for notification testing. Created {i} days ago.',
-                    'status': 'Active',
-                    'startDate': date
-                })
-            updates_data['windows_updates'][tenant_id] = test_win_updates
-            
-        # Add test M365 news
-        if 'news' in update_types:
-            test_news = []
-            for i in range(1, 4):
-                date = (datetime.now() - timedelta(days=i)).isoformat()
-                test_news.append({
-                    'id': f'test-news-{i}',
-                    'title': f'Test Microsoft 365 News {i}',
-                    'published_date': date,
-                    'link': 'https://example.com',
-                    'summary': f'This is a test news item for notification testing. Created {i} days ago.'
-                })
-            updates_data['m365_news'][tenant_id] = test_news
 
 @notification_bp.route('/send-notification', methods=['POST'])
 def send_notification():
