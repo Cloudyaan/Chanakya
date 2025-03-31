@@ -818,7 +818,7 @@ def send_email_with_ms_graph(recipient, subject, html_content):
         print(f"Error sending email with Microsoft Graph: {e}")
         return False
 
-def process_and_send_notification(setting_id=None):
+def process_and_send_notification(setting_id=None, use_existing_databases=False):
     """Process notifications and send emails"""
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
@@ -868,32 +868,54 @@ def process_and_send_notification(setting_id=None):
         has_updates = False
         
         for tenant_id in tenants:
-            # Create/ensure database files exist
-            ensure_tenant_database(tenant_id)
+            # Skip creating database files if use_existing_databases is True
+            if not use_existing_databases:
+                # Create/ensure database files exist
+                ensure_tenant_database(tenant_id)
             
             # Fetch message center updates if selected
             if 'message-center' in update_types:
-                mc_updates = fetch_message_center_updates(tenant_id, days)
-                updates_data['message_center'][tenant_id] = mc_updates
-                has_updates |= bool(mc_updates)
+                # Use prefer_service_announcements=True for message center
+                db_path = find_tenant_database(tenant_id, prefer_service_announcements=True)
+                if db_path:
+                    mc_updates = fetch_message_center_updates_from_db(db_path, days)
+                    updates_data['message_center'][tenant_id] = mc_updates
+                    has_updates |= bool(mc_updates)
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching message center updates")
+                    updates_data['message_center'][tenant_id] = []
             
             # Fetch Windows updates if selected
             if 'windows-updates' in update_types:
-                win_updates = fetch_windows_updates(tenant_id, days)
-                updates_data['windows_updates'][tenant_id] = win_updates
-                has_updates |= bool(win_updates)
+                # Regular tenant database for Windows updates
+                db_path = find_tenant_database(tenant_id, prefer_service_announcements=False)
+                if db_path:
+                    win_updates = fetch_windows_updates_from_db(db_path, days)
+                    updates_data['windows_updates'][tenant_id] = win_updates
+                    has_updates |= bool(win_updates)
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching Windows updates")
+                    updates_data['windows_updates'][tenant_id] = []
             
             # Fetch M365 news if selected
             if 'news' in update_types:
-                news = fetch_m365_news(tenant_id, days)
-                updates_data['m365_news'][tenant_id] = news
-                has_updates |= bool(news)
+                # Regular tenant database for M365 news
+                db_path = find_tenant_database(tenant_id, prefer_service_announcements=False)
+                if db_path:
+                    news = fetch_m365_news_from_db(db_path, days)
+                    updates_data['m365_news'][tenant_id] = news
+                    has_updates |= bool(news)
+                else:
+                    print(f"No database found for tenant {tenant_id} when fetching M365 news")
+                    updates_data['m365_news'][tenant_id] = []
         
-        # Generate test data if needed
-        if not has_updates:
+        # Generate test data if needed and if we're not using existing databases only
+        if not has_updates and not use_existing_databases:
             print(f"No updates found for notification {setting_dict['id']}, generating test data")
             add_test_data_notification(tenants, update_types, days, updates_data)
             has_updates = True
+        elif not has_updates:
+            print(f"No updates found for notification {setting_dict['id']} and using existing databases only")
         
         if not has_updates:
             print(f"No updates found for notification {setting_dict['id']}")
@@ -975,6 +997,7 @@ def add_test_data_notification(tenants, update_types, days, updates_data):
 def send_notification():
     """API endpoint to manually trigger sending a notification"""
     setting_id = request.json.get('id')
+    use_existing_databases = request.json.get('useExistingDatabases', False)
     
     if not setting_id:
         return jsonify({
@@ -983,7 +1006,7 @@ def send_notification():
         }), 400
     
     # Process and send the notification
-    results = process_and_send_notification(setting_id)
+    results = process_and_send_notification(setting_id, use_existing_databases)
     
     if not results.get('success'):
         return jsonify({
@@ -1050,3 +1073,110 @@ def start_scheduler():
 
 # Start the scheduler when the app starts
 start_scheduler()
+
+def fetch_message_center_updates_from_db(db_path, days=1):
+    """Fetch message center updates from a specific database file"""
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Check which table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
+        table_result = cursor.fetchone()
+        
+        if not table_result:
+            return []
+            
+        table_name = table_result['name']
+        
+        # Calculate the date range
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
+        # Query based on which table exists
+        if table_name == 'updates':
+            cursor.execute(f"""
+                SELECT 
+                    id, title, category, severity, lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType, bodyContent as description
+                FROM updates
+                WHERE lastModifiedDateTime > ?
+                ORDER BY lastModifiedDateTime DESC
+            """, (cutoff_date,))
+        else:  # announcements
+            cursor.execute(f"""
+                SELECT 
+                    id, title, category, severity, lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType, bodyContent as description
+                FROM announcements
+                WHERE lastModifiedDateTime > ?
+                ORDER BY lastModifiedDateTime DESC
+            """, (cutoff_date,))
+        
+        updates = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return updates
+    except Exception as e:
+        print(f"Error fetching message center updates from {db_path}: {e}")
+        return []
+
+def fetch_windows_updates_from_db(db_path, days=1):
+    """Fetch Windows updates from a specific database file"""
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Check if the windows_known_issues table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
+        if not cursor.fetchone():
+            return []
+        
+        # Calculate the date range
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
+        cursor.execute("""
+            SELECT 
+                wi.id, wi.product_id as productId, wi.title, wi.description, 
+                wi.webViewUrl, wi.status, wi.start_date as startDate, 
+                wi.resolved_date as resolvedDate, wp.name as productName
+            FROM windows_known_issues wi
+            LEFT JOIN windows_products wp ON wi.product_id = wp.id
+            WHERE wi.start_date > ?
+            ORDER BY wi.start_date DESC
+        """, (cutoff_date,))
+        
+        updates = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return updates
+    except Exception as e:
+        print(f"Error fetching Windows updates from {db_path}: {e}")
+        return []
+
+def fetch_m365_news_from_db(db_path, days=1):
+    """Fetch M365 news from a specific database file"""
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Check if the m365_news table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='m365_news'")
+        if not cursor.fetchone():
+            return []
+        
+        # Calculate the date range
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
+        cursor.execute("""
+            SELECT * FROM m365_news
+            WHERE published_date > ?
+            ORDER BY published_date DESC
+        """, (cutoff_date,))
+        
+        news = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return news
+    except Exception as e:
+        print(f"Error fetching M365 news from {db_path}: {e}")
+        return []

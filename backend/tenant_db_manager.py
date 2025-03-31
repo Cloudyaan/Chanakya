@@ -1,4 +1,3 @@
-
 import sqlite3
 import os
 import sys
@@ -56,28 +55,35 @@ def find_tenant_databases(tenant_id):
     if os.path.exists(sa_path):
         databases['service_announcements'] = sa_path
     
-    # Look for tenant database
-    tenant_db_patterns = [f"*_{tenant_id}.db", f"*{tenant_id}*.db"]
-    for pattern in tenant_db_patterns:
-        for db_path in glob.glob(pattern):
+    # Look for tenant database - prioritize standard tenant DBs
+    tenant_db_found = False
+    tenant_dbs = glob.glob(f"*_{tenant_id}.db")
+    for db_path in tenant_dbs:
+        if 'service_announcements' not in db_path:
+            databases['tenant'] = db_path
+            tenant_db_found = True
+            break
+    
+    # If no standard tenant DB found, try broader pattern
+    if not tenant_db_found:
+        for db_path in glob.glob(f"*{tenant_id}*.db"):
             if 'service_announcements' not in db_path and db_path not in databases.values():
                 databases['tenant'] = db_path
                 break
-        if 'tenant' in databases:
-            break
     
     print(f"Found databases for tenant {tenant_id}: {databases}")
     return databases
 
-def initialize_tenant_database(tenant):
+def initialize_tenant_database(tenant, skip_service_announcements=False):
     """Create or update the database structure for a tenant."""
     tenant_name = tenant["name"]
     tenant_id = tenant["tenantId"]
     db_path = get_tenant_database_path(tenant_name, tenant_id)
     
-    # Also initialize the service announcements database
-    sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
-    initialize_service_announcements_db(sa_db_path)
+    # Initialize the service announcements database unless skipped
+    if not skip_service_announcements:
+        sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
+        initialize_service_announcements_db(sa_db_path)
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

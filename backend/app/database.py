@@ -82,6 +82,10 @@ def find_tenant_database(tenant_id, prefer_service_announcements=False):
     
     for pattern in patterns:
         matching_files = glob.glob(pattern)
+        # Filter out service_announcements if not preferred
+        if not prefer_service_announcements and pattern != f"service_announcements_{tenant_id}.db":
+            matching_files = [f for f in matching_files if not f.startswith("service_announcements_")]
+        
         if matching_files:
             print(f"Found database: {matching_files[0]} using pattern: {pattern}")
             return matching_files[0]
