@@ -36,6 +36,12 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
     // If response is OK, parse and return the data
     const data = await response.json();
     console.log(`Received ${data.length} message center updates for tenant ID: ${tenantId}`);
+    
+    // Log the first item for debugging
+    if (data.length > 0) {
+      console.log('Sample update item:', data[0]);
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching tenant updates:', error);
@@ -58,7 +64,11 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tenantId, skipDatabaseCreation: true }),
+      body: JSON.stringify({ 
+        tenantId, 
+        skipDatabaseCreation: true,
+        forceUseExistingDatabase: true 
+      }),
     });
     
     if (!response.ok) {

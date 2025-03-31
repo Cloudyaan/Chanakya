@@ -162,7 +162,8 @@ export const sendNotificationNow = async (id: string): Promise<{ success: boolea
       },
       body: JSON.stringify({ 
         id,
-        useExistingDatabases: true // Flag to tell backend not to create new databases
+        useExistingDatabases: true, // Flag to tell backend not to create new databases
+        skipDatabaseCreation: true  // Additional flag for legacy code support
       }),
     });
     

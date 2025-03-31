@@ -50,26 +50,64 @@ def find_tenant_databases(tenant_id):
     """
     databases = {}
     
-    # Look for service announcements database
+    # Get tenant details from chanakya.db to have both IDs
+    conn = get_tenant_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    # If tenant is found, we have both internal ID and Microsoft tenant ID
+    if tenant:
+        ms_tenant_id = tenant['tenantId']
+        tenant_name = tenant['name']
+        safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
+        
+        # Check for exact database match first
+        tenant_db_exact = f"{safe_name}_{ms_tenant_id}.db"
+        if os.path.exists(tenant_db_exact):
+            databases['tenant'] = tenant_db_exact
+            print(f"Found exact tenant database: {tenant_db_exact}")
+        
+        # Look for service announcements database with Microsoft tenant ID
+        sa_path_ms = f"service_announcements_{ms_tenant_id}.db"
+        if os.path.exists(sa_path_ms):
+            databases['service_announcements'] = sa_path_ms
+    
+    # Look for service announcements database with internal ID
     sa_path = get_tenant_service_announcements_db_path(tenant_id)
     if os.path.exists(sa_path):
         databases['service_announcements'] = sa_path
     
-    # Look for tenant database - prioritize standard tenant DBs
-    tenant_db_found = False
-    tenant_dbs = glob.glob(f"*_{tenant_id}.db")
-    for db_path in tenant_dbs:
-        if 'service_announcements' not in db_path:
-            databases['tenant'] = db_path
-            tenant_db_found = True
-            break
+    # If tenant database not found yet, look for pattern matches
+    if 'tenant' not in databases:
+        # Try with internal ID first
+        tenant_dbs = glob.glob(f"*_{tenant_id}.db")
+        for db_path in tenant_dbs:
+            if 'service_announcements' not in db_path:
+                databases['tenant'] = db_path
+                break
+        
+        # If not found and we have tenant details, try with MS tenant ID
+        if 'tenant' not in databases and tenant:
+            tenant_dbs = glob.glob(f"*_{ms_tenant_id}.db")
+            for db_path in tenant_dbs:
+                if 'service_announcements' not in db_path:
+                    databases['tenant'] = db_path
+                    break
     
-    # If no standard tenant DB found, try broader pattern
-    if not tenant_db_found:
+    # If still not found, try broader pattern
+    if 'tenant' not in databases:
         for db_path in glob.glob(f"*{tenant_id}*.db"):
             if 'service_announcements' not in db_path and db_path not in databases.values():
                 databases['tenant'] = db_path
                 break
+        
+        # Try with MS tenant ID if available
+        if 'tenant' not in databases and tenant:
+            for db_path in glob.glob(f"*{ms_tenant_id}*.db"):
+                if 'service_announcements' not in db_path and db_path not in databases.values():
+                    databases['tenant'] = db_path
+                    break
     
     print(f"Found databases for tenant {tenant_id}: {databases}")
     return databases

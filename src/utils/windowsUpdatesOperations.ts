@@ -21,6 +21,12 @@ export const getWindowsUpdates = async (tenantId: string): Promise<WindowsUpdate
     
     const updates: WindowsUpdate[] = await response.json();
     console.log(`Retrieved ${updates.length} Windows updates:`, updates);
+    
+    // Log the first item for debugging if available
+    if (updates.length > 0) {
+      console.log('Sample Windows update:', updates[0]);
+    }
+    
     return updates;
   } catch (error) {
     console.error('Error in getWindowsUpdates:', error);
@@ -43,7 +49,8 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
       },
       body: JSON.stringify({ 
         tenantId,
-        skipDatabaseCreation: true // Flag to prevent creating new databases
+        skipDatabaseCreation: true, // Flag to prevent creating new databases
+        forceUseExistingDatabase: true // Extra flag to ensure only existing databases are used
       }),
     });
     

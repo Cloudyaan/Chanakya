@@ -4,15 +4,27 @@ import { M365News } from './types';
 
 export const getM365News = async (tenantId: string): Promise<M365News[]> => {
   try {
+    if (!tenantId) {
+      console.error('No tenant ID provided to getM365News');
+      return [];
+    }
+    
     console.log(`Fetching M365 news for tenant: ${tenantId}`);
     const response = await fetch(`${API_URL}/m365-news?tenantId=${tenantId}`);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error fetching M365 news: ${response.status} ${response.statusText}, ${errorText}`);
       throw new Error(`Error fetching M365 news: ${response.statusText}`);
     }
     
     const news: M365News[] = await response.json();
     console.log(`Retrieved ${news.length} M365 news items:`, news);
+    
+    // Log the first item for debugging if available
+    if (news.length > 0) {
+      console.log('Sample M365 news item:', news[0]);
+    }
     
     // Handle possible issues with news item structure
     return news.map(item => ({
@@ -36,13 +48,22 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
 
 export const fetchM365News = async (tenantId: string): Promise<boolean> => {
   try {
+    if (!tenantId) {
+      console.error('No tenant ID provided to fetchM365News');
+      return false;
+    }
+    
     console.log(`Triggering M365 news fetch for tenant: ${tenantId}`);
     const response = await fetch(`${API_URL}/fetch-m365-news`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tenantId }),
+      body: JSON.stringify({ 
+        tenantId,
+        skipDatabaseCreation: true,
+        forceUseExistingDatabase: true
+      }),
     });
     
     if (!response.ok) {
