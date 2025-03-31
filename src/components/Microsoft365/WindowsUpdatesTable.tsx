@@ -144,22 +144,22 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
                 )}
                 onClick={() => update.webViewUrl && openExternalLink(update.webViewUrl)}
               >
-                <TableCell className="font-medium truncate max-w-[150px]">
-                  {update.productName || 'Unknown Product'}
+                <TableCell>
+                  <span className="font-medium">{update.productName || 'Unknown Product'}</span>
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(update.status)}
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium flex items-center gap-1 truncate">
-                    <span className="truncate">{update.title || 'No Title'}</span>
-                    {update.webViewUrl && <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />}
+                  <div className="font-medium flex items-center gap-1">
+                    {update.title || 'No Title'}
+                    {update.webViewUrl && <ExternalLink size={14} className="text-blue-500" />}
                   </div>
-                  <div className="text-sm text-muted-foreground line-clamp-1 truncate max-w-full">
+                  <div className="text-sm text-muted-foreground line-clamp-1">
                     {update.description || 'No description available'}
                   </div>
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
+                <TableCell className="text-right">
                   {formatDate(update.startDate)}
                 </TableCell>
               </TableRow>
