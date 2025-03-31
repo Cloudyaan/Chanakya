@@ -24,8 +24,15 @@ export const getNotificationSettings = async (tenantId?: string): Promise<Notifi
   }
 };
 
+// Update the type definition to be more explicit and fix the type error
 export const addNotificationSetting = async (
-  setting: Omit<NotificationSetting, 'id' | 'created_at' | 'updated_at'>
+  setting: {
+    name: string;
+    email: string;
+    tenants: string[];
+    update_types: string[];
+    frequency: 'Daily' | 'Weekly' | 'Monthly';
+  }
 ): Promise<{ success: boolean; id?: string; message: string }> => {
   try {
     console.log('Adding notification setting:', setting);
