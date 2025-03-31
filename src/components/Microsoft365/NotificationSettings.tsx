@@ -39,12 +39,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { X, Edit, Trash2, Plus, Mail, Bell, Save } from 'lucide-react';
+import { X, Edit, Trash2, Plus, Mail, Bell, Save, Send, Calendar, Clock } from 'lucide-react';
 import { 
   getNotificationSettings, 
   addNotificationSetting, 
   updateNotificationSetting,
-  deleteNotificationSetting
+  deleteNotificationSetting,
+  sendNotificationNow
 } from '@/utils/notificationOperations';
 import { TenantConfig, NotificationSetting } from '@/utils/types';
 
@@ -69,6 +70,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
   const [editValues, setEditValues] = useState<Partial<FormValues> | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSetting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -139,6 +141,23 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
       update_types: Array.isArray(setting.update_types) ? setting.update_types : [],
       frequency: setting.frequency
     });
+  };
+
+  // Handle sending a notification now
+  const handleSendNow = async (id: string) => {
+    setIsSending(id);
+    try {
+      const result = await sendNotificationNow(id);
+      if (result.success) {
+        toast.success('Notification sent successfully');
+      } else {
+        toast.error(result.message || 'Failed to send notification');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred while sending the notification');
+    } finally {
+      setIsSending(null);
+    }
   };
 
   // Handle saving an edited notification setting
@@ -282,25 +301,34 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                             Select which tenants to receive updates from
                           </FormDescription>
                         </div>
-                        <Select
-                          onValueChange={(value) => {
-                            form.setValue('tenants', [value]);
-                          }}
-                          defaultValue={selectedTenant || undefined}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select tenant" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {tenants.filter(t => t.isActive).map((tenant) => (
-                              <SelectItem key={tenant.id} value={tenant.id}>
+                        <div className="space-y-2">
+                          {tenants.filter(t => t.isActive).map((tenant) => (
+                            <FormItem
+                              key={tenant.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={form.watch('tenants').includes(tenant.id)}
+                                  onCheckedChange={(checked) => {
+                                    const currentTenants = form.watch('tenants');
+                                    if (checked) {
+                                      form.setValue('tenants', [...currentTenants, tenant.id]);
+                                    } else {
+                                      form.setValue(
+                                        'tenants',
+                                        currentTenants.filter((id) => id !== tenant.id)
+                                      );
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
                                 {tenant.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              </FormLabel>
+                            </FormItem>
+                          ))}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -515,9 +543,14 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           </SelectContent>
                         </Select>
                       ) : (
-                        <span className="inline-block bg-green-100 px-2 py-1 rounded text-xs">
-                          {setting.frequency}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {setting.frequency === 'Daily' && <Clock size={14} />}
+                          {setting.frequency === 'Weekly' && <Calendar size={14} />}
+                          {setting.frequency === 'Monthly' && <Calendar size={14} />}
+                          <span className="inline-block bg-green-100 px-2 py-1 rounded text-xs">
+                            {setting.frequency}
+                          </span>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -546,6 +579,20 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleSendNow(setting.id)}
+                            disabled={isSending === setting.id}
+                            className="flex items-center gap-1"
+                          >
+                            {isSending === setting.id ? (
+                              <span className="animate-spin h-3 w-3 border-2 border-b-transparent rounded-full" />
+                            ) : (
+                              <Send size={14} />
+                            )}
+                            <span>Send Now</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleEdit(setting)}
                           >
                             <Edit size={14} />
@@ -570,7 +617,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
               <p className="text-muted-foreground mb-4">
                 You haven't created any notification settings yet. Click the "New Notification" button to create one.
               </p>
-              {/* Removed the "Create Notification Setting" button as requested */}
             </div>
           )}
         </CardContent>

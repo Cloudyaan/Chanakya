@@ -145,3 +145,36 @@ export const deleteNotificationSetting = async (id: string): Promise<{ success: 
     };
   }
 };
+
+// New function to send a notification immediately
+export const sendNotificationNow = async (id: string): Promise<{ success: boolean; message: string; results?: any[] }> => {
+  try {
+    console.log(`Sending notification ${id} now`);
+    const response = await fetch(`${API_URL}/send-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id }),
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to send notification');
+    }
+    
+    console.log('Send notification result:', result);
+    return {
+      success: true,
+      message: result.message,
+      results: result.results
+    };
+  } catch (error: any) {
+    console.error('Error in sendNotificationNow:', error);
+    return {
+      success: false,
+      message: error.message || 'An error occurred while sending the notification'
+    };
+  }
+};
