@@ -90,3 +90,26 @@ export interface WindowsUpdate {
   startDate: string | null;
   resolvedDate: string | null;
 }
+
+export interface M365News {
+  id: string;
+  tenantId: string;
+  tenantName?: string;
+  title: string;
+  published_date: string;
+  link: string;
+  summary: string;
+  categories: string[];
+  fetch_date: string;
+}
+
+export interface NotificationSetting {
+  id: string;
+  name: string;
+  email: string;
+  tenants: string[];
+  update_types: string[];
+  frequency: 'Daily' | 'Weekly' | 'Monthly';
+  created_at: string;
+  updated_at: string;
+}

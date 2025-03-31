@@ -29,3 +29,15 @@ export {
   getLicenseData,
   fetchTenantLicenses
 } from './licenseOperations';
+
+export {
+  getM365News,
+  fetchM365News
+} from './m365NewsOperations';
+
+export {
+  getNotificationSettings,
+  addNotificationSetting,
+  updateNotificationSetting,
+  deleteNotificationSetting
+} from './notificationOperations';

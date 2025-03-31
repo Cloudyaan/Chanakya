@@ -125,47 +125,51 @@ const WindowsUpdatesTable = ({ updates, onFetch, isFetching }: WindowsUpdatesTab
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[150px]">Product</TableHead>
-              <TableHead className="w-[120px]">Status</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="w-[120px] text-right">Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {updates.map((update) => (
-              <TableRow 
-                key={update.id} 
-                className={cn(
-                  "group hover:bg-muted/50 cursor-pointer",
-                  update.webViewUrl && "hover:underline"
-                )}
-                onClick={() => update.webViewUrl && openExternalLink(update.webViewUrl)}
-              >
-                <TableCell>
-                  <span className="font-medium">{update.productName || 'Unknown Product'}</span>
-                </TableCell>
-                <TableCell>
-                  {getStatusBadge(update.status)}
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium flex items-center gap-1">
-                    {update.title || 'No Title'}
-                    {update.webViewUrl && <ExternalLink size={14} className="text-blue-500" />}
-                  </div>
-                  <div className="text-sm text-muted-foreground line-clamp-1">
-                    {update.description || 'No description available'}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatDate(update.startDate)}
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px]">Product</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead className="w-[120px] text-right">Date</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {updates.map((update) => (
+                <TableRow 
+                  key={update.id} 
+                  className={cn(
+                    "group hover:bg-muted/50 cursor-pointer",
+                    update.webViewUrl && "hover:underline"
+                  )}
+                  onClick={() => update.webViewUrl && openExternalLink(update.webViewUrl)}
+                >
+                  <TableCell>
+                    <span className="font-medium truncate block max-w-[140px]" title={update.productName || 'Unknown Product'}>
+                      {update.productName || 'Unknown Product'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(update.status)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium flex items-center gap-1 truncate max-w-[300px]" title={update.title || 'No Title'}>
+                      {update.title || 'No Title'}
+                      {update.webViewUrl && <ExternalLink size={14} className="text-blue-500 flex-shrink-0" />}
+                    </div>
+                    <div className="text-sm text-muted-foreground truncate max-w-[300px]" title={update.description || 'No description available'}>
+                      {update.description || 'No description available'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    {formatDate(update.startDate)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
