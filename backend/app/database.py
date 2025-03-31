@@ -44,13 +44,17 @@ def init_db():
     conn.commit()
     conn.close()
 
-def find_tenant_database(tenant_id):
+def find_tenant_database(tenant_id, prefer_service_announcements=False):
     """Find tenant-specific database file based on ID.
     
-    This function searches for database files in the following order:
-    1. service_announcements_{tenant_id}.db
-    2. *_{tenant_id}.db
-    3. *{tenant_id}*.db
+    Args:
+        tenant_id: The ID of the tenant to find database for
+        prefer_service_announcements: If True, prioritize service_announcements databases
+    
+    This function searches for database files in the following order (unless prefer_service_announcements is True):
+    1. *_{tenant_id}.db (standard tenant DB)
+    2. service_announcements_{tenant_id}.db (only if it already exists)
+    3. *{tenant_id}*.db (any DB containing the tenant ID)
     
     Returns the path to the first matching database file, or None if not found.
     """
@@ -61,11 +65,20 @@ def find_tenant_database(tenant_id):
     print(f"Searching for tenant database with ID: {tenant_id}")
     
     # Look for database files matching different naming patterns
-    patterns = [
-        f"service_announcements_{tenant_id}.db",  # New service announcements DB format
-        f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
-        f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
-    ]
+    if prefer_service_announcements:
+        # When service announcements are preferred (for message-center source)
+        patterns = [
+            f"service_announcements_{tenant_id}.db",  # Preferred for service announcements
+            f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
+            f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
+        ]
+    else:
+        # Default priority - regular tenant DB first
+        patterns = [
+            f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
+            f"service_announcements_{tenant_id}.db",  # Service announcements DB (only if exists)
+            f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
+        ]
     
     for pattern in patterns:
         matching_files = glob.glob(pattern)

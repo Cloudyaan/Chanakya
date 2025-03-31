@@ -160,7 +160,10 @@ export const sendNotificationNow = async (id: string): Promise<{ success: boolea
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ 
+        id,
+        useExistingDatabases: true // Flag to tell backend not to create new databases
+      }),
     });
     
     const result = await response.json();

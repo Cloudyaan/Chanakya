@@ -41,7 +41,10 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tenantId }),
+      body: JSON.stringify({ 
+        tenantId,
+        skipDatabaseCreation: true // Flag to prevent creating new databases
+      }),
     });
     
     if (!response.ok) {

@@ -58,7 +58,7 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ tenantId }),
+      body: JSON.stringify({ tenantId, skipDatabaseCreation: true }),
     });
     
     if (!response.ok) {
