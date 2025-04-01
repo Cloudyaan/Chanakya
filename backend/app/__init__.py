@@ -14,7 +14,7 @@ def create_app():
     from app.routes.license_routes import license_bp
     from app.routes.windows_routes import windows_bp
     from app.routes.news_routes import news_bp
-    from app.routes.notification_routes import notification_bp
+    from app.routes.notification import notification_bp  # Updated import path
     
     app.register_blueprint(tenant_bp)
     app.register_blueprint(azure_bp)
