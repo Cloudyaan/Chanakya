@@ -18,10 +18,83 @@ def ensureArray(value):
 def normalizeFrequency(frequency):
     return 'Weekly' if frequency == 'Monthly' else frequency
 
+# Helper function to ensure text is properly sanitized
+def sanitizeHtml(text):
+    if not text:
+        return ""
+    
+    # Replace problematic HTML entities and tags
+    replacements = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '&': '&amp;',
+    }
+    
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    
+    return text
+
 def create_email_html(setting, updates_data):
-    """Create HTML email content for the notification"""
-    # Get frequency for the email header
-    frequency = setting.get('frequency', 'Regular')
+    """Create HTML email content with Adaptive Card-inspired styling"""
+    frequency = normalizeFrequency(setting.get('frequency', 'Regular'))
+    current_date = datetime.now().strftime('%Y-%m-%d %H:%M')
+    
+    # Adaptive Card-inspired styles
+    container_style = """
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    """
+    header_style = """
+        background-color: #6E59A5;
+        color: white;
+        padding: 20px;
+        border-radius: 4px 4px 0 0;
+        margin-bottom: 20px;
+    """
+    card_style = """
+        background-color: #FFFFFF;
+        border: 1px solid #DDDDDD;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        overflow: hidden;
+    """
+    card_header_style = """
+        background-color: #F3F2F1;
+        padding: 12px 15px;
+        border-bottom: 1px solid #DDDDDD;
+        font-weight: 600;
+    """
+    card_body_style = """
+        padding: 15px;
+    """
+    card_footer_style = """
+        background-color: #F9F9F9;
+        padding: 10px 15px;
+        border-top: 1px solid #EEEEEE;
+        font-size: 0.8em;
+        color: #666666;
+    """
+    badge_style = """
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 600;
+        margin-right: 8px;
+        text-transform: uppercase;
+    """
+    action_required_style = "background-color: #FDE7E9; color: #A80000;"
+    plan_change_style = "background-color: #E5DEFF; color: #8B5CF6;"
+    informational_style = "background-color: #D3E4FD; color: #0EA5E9;"
+    product_style = "background-color: #FFDEE2; color: #D946EF;"
+    status_style = "background-color: #F2FCE2; color: #2E7D32;"
     
     html = f"""
     <!DOCTYPE html>
@@ -30,145 +103,59 @@ def create_email_html(setting, updates_data):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Microsoft 365 Updates</title>
-        <style>
-            body {{
-                font-family: 'Segoe UI', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 0;
-                background-color: #f9f9f9;
-            }}
-            .container {{
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #ffffff;
-            }}
-            .header {{
-                background-color: #6E59A5;
-                color: white;
-                padding: 20px;
-                text-align: center;
-                border-radius: 6px 6px 0 0;
-            }}
-            .section {{
-                margin-bottom: 30px;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 20px;
-            }}
-            .section h2 {{
-                color: #6E59A5;
-                border-bottom: 2px solid #6E59A5;
-                padding-bottom: 8px;
-                margin-top: 30px;
-            }}
-            .update-item {{
-                padding: 15px;
-                margin-bottom: 15px;
-                background-color: #f5f5f5;
-                border-left: 4px solid #6E59A5;
-                border-radius: 4px;
-            }}
-            .update-title {{
-                font-weight: bold;
-                margin-bottom: 5px;
-                font-size: 16px;
-            }}
-            .update-meta {{
-                font-size: 0.9em;
-                color: #666;
-                margin-bottom: 10px;
-            }}
-            .update-id {{
-                font-family: monospace;
-                color: #666;
-                font-size: 0.85em;
-            }}
-            .update-desc {{
-                margin-top: 10px;
-            }}
-            .footer {{
-                text-align: center;
-                padding: 20px;
-                font-size: 0.8em;
-                color: #666;
-                background-color: #f5f5f5;
-                border-radius: 0 0 6px 6px;
-            }}
-            .badge {{
-                display: inline-block;
-                padding: 3px 8px;
-                border-radius: 12px;
-                font-size: 0.75em;
-                font-weight: 500;
-                text-transform: uppercase;
-                margin-right: 5px;
-            }}
-            .badge-action-required {{
-                background-color: #FDE1D3;
-                color: #F97316;
-            }}
-            .badge-plan-change {{
-                background-color: #E5DEFF;
-                color: #8B5CF6;
-            }}
-            .badge-info {{
-                background-color: #D3E4FD;
-                color: #0EA5E9;
-            }}
-            .badge-status {{
-                background-color: #F2FCE2;
-                color: #2E7D32;
-            }}
-            .badge-product {{
-                background-color: #FFDEE2;
-                color: #D946EF;
-            }}
-            .date-info {{
-                font-size: 0.85em;
-                color: #666;
-                text-align: right;
-                float: right;
-            }}
-            .no-updates {{
-                padding: 15px;
-                text-align: center;
-                background-color: #f9f9f9;
-                border-radius: 4px;
-                color: #666;
-            }}
-        </style>
     </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>Microsoft 365 Updates</h1>
-                <p>{frequency} Update Summary</p>
+    <body style="margin: 0; padding: 0; background-color: #F3F2F1;">
+        <div style="{container_style}">
+            <div style="{header_style}">
+                <h1 style="margin: 0; font-weight: 300;">Microsoft 365 Updates</h1>
+                <p style="margin: 5px 0 0; font-size: 0.9em;">{frequency} Update Summary • {current_date}</p>
             </div>
     """
     
+    def create_card(title, content, footer=None, accent_color="#6E59A5"):
+        """Helper to create Adaptive Card-like elements"""
+        nonlocal html
+        html += f"""
+        <div style="{card_style} border-left: 3px solid {accent_color};">
+            <div style="{card_header_style}">
+                {sanitizeHtml(title)}
+            </div>
+            <div style="{card_body_style}">
+                {content}
+            </div>
+        """
+        if footer:
+            html += f"""
+            <div style="{card_footer_style}">
+                {footer}
+            </div>
+            """
+        html += "</div>"
+    
     # Message Center Updates
     if 'message-center' in setting['update_types']:
-        html += """
-            <div class="section">
-                <h2>Message Center Announcements</h2>
+        html += f"""
+        <div style="margin-bottom: 25px;">
+            <h2 style="color: #6E59A5; margin-bottom: 15px;">Message Center Announcements</h2>
         """
         
         has_updates = False
         
-        for tenant_id, updates in updates_data['message_center'].items():
-            if updates:
+        for tenant_id, tenant_updates in updates_data['message_center'].items():
+            if isinstance(tenant_updates, list) and tenant_updates:
                 has_updates = True
                 
-                for update in updates:
+                for update in tenant_updates:
                     action_type = update.get('actionType', 'Informational')
-                    badge_class = "badge-info"
+                    badge_style_type = informational_style
+                    accent_color = "#0EA5E9"  # Blue
                     
                     if action_type == 'Action Required':
-                        badge_class = "badge-action-required"
+                        badge_style_type = action_required_style
+                        accent_color = "#A80000"  # Red
                     elif action_type == 'Plan for Change':
-                        badge_class = "badge-plan-change"
+                        badge_style_type = plan_change_style
+                        accent_color = "#8B5CF6"  # Purple
                     
                     category = update.get('category', 'General')
                     formatted_category = category
@@ -179,140 +166,174 @@ def create_email_html(setting, updates_data):
                     elif category == 'preventOrFixIssue':
                         formatted_category = 'Prevent Or Fix Issue'
                     
-                    # Try to format date nicely
                     try:
-                        published_date = datetime.fromisoformat(update.get('publishedDate', '')).strftime('%Y-%m-%d')
+                        published_date = datetime.fromisoformat(update.get('publishedDate', '')).strftime('%b %d, %Y')
                     except (ValueError, TypeError):
                         published_date = update.get('publishedDate', 'Unknown Date')
                     
-                    html += f"""
-                    <div class="update-item">
-                        <div class="update-title">{update.get('title', 'Untitled Update')}</div>
-                        <div class="update-id">ID: {update.get('messageId', update.get('id', 'Unknown'))}</div>
-                        <div class="update-meta">
-                            <span class="badge {badge_class}">{action_type}</span>
-                            <span class="badge badge-info">{formatted_category}</span>
-                            <span class="date-info">Last Updated: {published_date}</span>
-                        </div>
-                        <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
+                    # Sanitize description
+                    description = sanitizeHtml(update.get('description', 'No description available.'))
+                    description = description[:250] + ('...' if len(description) > 250 else '')
+                    
+                    content = f"""
+                    <div style="margin-bottom: 10px;">
+                        <span style="{badge_style} {badge_style_type}">{action_type}</span>
+                        <span style="{badge_style} {informational_style}">{formatted_category}</span>
+                    </div>
+                    <div style="margin-bottom: 10px; color: #333333; line-height: 1.4;">
+                        {description}
                     </div>
                     """
+                    
+                    footer = f"""
+                    <span>ID: {update.get('messageId', update.get('id', 'Unknown'))}</span>
+                    <span style="float: right;">Published: {published_date}</span>
+                    """
+                    
+                    create_card(
+                        title=update.get('title', 'Untitled Update'),
+                        content=content,
+                        footer=footer,
+                        accent_color=accent_color
+                    )
         
         if not has_updates:
-            html += """
-                <div class="no-updates">
-                    No message center announcements found for the selected time period.
-                </div>
-            """
+            create_card(
+                title="No new announcements",
+                content="No message center announcements found for the selected time period.",
+                accent_color="#666666"
+            )
         
-        html += """
-            </div>
-        """
+        html += "</div>"
     
     # Windows Updates
     if 'windows-updates' in setting['update_types']:
-        html += """
-            <div class="section">
-                <h2>Windows Updates</h2>
+        html += f"""
+        <div style="margin-bottom: 25px;">
+            <h2 style="color: #6E59A5; margin-bottom: 15px;">Windows Updates</h2>
         """
         
         has_updates = False
         
-        for tenant_id, updates in updates_data['windows_updates'].items():
-            if updates:
+        for tenant_id, tenant_updates in updates_data['windows_updates'].items():
+            if isinstance(tenant_updates, list) and tenant_updates:
                 has_updates = True
                 
-                for update in updates:
-                    # Try to format date nicely
+                for update in tenant_updates:
                     try:
-                        start_date = datetime.fromisoformat(update.get('startDate', '')).strftime('%Y-%m-%d')
+                        start_date = datetime.fromisoformat(update.get('startDate', '')).strftime('%b %d, %Y')
                     except (ValueError, TypeError):
                         start_date = update.get('startDate', 'Unknown Date')
                     
-                    html += f"""
-                    <div class="update-item">
-                        <div class="update-title">{update.get('title', 'Untitled Update')}</div>
-                        <div class="update-meta">
-                            <span class="badge badge-product">{update.get('productName', 'Unknown Product')}</span>
-                            <span class="badge badge-status">{update.get('status', 'Unknown Status')}</span>
-                            <span class="date-info">Date: {start_date}</span>
-                        </div>
-                        <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
+                    # Sanitize product name and status
+                    product_name = sanitizeHtml(update.get('productName', 'Unknown Product'))
+                    status = sanitizeHtml(update.get('status', 'Unknown Status'))
+                    
+                    # Sanitize description
+                    description = sanitizeHtml(update.get('description', 'No description available.'))
+                    description = description[:250] + ('...' if len(description) > 250 else '')
+                    
+                    content = f"""
+                    <div style="margin-bottom: 10px;">
+                        <span style="{badge_style} {product_style}">{product_name}</span>
+                        <span style="{badge_style} {status_style}">{status}</span>
+                    </div>
+                    <div style="margin-bottom: 10px; color: #333333; line-height: 1.4;">
+                        {description}
                     </div>
                     """
+                    
+                    footer = f"<span style=\"float: right;\">Release date: {start_date}</span>"
+                    
+                    create_card(
+                        title=update.get('title', 'Untitled Update'),
+                        content=content,
+                        footer=footer,
+                        accent_color="#D946EF"  # Magenta
+                    )
         
         if not has_updates:
-            html += """
-                <div class="no-updates">
-                    No Windows updates found for the selected time period.
-                </div>
-            """
+            create_card(
+                title="No new updates",
+                content="No Windows updates found for the selected time period.",
+                accent_color="#666666"
+            )
         
-        html += """
-            </div>
-        """
+        html += "</div>"
     
     # M365 News
     if 'news' in setting['update_types']:
-        html += """
-            <div class="section">
-                <h2>Microsoft 365 News</h2>
+        html += f"""
+        <div style="margin-bottom: 25px;">
+            <h2 style="color: #6E59A5; margin-bottom: 15px;">Microsoft 365 News</h2>
         """
         
         has_updates = False
         
-        for tenant_id, news_items in updates_data['m365_news'].items():
-            if news_items:
+        for tenant_id, tenant_news in updates_data['m365_news'].items():
+            if isinstance(tenant_news, list) and tenant_news:
                 has_updates = True
                 
-                for item in news_items:
-                    # Try to format date nicely
+                for item in tenant_news:
                     try:
-                        published_date = datetime.fromisoformat(item.get('published_date', '')).strftime('%Y-%m-%d')
+                        published_date = datetime.fromisoformat(item.get('published_date', '')).strftime('%b %d, %Y')
                     except (ValueError, TypeError):
                         published_date = item.get('published_date', 'Unknown Date')
                     
-                    # Get categories if available
-                    categories = item.get('categories', [])
-                    if isinstance(categories, str):
-                        try:
-                            categories = json.loads(categories)
-                        except:
-                            categories = []
-                    
+                    categories = ensureArray(item.get('categories', []))
                     category_badges = ""
-                    if categories and len(categories) > 0:
-                        for category in categories[:3]:  # Limit to first 3 categories
-                            category_badges += f'<span class="badge badge-info">{category}</span> '
                     
-                    html += f"""
-                    <div class="update-item">
-                        <div class="update-title">{item.get('title', 'Untitled News')}</div>
-                        <div class="update-meta">
-                            {category_badges}
-                            <span class="date-info">Published: {published_date}</span>
-                        </div>
-                        <div class="update-desc">{item.get('summary', 'No summary available.')[:200]}...</div>
-                        <div><a href="{item.get('link', '#')}">Read more</a></div>
+                    for category in categories[:3]:  # Limit to first 3 categories
+                        sanitized_category = sanitizeHtml(category)
+                        category_badges += f'<span style="{badge_style} {informational_style}">{sanitized_category}</span> '
+                    
+                    # Sanitize summary and title
+                    summary = sanitizeHtml(item.get('summary', 'No summary available.'))
+                    summary = summary[:250] + ('...' if len(summary) > 250 else '')
+                    
+                    # Ensure link is properly formatted and safe
+                    link = item.get('link', '#')
+                    if not link.startswith(('http://', 'https://')):
+                        link = '#'  # Default to hash if not a valid URL
+                    
+                    content = f"""
+                    <div style="margin-bottom: 10px;">
+                        {category_badges}
+                    </div>
+                    <div style="margin-bottom: 10px; color: #333333; line-height: 1.4;">
+                        {summary}
+                    </div>
+                    <div>
+                        <a href="{link}" 
+                           style="color: #6E59A5; text-decoration: none; font-weight: 500;">
+                           Read more →
+                        </a>
                     </div>
                     """
+                    
+                    footer = f"<span style=\"float: right;\">Published: {published_date}</span>"
+                    
+                    create_card(
+                        title=item.get('title', 'Untitled News'),
+                        content=content,
+                        footer=footer,
+                        accent_color="#F97316"  # Orange
+                    )
         
         if not has_updates:
-            html += """
-                <div class="no-updates">
-                    No Microsoft 365 news found for the selected time period.
-                </div>
-            """
+            create_card(
+                title="No recent news",
+                content="No Microsoft 365 news found for the selected time period.",
+                accent_color="#666666"
+            )
         
-        html += """
-            </div>
-        """
+        html += "</div>"
     
     # Footer
     html += f"""
-            <div class="footer">
-                <p>This email was sent as part of your Microsoft 365 notification settings.</p>
-                <p>Update frequency: {setting['frequency']} | Date sent: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+            <div style="margin-top: 30px; padding: 15px; text-align: center; color: #666666; font-size: 0.8em;">
+                <p>This email was sent as part of your Microsoft 365 notification settings</p>
+                <p>Update frequency: {frequency} • Generated on {current_date}</p>
             </div>
         </div>
     </body>
