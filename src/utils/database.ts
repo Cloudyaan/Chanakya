@@ -20,13 +20,10 @@ export {
 
 export {
   getTenantUpdates,
-  fetchTenantUpdates
-} from './messageCenterOperations';
-
-export {
+  fetchTenantUpdates,
   getWindowsUpdates,
   fetchWindowsUpdates
-} from './windowsUpdatesOperations';
+} from './updatesOperations';
 
 export {
   getLicenseData,
@@ -42,7 +39,5 @@ export {
   getNotificationSettings,
   addNotificationSetting,
   updateNotificationSetting,
-  deleteNotificationSetting,
-  sendNotification
+  deleteNotificationSetting
 } from './notificationOperations';
-

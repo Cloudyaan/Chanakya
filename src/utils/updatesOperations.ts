@@ -1,7 +1,12 @@
 
-import { TenantUpdate, WindowsUpdate } from './types';
-import { API_URL } from './api';
+// Re-export all operations for backward compatibility
+import { getTenantUpdates, fetchTenantUpdates } from './messageCenterOperations';
+import { getWindowsUpdates, fetchWindowsUpdates } from './windowsUpdatesOperations';
 
-export { getTenantUpdates, fetchTenantUpdates } from './messageCenterOperations';
-export { getWindowsUpdates, fetchWindowsUpdates } from './windowsUpdatesOperations';
-
+// Export the functions from both files to maintain compatibility
+export {
+  getTenantUpdates,
+  fetchTenantUpdates,
+  getWindowsUpdates,
+  fetchWindowsUpdates
+};
