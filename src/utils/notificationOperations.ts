@@ -93,8 +93,7 @@ export const sendNotification = async (id: string): Promise<boolean> => {
         useExistingDatabases: true,
         verifySettings: true, // Add flag to verify settings before sending
         checkPeriod: true,    // Enable proper time period checking based on frequency
-        fixEmailTemplate: true, // Flag to ensure email template fixes are applied
-        forceExactDateFilter: true // New flag to enforce exact yesterday date filtering
+        fixEmailTemplate: true // New flag to ensure email template fixes are applied
       }),
     });
     

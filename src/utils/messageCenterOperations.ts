@@ -68,8 +68,7 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
         tenantId, 
         skipDatabaseCreation: true,
         forceUseExistingDatabase: true,
-        fixCompatibility: true, // Flag to fix compatibility issues
-        forceExactDateFilter: true // New flag to enforce exact date filtering
+        fixCompatibility: true // Add flag to fix compatibility issues
       }),
     });
     

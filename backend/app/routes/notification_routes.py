@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 import sqlite3
 import json
@@ -431,26 +432,7 @@ def get_time_period_for_frequency(frequency, check_period=True):
     else:
         return 7  # Default to 7 days for any other frequency
 
-def get_exact_date_for_filter(frequency):
-    """Get the exact date to filter from based on frequency"""
-    from datetime import datetime, timedelta
-    
-    now = datetime.now()
-    
-    if frequency == "Daily":
-        # Use beginning of yesterday (00:00:00)
-        yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        return yesterday_start.isoformat()
-    elif frequency in ["Weekly", "Monthly"]:
-        # Use beginning of 7 days ago (00:00:00)
-        week_ago_start = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
-        return week_ago_start.isoformat()
-    else:
-        # Default to beginning of yesterday
-        yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        return yesterday_start.isoformat()
-
-def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True):
     """Fetch message center updates for a tenant for the appropriate time period"""
     # Get days based on frequency
     days = get_time_period_for_frequency(frequency, check_period)
@@ -478,14 +460,8 @@ def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True
         table_name = table_result['name']
         
         # Calculate the date range
-        if force_exact_date:
-            # Use exact date (beginning of yesterday for daily)
-            cutoff_date = get_exact_date_for_filter(frequency)
-            print(f"Filtering updates using exact date filter since: {cutoff_date}")
-        else:
-            # Use relative time from now (for backward compatibility)
-            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-            print(f"Filtering updates since: {cutoff_date}")
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering updates since: {cutoff_date}")
         
         # Query based on which table exists
         if table_name == 'updates':
@@ -515,7 +491,7 @@ def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True
         print(f"Error fetching message center updates: {e}")
         return []
 
-def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True):
     """Fetch Windows updates for a tenant for the appropriate time period"""
     # Get days based on frequency
     days = get_time_period_for_frequency(frequency, check_period)
@@ -539,14 +515,8 @@ def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force
             return []
         
         # Calculate the date range
-        if force_exact_date:
-            # Use exact date (beginning of yesterday for daily)
-            cutoff_date = get_exact_date_for_filter(frequency)
-            print(f"Filtering Windows updates using exact date filter since: {cutoff_date}")
-        else:
-            # Use relative time from now (for backward compatibility)
-            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-            print(f"Filtering Windows updates since: {cutoff_date}")
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering Windows updates since: {cutoff_date}")
         
         cursor.execute("""
             SELECT 
@@ -567,7 +537,7 @@ def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force
         print(f"Error fetching Windows updates: {e}")
         return []
 
-def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+def fetch_m365_news(tenant_id, frequency="Daily", check_period=True):
     """Fetch M365 news for a tenant for the appropriate time period"""
     # Get days based on frequency
     days = get_time_period_for_frequency(frequency, check_period)
@@ -591,14 +561,8 @@ def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact
             return []
         
         # Calculate the date range
-        if force_exact_date:
-            # Use exact date (beginning of yesterday for daily)
-            cutoff_date = get_exact_date_for_filter(frequency)
-            print(f"Filtering M365 news using exact date filter since: {cutoff_date}")
-        else:
-            # Use relative time from now (for backward compatibility)
-            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-            print(f"Filtering M365 news since: {cutoff_date}")
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering M365 news since: {cutoff_date}")
         
         cursor.execute("""
             SELECT * FROM m365_news
@@ -652,7 +616,6 @@ def create_email_html(setting, updates_data):
                 margin-bottom: 30px;
                 border-bottom: 1px solid #eee;
                 padding-bottom: 20px;
-                overflow: hidden; /* Important: Contains floats */
             }}
             .section h2 {{
                 color: #6E59A5;
@@ -671,8 +634,6 @@ def create_email_html(setting, updates_data):
                 width: 100%; /* Full width to prevent nesting */
                 box-sizing: border-box; /* Include padding in width calculation */
                 float: none; /* Prevent floating */
-                position: relative; /* Position relative for absolute positioning of elements if needed */
-                overflow: hidden; /* Contain any floated elements */
             }}
             .update-title {{
                 font-weight: bold;
@@ -683,19 +644,14 @@ def create_email_html(setting, updates_data):
                 font-size: 0.9em;
                 color: #666;
                 margin-bottom: 10px;
-                overflow: hidden; /* Contain floated elements */
             }}
             .update-id {{
                 font-family: monospace;
                 color: #666;
                 font-size: 0.85em;
-                display: block; /* Force block display */
-                margin-bottom: 5px;
             }}
             .update-desc {{
                 margin-top: 10px;
-                clear: both; /* Ensure it starts on a new line */
-                display: block; /* Force block display */
             }}
             .footer {{
                 text-align: center;
@@ -705,7 +661,6 @@ def create_email_html(setting, updates_data):
                 background-color: #f5f5f5;
                 border-radius: 0 0 6px 6px;
                 clear: both; /* Ensure footer is properly positioned */
-                display: block; /* Force block display */
             }}
             .badge {{
                 display: inline-block;
@@ -715,7 +670,6 @@ def create_email_html(setting, updates_data):
                 font-weight: 500;
                 text-transform: uppercase;
                 margin-right: 5px;
-                float: none; /* Prevent floating */
             }}
             .badge-action-required {{
                 background-color: #FDE1D3;
@@ -741,7 +695,6 @@ def create_email_html(setting, updates_data):
                 font-size: 0.85em;
                 color: #666;
                 text-align: right;
-                float: right; /* Float to right but contained by parent */
             }}
             .no-updates {{
                 padding: 15px;
@@ -749,8 +702,6 @@ def create_email_html(setting, updates_data):
                 background-color: #f9f9f9;
                 border-radius: 4px;
                 color: #666;
-                display: block; /* Force block display */
-                margin-bottom: 15px;
             }}
         </style>
     </head>
@@ -1015,7 +966,7 @@ def send_email_with_ms_graph(recipient, subject, html_content):
         print(f"Error sending email with Microsoft Graph: {e}")
         return False
 
-def process_and_send_notification(setting_id=None, use_existing_databases=False, check_period=True, force_exact_date=False):
+def process_and_send_notification(setting_id=None, use_existing_databases=False, check_period=True):
     """Process notifications and send emails"""
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
@@ -1073,7 +1024,7 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
         for tenant_id in tenants:
             # Get appropriate updates based on update types, passing frequency
             if 'message-center' in update_types:
-                message_center_updates = fetch_message_center_updates(tenant_id, frequency, check_period, force_exact_date)
+                message_center_updates = fetch_message_center_updates(tenant_id, frequency, check_period)
                 if message_center_updates:
                     updates_found = True
                     all_updates['message_center'][tenant_id] = message_center_updates
@@ -1082,7 +1033,7 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
                     all_updates['message_center'][tenant_id] = []
             
             if 'windows-updates' in update_types:
-                windows_updates = fetch_windows_updates(tenant_id, frequency, check_period, force_exact_date)
+                windows_updates = fetch_windows_updates(tenant_id, frequency, check_period)
                 if windows_updates:
                     updates_found = True
                     all_updates['windows_updates'][tenant_id] = windows_updates
@@ -1091,7 +1042,7 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
                     all_updates['windows_updates'][tenant_id] = []
             
             if 'news' in update_types:
-                m365_news = fetch_m365_news(tenant_id, frequency, check_period, force_exact_date)
+                m365_news = fetch_m365_news(tenant_id, frequency, check_period)
                 if m365_news:
                     updates_found = True
                     all_updates['m365_news'][tenant_id] = m365_news
@@ -1143,8 +1094,7 @@ def send_notification():
     data = request.json or {}
     setting_id = data.get('id')
     use_existing_databases = data.get('useExistingDatabases', False)
-    check_period = data.get('checkPeriod', False)
-    force_exact_date = data.get('forceExactDateFilter', False)
+    check_period = data.get('checkPeriod', False)  # Get the checkPeriod flag from the request
     
     if not setting_id:
         return jsonify({"error": "No notification setting ID provided"}), 400
@@ -1160,7 +1110,7 @@ def send_notification():
     if setting:
         print(f"Processing notification: {dict(setting)}")
     
-    result = process_and_send_notification(setting_id, use_existing_databases, check_period, force_exact_date)
+    result = process_and_send_notification(setting_id, use_existing_databases, check_period)
     return jsonify(result)
 
 # Start the notification scheduler thread
@@ -1208,3 +1158,4 @@ def run_notification_scheduler():
 scheduler_thread = threading.Thread(target=run_notification_scheduler)
 scheduler_thread.daemon = True
 scheduler_thread.start()
+
