@@ -629,6 +629,11 @@ def create_email_html(setting, updates_data):
                 background-color: #f5f5f5;
                 border-left: 4px solid #6E59A5;
                 border-radius: 4px;
+                clear: both; /* Add clear to prevent floating issues */
+                display: block; /* Ensure items are block-level elements */
+                width: 100%; /* Full width to prevent nesting */
+                box-sizing: border-box; /* Include padding in width calculation */
+                float: none; /* Prevent floating */
             }}
             .update-title {{
                 font-weight: bold;
@@ -655,6 +660,7 @@ def create_email_html(setting, updates_data):
                 color: #666;
                 background-color: #f5f5f5;
                 border-radius: 0 0 6px 6px;
+                clear: both; /* Ensure footer is properly positioned */
             }}
             .badge {{
                 display: inline-block;
@@ -744,6 +750,7 @@ def create_email_html(setting, updates_data):
                     except (ValueError, TypeError):
                         published_date = update.get('publishedDate', 'Unknown Date')
                     
+                    # Ensure each update is properly closed with closing div tag
                     html += f"""
                     <div class="update-item">
                         <div class="update-title">{update.get('title', 'Untitled Update')}</div>
@@ -755,7 +762,7 @@ def create_email_html(setting, updates_data):
                         </div>
                         <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
                     </div>
-                    """
+                    """  # Ensure this closing div tag is properly included
         
         if not has_updates:
             html += """
@@ -764,7 +771,7 @@ def create_email_html(setting, updates_data):
                 </div>
             """
         
-        html += "</div>"
+        html += "</div>"  # Close the section div properly
     
     # Windows Updates
     if 'windows-updates' in setting['update_types']:
@@ -786,6 +793,7 @@ def create_email_html(setting, updates_data):
                     except (ValueError, TypeError):
                         start_date = update.get('startDate', 'Unknown Date')
                     
+                    # Ensure each windows update is properly closed
                     html += f"""
                     <div class="update-item">
                         <div class="update-title">{update.get('title', 'Untitled Update')}</div>
@@ -796,7 +804,7 @@ def create_email_html(setting, updates_data):
                         </div>
                         <div class="update-desc">{update.get('description', 'No description available.')[:200]}...</div>
                     </div>
-                    """
+                    """  # Ensure proper closing div tag
         
         if not has_updates:
             html += """
@@ -805,7 +813,7 @@ def create_email_html(setting, updates_data):
                 </div>
             """
         
-        html += "</div>"
+        html += "</div>"  # Close the section div
     
     # M365 News
     if 'news' in setting['update_types']:
@@ -840,6 +848,7 @@ def create_email_html(setting, updates_data):
                         for category in categories[:3]:  # Limit to first 3 categories
                             category_badges += f'<span class="badge badge-info">{category}</span> '
                     
+                    # Ensure news items have proper closing div tags
                     html += f"""
                     <div class="update-item">
                         <div class="update-title">{item.get('title', 'Untitled News')}</div>
@@ -850,7 +859,7 @@ def create_email_html(setting, updates_data):
                         <div class="update-desc">{item.get('summary', 'No summary available.')[:200]}...</div>
                         <div><a href="{item.get('link', '#')}">Read more</a></div>
                     </div>
-                    """
+                    """  # Ensure proper closing div tag
         
         if not has_updates:
             html += """
@@ -859,9 +868,9 @@ def create_email_html(setting, updates_data):
                 </div>
             """
         
-        html += "</div>"
+        html += "</div>"  # Close the section div
     
-    # Footer
+    # Footer - ensure proper closing of all tags
     html += f"""
             <div class="footer">
                 <p>This email was sent as part of your Microsoft 365 notification settings.</p>

@@ -92,7 +92,8 @@ export const sendNotification = async (id: string): Promise<boolean> => {
         id,
         useExistingDatabases: true,
         verifySettings: true, // Add flag to verify settings before sending
-        checkPeriod: true     // Enable proper time period checking based on frequency
+        checkPeriod: true,    // Enable proper time period checking based on frequency
+        fixEmailTemplate: true // New flag to ensure email template fixes are applied
       }),
     });
     
