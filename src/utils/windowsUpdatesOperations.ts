@@ -52,7 +52,8 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
         skipDatabaseCreation: true, // Flag to prevent creating new databases
         forceUseExistingDatabase: true, // Extra flag to ensure only existing databases are used
         fixCompatibility: true, // Flag to trigger compatibility fixes for numpy/pandas
-        forceExactDateFilter: true // New flag to enforce exact date filtering
+        forceExactDateFilter: true, // New flag to enforce exact date filtering
+        useCompleteDay: true // Use complete day for filtering (00:00:00 to 23:59:59)
       }),
     });
     
