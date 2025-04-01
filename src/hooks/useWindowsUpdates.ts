@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { WindowsUpdate } from '@/utils/types';
-import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/windowsUpdatesOperations';
+import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/updatesOperations';
 import { useToast } from '@/hooks/use-toast';
 
 export const useWindowsUpdates = (tenantId: string | null) => {
@@ -67,11 +67,11 @@ export const useWindowsUpdates = (tenantId: string | null) => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching Windows updates:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to trigger Windows update data fetch",
+        description: "Failed to trigger Windows update data fetch",
         variant: "destructive",
       });
     } finally {

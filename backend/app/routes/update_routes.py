@@ -179,9 +179,6 @@ def get_updates():
 @update_bp.route('/fetch-updates', methods=['POST'])
 def trigger_fetch_updates():
     tenant_id = request.json.get('tenantId')
-    skip_database_creation = request.json.get('skipDatabaseCreation', False)
-    force_use_existing_database = request.json.get('forceUseExistingDatabase', False)
-    use_existing_databases = request.json.get('useExistingDatabases', False)
     
     if not tenant_id:
         return jsonify({
@@ -231,48 +228,22 @@ def trigger_fetch_updates():
                 
             # Try different ways to run the batch file
             try:
-                # Add flags to command line arguments
-                cmd_args = ['fetch_updates.bat', tenant_id]
-                if skip_database_creation:
-                    cmd_args.append('--skip-db-creation')
-                if force_use_existing_database or use_existing_databases:
-                    cmd_args.append('--use-existing-db')
-                
-                subprocess.run(cmd_args, check=True)
+                subprocess.run(['fetch_updates.bat', tenant_id], check=True)
             except Exception as batch_error:
                 print(f"Error running batch file directly: {str(batch_error)}")
                 try:
                     # Try with cmd /c
-                    cmd_args = ['cmd', '/c', 'fetch_updates.bat', tenant_id]
-                    if skip_database_creation:
-                        cmd_args.append('--skip-db-creation')
-                    if force_use_existing_database or use_existing_databases:
-                        cmd_args.append('--use-existing-db')
-                    
-                    subprocess.run(cmd_args, check=True)
+                    subprocess.run(['cmd', '/c', 'fetch_updates.bat', tenant_id], check=True)
                 except Exception as cmd_error:
                     print(f"Error running with cmd /c: {str(cmd_error)}")
                     # As a last resort, try with python
-                    cmd_args = ['python', 'fetch_updates.py', tenant_id]
-                    if skip_database_creation:
-                        cmd_args.append('--skip-db-creation')
-                    if force_use_existing_database or use_existing_databases:
-                        cmd_args.append('--use-existing-db')
-                    
-                    subprocess.run(cmd_args, check=True)
+                    subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
         else:
             # On non-Windows, run the Python script directly
             print(f"Running command: python fetch_updates.py {tenant_id}")
             
-            # Add flags to command line arguments
-            cmd_args = ['python', 'fetch_updates.py', tenant_id]
-            if skip_database_creation:
-                cmd_args.append('--skip-db-creation')
-            if force_use_existing_database or use_existing_databases:
-                cmd_args.append('--use-existing-db')
-            
             # Use sys.executable to ensure we use the same Python interpreter
-            subprocess.run(cmd_args, check=True)
+            subprocess.run(['python', 'fetch_updates.py', tenant_id], check=True)
         
         return jsonify({
             'success': True,

@@ -2,7 +2,6 @@
 import importlib.util
 import subprocess
 import sys
-import os
 
 def check_dependencies():
     """Check if required Python packages are installed."""
@@ -45,20 +44,8 @@ def check_numpy_pandas_compatibility():
             try:
                 # Reinstall numpy first, then pandas
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy"])
-                
-                # Force a restart of the application on macOS or Linux after reinstalling numpy
-                if os.name != 'nt':  # Not Windows
-                    print("Forcing application restart after numpy reinstall")
-                    os.execv(sys.executable, ['python'] + sys.argv)
-                
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "pandas"])
                 print("Successfully reinstalled numpy and pandas")
-                
-                # Force a restart of the application
-                if os.name != 'nt':  # Not Windows
-                    print("Forcing application restart after reinstalling packages")
-                    os.execv(sys.executable, ['python'] + sys.argv)
-                
                 return True
             except Exception as install_error:
                 print(f"Failed to fix numpy/pandas compatibility: {install_error}")
@@ -68,18 +55,4 @@ def check_numpy_pandas_compatibility():
             return False
     except Exception as e:
         print(f"Error importing pandas: {e}")
-        return False
-
-def fix_pandas_numpy_compatibility():
-    """Fix pandas and numpy compatibility issues by reinstalling both packages."""
-    try:
-        print("Attempting to fix pandas/numpy compatibility by reinstalling...")
-        # Force reinstall numpy first
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy"])
-        # Then reinstall pandas
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "pandas"])
-        print("Successfully reinstalled numpy and pandas")
-        return True
-    except Exception as e:
-        print(f"Failed to reinstall numpy and pandas: {e}")
         return False

@@ -16,16 +16,6 @@ if %ERRORLEVEL% NEQ 0 (
     )
 )
 
-REM Check for numpy/pandas compatibility issue
-python -c "import pandas" 2>NUL
-if %ERRORLEVEL% NEQ 0 (
-    echo Detected potential numpy/pandas compatibility issue.
-    echo Reinstalling numpy and pandas...
-    pip install --force-reinstall numpy
-    pip install --force-reinstall pandas
-)
-
-REM Pass all command line arguments to the Python script
 python fetch_windows_updates.py %*
 
 echo.
