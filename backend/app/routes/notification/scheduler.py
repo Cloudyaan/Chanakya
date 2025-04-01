@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 import sqlite3
 from app.database import get_db_connection
-from backend.app.routes.notification.process import process_and_send_notification
+from app.routes.notification.process import process_and_send_notification
 
 # Start the notification scheduler thread
 def run_notification_scheduler():

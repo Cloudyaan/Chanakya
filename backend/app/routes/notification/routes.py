@@ -46,7 +46,7 @@ def get_notification_settings():
 @notification_bp.route('/send-notification', methods=['POST'])
 def send_notification():
     """Send a notification immediately"""
-    from backend.app.routes.notification.process import process_and_send_notification
+    from app.routes.notification.process import process_and_send_notification
     
     data = request.json or {}
     setting_id = data.get('id')
