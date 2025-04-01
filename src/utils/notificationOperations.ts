@@ -79,10 +79,10 @@ export const deleteNotificationSetting = async (id: string): Promise<boolean> =>
   }
 };
 
-// Function to send a notification immediately
+// Function to send a notification immediately with proper settings verification
 export const sendNotification = async (id: string): Promise<boolean> => {
   try {
-    console.log(`Sending notification ${id} with useExistingDatabases=true`);
+    console.log(`Sending notification ${id} with proper settings verification`);
     const response = await fetch(`${API_URL}/send-notification`, {
       method: 'POST',
       headers: {
@@ -90,7 +90,9 @@ export const sendNotification = async (id: string): Promise<boolean> => {
       },
       body: JSON.stringify({ 
         id,
-        useExistingDatabases: true 
+        useExistingDatabases: true,
+        verifySettings: true, // Add flag to verify settings before sending
+        checkPeriod: true     // Check appropriate time period based on frequency
       }),
     });
     

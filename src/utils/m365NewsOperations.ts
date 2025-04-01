@@ -62,7 +62,8 @@ export const fetchM365News = async (tenantId: string): Promise<boolean> => {
       body: JSON.stringify({ 
         tenantId,
         skipDatabaseCreation: true,
-        forceUseExistingDatabase: true
+        forceUseExistingDatabase: true,
+        fixCompatibility: true // Add flag to ensure compatibility fixes
       }),
     });
     

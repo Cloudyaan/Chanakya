@@ -51,7 +51,7 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
         tenantId,
         skipDatabaseCreation: true, // Flag to prevent creating new databases
         forceUseExistingDatabase: true, // Extra flag to ensure only existing databases are used
-        fixCompatibility: true // New flag to trigger compatibility fixes
+        fixCompatibility: true // Flag to trigger compatibility fixes for numpy/pandas
       }),
     });
     

@@ -67,7 +67,8 @@ export const fetchTenantUpdates = async (tenantId: string): Promise<boolean> => 
       body: JSON.stringify({ 
         tenantId, 
         skipDatabaseCreation: true,
-        forceUseExistingDatabase: true 
+        forceUseExistingDatabase: true,
+        fixCompatibility: true // Add flag to fix compatibility issues
       }),
     });
     

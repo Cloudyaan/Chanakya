@@ -25,7 +25,12 @@ if %ERRORLEVEL% NEQ 0 (
     pip install --force-reinstall pandas
 )
 
-python fetch_windows_updates.py %*
+REM Pass the fixCompatibility flag if specified
+if "%1"=="--fix-compatibility" (
+    python fetch_windows_updates.py --fix-compatibility %2
+) else (
+    python fetch_windows_updates.py --fix-compatibility %1
+)
 
 echo.
 echo Done!
