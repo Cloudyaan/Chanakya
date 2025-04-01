@@ -10,7 +10,7 @@ def create_app():
     # Register blueprints
     from app.routes.tenant_routes import tenant_bp
     from app.routes.azure_routes import azure_bp
-    from app.routes.update_routes import update_bp
+    from app.routes.update import update_bp  # Updated import path
     from app.routes.license_routes import license_bp
     from app.routes.windows_routes import windows_bp
     from app.routes.news_routes import news_bp
