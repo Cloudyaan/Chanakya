@@ -4,7 +4,7 @@ import sqlite3
 import json
 from datetime import datetime
 import uuid
-from app.routes.notification import notification_bp
+from backend.app.routes.notification import notification_bp
 from app.database import get_db_connection
 
 @notification_bp.route('/notification-settings', methods=['GET'])
@@ -46,7 +46,7 @@ def get_notification_settings():
 @notification_bp.route('/send-notification', methods=['POST'])
 def send_notification():
     """Send a notification immediately"""
-    from app.routes.notification.process import process_and_send_notification
+    from backend.app.routes.notification.process import process_and_send_notification
     
     data = request.json or {}
     setting_id = data.get('id')

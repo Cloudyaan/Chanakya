@@ -4,7 +4,7 @@ import sqlite3
 import json
 import uuid
 from datetime import datetime
-from app.routes.notification import notification_bp
+from backend.app.routes.notification import notification_bp
 from app.database import get_db_connection
 
 @notification_bp.route('/notification-settings', methods=['POST'])

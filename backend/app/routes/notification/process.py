@@ -2,8 +2,8 @@
 import json
 import sqlite3
 from app.database import get_db_connection
-from app.routes.notification.data_fetch import fetch_message_center_updates, fetch_windows_updates, fetch_m365_news
-from app.routes.notification.email import create_email_html, send_email_with_ms_graph
+from backend.app.routes.notification.data_fetch import fetch_message_center_updates, fetch_windows_updates, fetch_m365_news
+from backend.app.routes.notification.email import create_email_html, send_email_with_ms_graph
 
 def process_and_send_notification(setting_id=None, use_existing_databases=False, check_period=True, force_exact_date=False):
     """Process notifications and send emails"""
