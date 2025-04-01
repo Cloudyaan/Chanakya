@@ -418,8 +418,26 @@ def add_test_data_to_tenant_db(db_path):
     except Exception as e:
         print(f"Error adding test data: {e}")
 
-def fetch_message_center_updates(tenant_id, days=1):
-    """Fetch message center updates for a tenant for the specified number of days"""
+def get_time_period_for_frequency(frequency, check_period=True):
+    """Get the appropriate time period based on notification frequency"""
+    if not check_period:
+        # Default to 7 days if not checking period (backward compatibility)
+        return 7
+    
+    # Return days based on frequency
+    if frequency == "Daily":
+        return 1  # Last 24 hours for daily
+    elif frequency in ["Weekly", "Monthly"]:
+        return 7  # Last 7 days for weekly and monthly
+    else:
+        return 7  # Default to 7 days for any other frequency
+
+def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True):
+    """Fetch message center updates for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching message center updates for last {days} days based on {frequency} frequency")
+    
     # Ensure the tenant database exists
     db_path = find_tenant_database(tenant_id)
     if not db_path:
@@ -443,6 +461,7 @@ def fetch_message_center_updates(tenant_id, days=1):
         
         # Calculate the date range
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering updates since: {cutoff_date}")
         
         # Query based on which table exists
         if table_name == 'updates':
@@ -466,13 +485,18 @@ def fetch_message_center_updates(tenant_id, days=1):
         
         updates = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        print(f"Found {len(updates)} message center updates since {cutoff_date}")
         return updates
     except Exception as e:
         print(f"Error fetching message center updates: {e}")
         return []
 
-def fetch_windows_updates(tenant_id, days=1):
-    """Fetch Windows updates for a tenant for the specified number of days"""
+def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True):
+    """Fetch Windows updates for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching Windows updates for last {days} days based on {frequency} frequency")
+    
     # Ensure the tenant database exists
     db_path = find_tenant_database(tenant_id)
     if not db_path:
@@ -492,6 +516,7 @@ def fetch_windows_updates(tenant_id, days=1):
         
         # Calculate the date range
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering Windows updates since: {cutoff_date}")
         
         cursor.execute("""
             SELECT 
@@ -506,13 +531,18 @@ def fetch_windows_updates(tenant_id, days=1):
         
         updates = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        print(f"Found {len(updates)} Windows updates since {cutoff_date}")
         return updates
     except Exception as e:
         print(f"Error fetching Windows updates: {e}")
         return []
 
-def fetch_m365_news(tenant_id, days=1):
-    """Fetch M365 news for a tenant for the specified number of days"""
+def fetch_m365_news(tenant_id, frequency="Daily", check_period=True):
+    """Fetch M365 news for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching M365 news for last {days} days based on {frequency} frequency")
+    
     # Ensure the tenant database exists
     db_path = find_tenant_database(tenant_id)
     if not db_path:
@@ -532,6 +562,7 @@ def fetch_m365_news(tenant_id, days=1):
         
         # Calculate the date range
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        print(f"Filtering M365 news since: {cutoff_date}")
         
         cursor.execute("""
             SELECT * FROM m365_news
@@ -541,6 +572,7 @@ def fetch_m365_news(tenant_id, days=1):
         
         news = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        print(f"Found {len(news)} M365 news items since {cutoff_date}")
         return news
     except Exception as e:
         print(f"Error fetching M365 news: {e}")
@@ -925,7 +957,7 @@ def send_email_with_ms_graph(recipient, subject, html_content):
         print(f"Error sending email with Microsoft Graph: {e}")
         return False
 
-def process_and_send_notification(setting_id=None, use_existing_databases=False):
+def process_and_send_notification(setting_id=None, use_existing_databases=False, check_period=True):
     """Process notifications and send emails"""
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
@@ -967,6 +999,10 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False)
             })
             continue
         
+        # Get the frequency to determine time period
+        frequency = setting_dict.get('frequency', 'Daily')
+        print(f"Processing notification with frequency: {frequency}")
+        
         # Get updates for each tenant
         all_updates = {
             'message_center': {},
@@ -977,32 +1013,32 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False)
         updates_found = False
         
         for tenant_id in tenants:
-            # Get appropriate updates based on update types
+            # Get appropriate updates based on update types, passing frequency
             if 'message-center' in update_types:
-                message_center_updates = fetch_message_center_updates(tenant_id, days=7)
+                message_center_updates = fetch_message_center_updates(tenant_id, frequency, check_period)
                 if message_center_updates:
                     updates_found = True
                     all_updates['message_center'][tenant_id] = message_center_updates
                 else:
-                    print(f"No database found for tenant {tenant_id} when fetching message center updates")
+                    print(f"No message center updates found for tenant {tenant_id}")
                     all_updates['message_center'][tenant_id] = []
             
             if 'windows-updates' in update_types:
-                windows_updates = fetch_windows_updates(tenant_id, days=7)
+                windows_updates = fetch_windows_updates(tenant_id, frequency, check_period)
                 if windows_updates:
                     updates_found = True
                     all_updates['windows_updates'][tenant_id] = windows_updates
                 else:
-                    print(f"No database found for tenant {tenant_id} when fetching Windows updates")
+                    print(f"No Windows updates found for tenant {tenant_id}")
                     all_updates['windows_updates'][tenant_id] = []
             
             if 'news' in update_types:
-                m365_news = fetch_m365_news(tenant_id, days=7)
+                m365_news = fetch_m365_news(tenant_id, frequency, check_period)
                 if m365_news:
                     updates_found = True
                     all_updates['m365_news'][tenant_id] = m365_news
                 else:
-                    print(f"No database found for tenant {tenant_id} when fetching M365 news")
+                    print(f"No M365 news found for tenant {tenant_id}")
                     all_updates['m365_news'][tenant_id] = []
         
         if use_existing_databases and not updates_found:
@@ -1019,7 +1055,7 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False)
             results.append({
                 "id": setting_dict['id'],
                 "success": False,
-                "message": "No updates found"
+                "message": "No updates found for the specified time period"
             })
             continue
         
@@ -1049,11 +1085,23 @@ def send_notification():
     data = request.json or {}
     setting_id = data.get('id')
     use_existing_databases = data.get('useExistingDatabases', False)
+    check_period = data.get('checkPeriod', False)  # Get the checkPeriod flag from the request
     
     if not setting_id:
         return jsonify({"error": "No notification setting ID provided"}), 400
     
-    result = process_and_send_notification(setting_id, use_existing_databases)
+    # Print the notification settings
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM notification_settings WHERE id = ?', (setting_id,))
+    setting = cursor.fetchone()
+    conn.close()
+    
+    if setting:
+        print(f"Processing notification: {dict(setting)}")
+    
+    result = process_and_send_notification(setting_id, use_existing_databases, check_period)
     return jsonify(result)
 
 # Start the notification scheduler thread
@@ -1083,13 +1131,13 @@ def run_notification_scheduler():
                 
                 # Send notifications based on frequency
                 if frequency == 'Daily' and now.hour == 9:  # 9 AM daily
-                    process_and_send_notification(setting['id'])
+                    process_and_send_notification(setting['id'], check_period=True)
                 
                 elif frequency == 'Weekly' and now.weekday() == 0 and now.hour == 9:  # Monday at 9 AM
-                    process_and_send_notification(setting['id'])
+                    process_and_send_notification(setting['id'], check_period=True)
                 
                 elif frequency == 'Monthly' and now.day == 1 and now.hour == 9:  # 1st day of month at 9 AM
-                    process_and_send_notification(setting['id'])
+                    process_and_send_notification(setting['id'], check_period=True)
             
         except Exception as e:
             print(f"Error in notification scheduler: {e}")
@@ -1101,3 +1149,4 @@ def run_notification_scheduler():
 scheduler_thread = threading.Thread(target=run_notification_scheduler)
 scheduler_thread.daemon = True
 scheduler_thread.start()
+
