@@ -1,12 +1,7 @@
 
-// Re-export all operations for backward compatibility
-import { getTenantUpdates, fetchTenantUpdates } from './messageCenterOperations';
-import { getWindowsUpdates, fetchWindowsUpdates } from './windowsUpdatesOperations';
+import { TenantUpdate, WindowsUpdate } from './types';
+import { API_URL } from './api';
 
-// Export the functions from both files to maintain compatibility
-export {
-  getTenantUpdates,
-  fetchTenantUpdates,
-  getWindowsUpdates,
-  fetchWindowsUpdates
-};
+export { getTenantUpdates, fetchTenantUpdates } from './messageCenterOperations';
+export { getWindowsUpdates, fetchWindowsUpdates } from './windowsUpdatesOperations';
+
