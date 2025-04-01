@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -63,6 +64,20 @@ interface NotificationSettingsProps {
   selectedTenant: string | null;
 }
 
+// Helper function to parse JSON strings or return arrays
+const parseJsonToArray = (value: string | string[] | null | undefined): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("Error parsing JSON:", e);
+    return [];
+  }
+};
+
 const normalizeFrequency = (frequency: string): 'Daily' | 'Weekly' => {
   return (frequency === 'Monthly') ? 'Weekly' : (frequency as 'Daily' | 'Weekly');
 };
@@ -91,7 +106,15 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     try {
       const settings = await getNotificationSettings(selectedTenant || undefined);
       console.log('Loaded notification settings:', settings);
-      setNotificationSettings(settings);
+      
+      // Process settings to ensure arrays are correctly formatted
+      const processedSettings = settings.map(setting => ({
+        ...setting,
+        tenants: parseJsonToArray(setting.tenants),
+        update_types: parseJsonToArray(setting.update_types)
+      }));
+      
+      setNotificationSettings(processedSettings);
     } catch (error) {
       console.error('Error loading notification settings:', error);
       toast.error('Failed to load notification settings');
@@ -132,10 +155,22 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
   };
 
   const handleEdit = (setting: NotificationSetting) => {
+    // Parse JSON strings into arrays if needed
+    const tenantArray = parseJsonToArray(setting.tenants);
+    const updateTypesArray = parseJsonToArray(setting.update_types);
+    
     setIsEditing(setting.id);
     setEditValues({
-      tenants: Array.isArray(setting.tenants) ? setting.tenants : [],
-      update_types: Array.isArray(setting.update_types) ? setting.update_types : [],
+      name: setting.name,
+      email: setting.email,
+      tenants: tenantArray,
+      update_types: updateTypesArray,
+      frequency: normalizeFrequency(setting.frequency)
+    });
+    
+    console.log("Editing setting with values:", {
+      tenants: tenantArray,
+      update_types: updateTypesArray,
       frequency: normalizeFrequency(setting.frequency)
     });
   };
@@ -198,19 +233,6 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
     { id: 'news', label: 'Microsoft 365 News' }
   ];
 
-  const ensureArray = (value: any): string[] => {
-    if (Array.isArray(value)) return value;
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  };
-
   const getFrequencyIcon = (frequency: string) => {
     if (frequency === 'Daily') return <Clock size={14} />;
     return <Calendar size={14} />;
@@ -218,6 +240,12 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
 
   const getFrequencyLabel = (frequency: string) => {
     return normalizeFrequency(frequency);
+  };
+
+  // Helper function to check if an item is in the array
+  const isItemInArray = (array: any[] | undefined | null, item: string): boolean => {
+    if (!array) return false;
+    return array.includes(item);
   };
 
   return (
@@ -452,7 +480,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           {tenants.filter(t => t.isActive).map((tenant) => (
                             <div key={tenant.id} className="flex items-center space-x-2 mb-1">
                               <Checkbox
-                                checked={(editValues?.tenants || []).includes(tenant.id)}
+                                checked={isItemInArray(editValues?.tenants, tenant.id)}
                                 onCheckedChange={(checked) => {
                                   const currentTenants = editValues?.tenants || [];
                                   if (checked) {
@@ -474,7 +502,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         </div>
                       ) : (
                         <div>
-                          {ensureArray(setting.tenants).map((tenantId) => {
+                          {parseJsonToArray(setting.tenants).map((tenantId) => {
                             const tenant = tenants.find(t => t.id === tenantId);
                             return tenant ? (
                               <span key={tenantId} className="inline-block bg-gray-100 px-2 py-1 rounded text-xs mr-1 mb-1">
@@ -491,7 +519,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                           {updateTypes.map((type) => (
                             <div key={type.id} className="flex items-center space-x-2 mb-1">
                               <Checkbox
-                                checked={(editValues?.update_types || []).includes(type.id)}
+                                checked={isItemInArray(editValues?.update_types, type.id)}
                                 onCheckedChange={(checked) => {
                                   const currentTypes = editValues?.update_types || [];
                                   if (checked) {
@@ -513,7 +541,7 @@ const NotificationSettings = ({ tenants, selectedTenant }: NotificationSettingsP
                         </div>
                       ) : (
                         <div>
-                          {ensureArray(setting.update_types).map((typeId) => {
+                          {parseJsonToArray(setting.update_types).map((typeId) => {
                             const type = updateTypes.find(t => t.id === typeId);
                             return type ? (
                               <span key={typeId} className="inline-block bg-blue-100 px-2 py-1 rounded text-xs mr-1 mb-1">

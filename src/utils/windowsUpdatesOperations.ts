@@ -50,7 +50,8 @@ export const fetchWindowsUpdates = async (tenantId: string): Promise<boolean> =>
       body: JSON.stringify({ 
         tenantId,
         skipDatabaseCreation: true, // Flag to prevent creating new databases
-        forceUseExistingDatabase: true // Extra flag to ensure only existing databases are used
+        forceUseExistingDatabase: true, // Extra flag to ensure only existing databases are used
+        fixCompatibility: true // New flag to trigger compatibility fixes
       }),
     });
     

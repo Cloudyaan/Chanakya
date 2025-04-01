@@ -4,6 +4,7 @@ import json
 import sqlite3
 import sys
 import os
+import argparse
 
 try:
     import msal
@@ -126,12 +127,48 @@ def store_known_issues(db_path, product_id, known_issues):
     conn.commit()
     conn.close()
 
-def fetch_data_for_tenant(tenant):
+def fix_numpy_pandas_compatibility():
+    """Fix numpy/pandas compatibility issues by reinstalling packages."""
+    try:
+        print("Attempting to fix numpy/pandas compatibility issues...")
+        # Try importing pandas to check if there's an issue
+        try:
+            import pandas
+            print("Pandas imported successfully, no fix needed.")
+            return True
+        except ValueError as e:
+            if "numpy.dtype size changed" in str(e):
+                print("NumPy and pandas version incompatibility detected.")
+                print("Reinstalling numpy and pandas...")
+                
+                import subprocess
+                import sys
+                
+                # Reinstall numpy first, then pandas
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy"])
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "pandas"])
+                print("Successfully reinstalled numpy and pandas")
+                return True
+            else:
+                print(f"Unexpected pandas import error: {e}")
+                return False
+        except Exception as e:
+            print(f"Error importing pandas: {e}")
+            return False
+    except Exception as e:
+        print(f"Error fixing numpy/pandas compatibility: {e}")
+        return False
+
+def fetch_data_for_tenant(tenant, fix_compatibility=False):
     """Fetch Windows update data for a specific tenant."""
     tenant_name = tenant["name"]
     tenant_id = tenant["tenantId"]
 
     print(f"Processing tenant: {tenant_name} (ID: {tenant_id})")
+    
+    # Fix numpy/pandas compatibility if requested
+    if fix_compatibility:
+        fix_numpy_pandas_compatibility()
     
     # Get access token
     token = get_access_token(tenant)
@@ -172,15 +209,25 @@ def fetch_data_for_tenant(tenant):
         return False
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Fetch Windows updates data")
+    parser.add_argument("tenant_id", nargs="?", help="Process only this tenant ID")
+    parser.add_argument("--fix-compatibility", action="store_true", help="Fix numpy/pandas compatibility issues")
+    args = parser.parse_args()
+    
+    # Apply compatibility fix if requested
+    if args.fix_compatibility:
+        fix_numpy_pandas_compatibility()
+    
     # Process specific tenant if provided as argument
-    if len(sys.argv) > 1:
-        tenant_id = sys.argv[1]
+    if args.tenant_id:
+        tenant_id = args.tenant_id
         tenants = fetch_tenants()
         matching_tenant = next((t for t in tenants if t['id'] == tenant_id), None)
         
         if matching_tenant:
             print(f"Processing single tenant: {matching_tenant['name']}")
-            fetch_data_for_tenant(matching_tenant)
+            fetch_data_for_tenant(matching_tenant, args.fix_compatibility)
         else:
             print(f"No tenant found with ID: {tenant_id}")
     else:
@@ -192,7 +239,7 @@ def main():
             
         print(f"Found {len(tenants)} tenants to process.")
         for tenant in tenants:
-            fetch_data_for_tenant(tenant)
+            fetch_data_for_tenant(tenant, args.fix_compatibility)
 
 if __name__ == "__main__":
     main()

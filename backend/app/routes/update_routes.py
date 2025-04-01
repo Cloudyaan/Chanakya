@@ -261,3 +261,60 @@ def trigger_fetch_updates():
             'error': 'Server error',
             'message': f'Unexpected error: {str(e)}'
         }), 500
+
+@update_bp.route('/fetch-windows-updates', methods=['POST'])
+def trigger_fetch_windows_updates():
+    tenant_id = request.json.get('tenantId')
+    fix_compatibility = request.json.get('fixCompatibility', False)
+    
+    if not tenant_id:
+        return jsonify({
+            'error': 'Tenant ID is required',
+            'message': 'Please specify a tenantId in the request body'
+        }), 400
+    
+    # Check if the tenant exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    conn.close()
+    
+    if not tenant:
+        return jsonify({
+            'error': 'Tenant not found',
+            'message': f'No tenant found with ID {tenant_id}'
+        }), 404
+    
+    try:
+        print(f"Attempting to fetch Windows updates for tenant ID: {tenant_id}")
+        
+        # Prepare command arguments
+        cmd_args = [tenant_id]
+        if fix_compatibility:
+            cmd_args.append("--fix-compatibility")
+        
+        # On Windows, run the batch file
+        if os.name == 'nt':
+            print(f"Running command: fetch_windows_updates.bat {' '.join(cmd_args)}")
+            subprocess.run(['fetch_windows_updates.bat'] + cmd_args, check=True)
+        else:
+            # On non-Windows, run the Python script directly
+            print(f"Running command: python fetch_windows_updates.py {' '.join(cmd_args)}")
+            subprocess.run(['python', 'fetch_windows_updates.py'] + cmd_args, check=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully fetched Windows updates for tenant {tenant["name"]}'
+        })
+    except subprocess.CalledProcessError as e:
+        print(f"Error running fetch_windows_updates script: {str(e)}")
+        return jsonify({
+            'error': 'Fetch Windows updates failed',
+            'message': f'Error running fetch_windows_updates script: {str(e)}'
+        }), 500
+    except Exception as e:
+        print(f"Unexpected error when fetching Windows updates: {str(e)}")
+        return jsonify({
+            'error': 'Server error',
+            'message': f'Unexpected error: {str(e)}'
+        }), 500
