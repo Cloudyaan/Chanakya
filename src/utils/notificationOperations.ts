@@ -82,7 +82,7 @@ export const deleteNotificationSetting = async (id: string): Promise<boolean> =>
 // Function to send a notification immediately with proper settings verification
 export const sendNotification = async (id: string): Promise<boolean> => {
   try {
-    console.log(`Sending notification ${id} with proper settings verification`);
+    console.log(`Sending notification ${id} with proper date filtering`);
     const response = await fetch(`${API_URL}/send-notification`, {
       method: 'POST',
       headers: {
@@ -94,7 +94,7 @@ export const sendNotification = async (id: string): Promise<boolean> => {
         verifySettings: true,    // Add flag to verify settings before sending
         checkPeriod: true,       // Enable proper time period checking based on frequency
         fixEmailTemplate: true,  // Flag to ensure email template fixes are applied
-        forceExactDateFilter: true, // Flag to enforce exact yesterday date filtering
+        forceExactDateFilter: true, // Flag to enforce exact date filtering
         useCompleteDay: true     // Use complete day for date filtering (00:00:00 to 23:59:59)
       }),
     });
