@@ -134,12 +134,6 @@ const WindowsUpdatesContent = ({
                     <Monitor size={10} />
                     {update.productName || "Windows"}
                   </Badge>
-                  {update.classification && (
-                    <Badge variant="outline" className="flex gap-1 items-center bg-green-50 text-green-700 border-green-200">
-                      <Tag size={10} />
-                      {update.classification}
-                    </Badge>
-                  )}
                   {update.status && (
                     <Badge variant="outline" className="flex gap-1 items-center bg-purple-50 text-purple-700 border-purple-200">
                       <FileText size={10} />
