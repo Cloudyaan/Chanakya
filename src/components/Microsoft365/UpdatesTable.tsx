@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TenantUpdate } from '@/utils/types';
 import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -54,7 +55,7 @@ const UpdatesTable = ({
     }
   };
   return <Card>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+      <CardHeader className="sticky top-[200px] z-10 bg-white pb-2 flex flex-row items-center justify-between">
         <CardTitle>Message Center Announcements</CardTitle>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="flex items-center gap-1">
@@ -66,7 +67,7 @@ const UpdatesTable = ({
       </CardHeader>
       <CardContent>
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-[260px] bg-white z-10">
             <TableRow>
               <TableHead className="w-[150px]">Action Type</TableHead>
               <TableHead className="w-[150px]">Category</TableHead>

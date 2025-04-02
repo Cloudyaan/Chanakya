@@ -96,25 +96,27 @@ const Updates = () => {
 
   return (
     <Microsoft365>
-      <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.4 }}
-          className="mb-6 flex flex-wrap justify-between items-center"
-        >
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
-            <p className="text-m365-gray-500">View all updates from Microsoft 365 and Windows</p>
-          </div>
-          
-          <UpdatesHeader selectedTenant={selectedTenant} />
-        </motion.div>
+      <main className="max-w-7xl mx-auto px-6 sm:px-8">
+        <div className="sticky top-[60px] bg-background z-10 pt-8 pb-4">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.4 }}
+            className="mb-6 flex flex-wrap justify-between items-center"
+          >
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Overview</h1>
+              <p className="text-m365-gray-500">View all updates from Microsoft 365 and Windows</p>
+            </div>
+            
+            <UpdatesHeader selectedTenant={selectedTenant} />
+          </motion.div>
+        </div>
         
         {activeTenants.length === 0 ? (
           <NoTenantsMessage />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-8">
             <UpdateTabsContent 
               regularUpdates={regularUpdates}
               hasSystemMessage={hasSystemMessage}

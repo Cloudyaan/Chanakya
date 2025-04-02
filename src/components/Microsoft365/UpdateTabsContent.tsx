@@ -61,20 +61,22 @@ const UpdateTabsContent = ({
       )}
       
       <Tabs defaultValue="message-center" className="w-full">
-        <TabsList className="w-full mb-4 grid grid-cols-3">
-          <TabsTrigger value="message-center" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message Center
-          </TabsTrigger>
-          <TabsTrigger value="windows-updates" className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" />
-            Windows Updates
-          </TabsTrigger>
-          <TabsTrigger value="news" className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4" />
-            News
-          </TabsTrigger>
-        </TabsList>
+        <div className="sticky top-[144px] bg-background z-10 pt-2 pb-4">
+          <TabsList className="w-full mb-4 grid grid-cols-3">
+            <TabsTrigger value="message-center" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Center
+            </TabsTrigger>
+            <TabsTrigger value="windows-updates" className="flex items-center gap-2">
+              <Monitor className="h-4 w-4" />
+              Windows Updates
+            </TabsTrigger>
+            <TabsTrigger value="news" className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              News
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="message-center">
           {regularUpdates.length > 0 ? (
