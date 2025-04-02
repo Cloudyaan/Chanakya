@@ -70,9 +70,9 @@ const UpdatesTable = ({
                   <Badge variant={update.severity === 'High' ? 'destructive' : 'default'} className="text-xs">
                     {update.severity || 'Normal'}
                   </Badge>
-                  {update.publishedDateTime && (
+                  {update.publishedDate && (
                     <span className="text-xs text-gray-500">
-                      {format(new Date(update.publishedDateTime), 'MMM d, yyyy')}
+                      {format(new Date(update.publishedDate), 'MMM d, yyyy')}
                     </span>
                   )}
                 </div>
