@@ -11,6 +11,8 @@ import time
 
 # Configuration
 RSS_FEEDS = [
+    "https://www.microsoft.com/en-us/microsoft-365/roadmap/rss",
+    "https://www.microsoft.com/microsoft-365/roadmap/rss",
     "https://www.microsoft.com/releasecommunications/api/v2/m365/rss",
 ]
 
