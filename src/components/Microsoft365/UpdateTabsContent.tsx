@@ -61,7 +61,7 @@ const UpdateTabsContent = ({
       )}
       
       <Tabs defaultValue="message-center" className="w-full">
-        <div className="sticky top-[144px] bg-background z-10 pt-2 pb-4">
+        <div className="sticky top-[144px] bg-background z-50 pt-2 pb-4">
           <TabsList className="w-full mb-4 grid grid-cols-3">
             <TabsTrigger value="message-center" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -78,7 +78,7 @@ const UpdateTabsContent = ({
           </TabsList>
         </div>
         
-        <TabsContent value="message-center">
+        <TabsContent value="message-center" className="mt-0">
           {regularUpdates.length > 0 ? (
             <UpdatesTable 
               updates={regularUpdates}
@@ -96,7 +96,7 @@ const UpdateTabsContent = ({
           )}
         </TabsContent>
         
-        <TabsContent value="windows-updates">
+        <TabsContent value="windows-updates" className="mt-0">
           <WindowsUpdatesContent 
             isLoading={windowsIsLoading}
             windowsUpdates={windowsUpdates}
@@ -105,7 +105,7 @@ const UpdateTabsContent = ({
           />
         </TabsContent>
         
-        <TabsContent value="news">
+        <TabsContent value="news" className="mt-0">
           <M365NewsContent 
             isLoading={newsIsLoading}
             newsItems={newsItems}
