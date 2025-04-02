@@ -1,307 +1,201 @@
-from datetime import datetime, timedelta
-import json
+
 import sqlite3
-import os
+from datetime import datetime, timedelta
 
-from app.database import find_tenant_database, get_all_tenant_databases
+from app.database import find_tenant_database
+from .db_helpers import ensure_tenant_database
 
-def fetch_message_center_updates(tenant_id, frequency, check_period=True, force_exact_date=False):
-    """Fetch Message Center updates for a tenant with frequency filtering"""
-    print(f"Fetching Message Center updates for tenant {tenant_id} with frequency {frequency}")
-    print(f"Check period: {check_period}, Force exact date: {force_exact_date}")
+def get_time_period_for_frequency(frequency, check_period=True):
+    """Get the appropriate time period based on notification frequency"""
+    if not check_period:
+        # Default to 7 days if not checking period (backward compatibility)
+        return 7
+    
+    # Return days based on frequency
+    if frequency == "Daily":
+        return 1  # Last 24 hours for daily
+    elif frequency in ["Weekly", "Monthly"]:
+        return 7  # Last 7 days for weekly and monthly
+    else:
+        return 7  # Default to 7 days for any other frequency
+
+def get_exact_date_for_filter(frequency):
+    """Get the exact date to filter from based on frequency"""
+    now = datetime.now()
+    
+    if frequency == "Daily":
+        # Use beginning of yesterday (00:00:00)
+        yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return yesterday_start.isoformat()
+    elif frequency in ["Weekly", "Monthly"]:
+        # Use beginning of 7 days ago (00:00:00)
+        week_ago_start = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return week_ago_start.isoformat()
+    else:
+        # Default to beginning of yesterday
+        yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return yesterday_start.isoformat()
+
+def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+    """Fetch message center updates for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching message center updates for last {days} days based on {frequency} frequency")
+    
+    # Ensure the tenant database exists
+    db_path = find_tenant_database(tenant_id)
+    if not db_path:
+        db_path = ensure_tenant_database(tenant_id)
+        if not db_path:
+            return []
     
     try:
-        # Get all tenant databases
-        tenant_databases = get_all_tenant_databases(tenant_id)
-        
-        # Determine which database to use
-        if 'tenant' in tenant_databases:
-            tenant_db_path = tenant_databases['tenant']
-        else:
-            tenant_db_path = find_tenant_database(tenant_id)
-        
-        if not tenant_db_path:
-            print(f"No database found for tenant {tenant_id}")
-            return []
-        
-        print(f"Using database: {tenant_db_path}")
-        
-        # Connect to the database
-        conn = sqlite3.connect(tenant_db_path)
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Check if the message_center_updates table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='message_center_updates'")
-        if not cursor.fetchone():
-            print(f"message_center_updates table not found in database {tenant_db_path}")
+        # Check which table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
+        table_result = cursor.fetchone()
+        
+        if not table_result:
             return []
-        
-        # Determine the date range based on frequency
-        now = datetime.now()
-        cutoff_date = None
-        
-        if check_period:
-            if frequency == 'Daily':
-                # Get updates from the last day
-                cutoff_date = now - timedelta(days=1)
-                print(f"Using daily cutoff: {cutoff_date}")
-            elif frequency in ['Weekly', 'Monthly']:
-                # Get updates from the last week or month
-                days = 7 if frequency == 'Weekly' else 30
-                cutoff_date = now - timedelta(days=days)
-                print(f"Using {frequency} cutoff: {cutoff_date}")
-            else:
-                # Default to 10 days
-                cutoff_date = now - timedelta(days=10)
-                print(f"Using default 10-day cutoff: {cutoff_date}")
             
-            # If forcing exact date filter, set to start of day
-            if force_exact_date:
-                cutoff_date = datetime(cutoff_date.year, cutoff_date.month, cutoff_date.day, 0, 0, 0)
-                print(f"Using exact date cutoff: {cutoff_date}")
-                
-                # Query with filtered date range
-                cursor.execute('''
-                    SELECT * FROM message_center_updates
-                    WHERE datetime(publishedDate) >= datetime(?)
-                    ORDER BY publishedDate DESC
-                ''', (cutoff_date.isoformat(),))
-            else:
-                # Use date string comparison (less precise but more compatible)
-                cutoff_date_str = cutoff_date.strftime('%Y-%m-%d')
-                print(f"Using string date cutoff: {cutoff_date_str}")
-                
-                # Query with filtered date range using string comparison
-                cursor.execute('''
-                    SELECT * FROM message_center_updates
-                    WHERE publishedDate >= ?
-                    ORDER BY publishedDate DESC
-                ''', (cutoff_date_str,))
+        table_name = table_result['name']
+        
+        # Calculate the date range
+        if force_exact_date:
+            # Use exact date (beginning of yesterday for daily)
+            cutoff_date = get_exact_date_for_filter(frequency)
+            print(f"Filtering updates using exact date filter since: {cutoff_date}")
         else:
-            # If not checking period, get all updates
-            print("Not applying date filtering, fetching all updates")
-            cursor.execute('''
-                SELECT * FROM message_center_updates
-                ORDER BY publishedDate DESC
-            ''')
+            # Use relative time from now (for backward compatibility)
+            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            print(f"Filtering updates since: {cutoff_date}")
         
-        updates = []
-        for row in cursor.fetchall():
-            updates.append(dict(row))
+        # Query based on which table exists
+        if table_name == 'updates':
+            cursor.execute(f"""
+                SELECT 
+                    id, title, category, severity, lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType, bodyContent as description
+                FROM updates
+                WHERE lastModifiedDateTime > ?
+                ORDER BY lastModifiedDateTime DESC
+            """, (cutoff_date,))
+        else:  # announcements
+            cursor.execute(f"""
+                SELECT 
+                    id, title, category, severity, lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType, bodyContent as description
+                FROM announcements
+                WHERE lastModifiedDateTime > ?
+                ORDER BY lastModifiedDateTime DESC
+            """, (cutoff_date,))
         
+        updates = [dict(row) for row in cursor.fetchall()]
         conn.close()
-        print(f"Found {len(updates)} message center updates after date filtering")
+        print(f"Found {len(updates)} message center updates since {cutoff_date}")
         return updates
-    
-    except sqlite3.Error as e:
-        print(f"SQLite error in fetch_message_center_updates: {e}")
-        return []
     except Exception as e:
-        print(f"Error in fetch_message_center_updates: {e}")
+        print(f"Error fetching message center updates: {e}")
         return []
 
-def fetch_windows_updates(tenant_id, frequency, check_period=True, force_exact_date=False):
-    """Fetch Windows updates for a tenant with frequency filtering"""
-    print(f"Fetching Windows updates for tenant {tenant_id} with frequency {frequency}")
-    print(f"Check period: {check_period}, Force exact date: {force_exact_date}")
+def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+    """Fetch Windows updates for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching Windows updates for last {days} days based on {frequency} frequency")
+    
+    # Ensure the tenant database exists
+    db_path = find_tenant_database(tenant_id)
+    if not db_path:
+        db_path = ensure_tenant_database(tenant_id)
+        if not db_path:
+            return []
     
     try:
-        # Get all tenant databases
-        tenant_databases = get_all_tenant_databases(tenant_id)
-        
-        # Determine which database to use
-        if 'tenant' in tenant_databases:
-            tenant_db_path = tenant_databases['tenant']
-        else:
-            tenant_db_path = find_tenant_database(tenant_id)
-        
-        if not tenant_db_path:
-            print(f"No database found for tenant {tenant_id}")
-            return []
-        
-        print(f"Using database: {tenant_db_path}")
-        
-        # Connect to the database
-        conn = sqlite3.connect(tenant_db_path)
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Check if the windows_updates table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_updates'")
+        # Check if the windows_known_issues table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
         if not cursor.fetchone():
-            print(f"windows_updates table not found in database {tenant_db_path}")
             return []
         
-        # Determine the date range based on frequency
-        now = datetime.now()
-        cutoff_date = None
-        
-        if check_period:
-            if frequency == 'Daily':
-                # Get updates from the last day
-                cutoff_date = now - timedelta(days=1)
-                print(f"Using daily cutoff: {cutoff_date}")
-            elif frequency in ['Weekly', 'Monthly']:
-                # Get updates from the last week or month
-                days = 7 if frequency == 'Weekly' else 30
-                cutoff_date = now - timedelta(days=days)
-                print(f"Using {frequency} cutoff: {cutoff_date}")
-            else:
-                # Default to 10 days
-                cutoff_date = now - timedelta(days=10)
-                print(f"Using default 10-day cutoff: {cutoff_date}")
-            
-            # If forcing exact date filter, set to start of day
-            if force_exact_date:
-                cutoff_date = datetime(cutoff_date.year, cutoff_date.month, cutoff_date.day, 0, 0, 0)
-                print(f"Using exact date cutoff: {cutoff_date}")
-                
-                # Query with filtered date range
-                cursor.execute('''
-                    SELECT * FROM windows_updates
-                    WHERE datetime(startDate) >= datetime(?)
-                    ORDER BY startDate DESC
-                ''', (cutoff_date.isoformat(),))
-            else:
-                # Use date string comparison (less precise but more compatible)
-                cutoff_date_str = cutoff_date.strftime('%Y-%m-%d')
-                print(f"Using string date cutoff: {cutoff_date_str}")
-                
-                # Query with filtered date range using string comparison
-                cursor.execute('''
-                    SELECT * FROM windows_updates
-                    WHERE startDate >= ?
-                    ORDER BY startDate DESC
-                ''', (cutoff_date_str,))
+        # Calculate the date range
+        if force_exact_date:
+            # Use exact date (beginning of yesterday for daily)
+            cutoff_date = get_exact_date_for_filter(frequency)
+            print(f"Filtering Windows updates using exact date filter since: {cutoff_date}")
         else:
-            # If not checking period, get all updates
-            print("Not applying date filtering, fetching all updates")
-            cursor.execute('''
-                SELECT * FROM windows_updates
-                ORDER BY startDate DESC
-            ''')
+            # Use relative time from now (for backward compatibility)
+            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            print(f"Filtering Windows updates since: {cutoff_date}")
         
-        updates = []
-        for row in cursor.fetchall():
-            updates.append(dict(row))
+        cursor.execute("""
+            SELECT 
+                wi.id, wi.product_id as productId, wi.title, wi.description, 
+                wi.webViewUrl, wi.status, wi.start_date as startDate, 
+                wi.resolved_date as resolvedDate, wp.name as productName
+            FROM windows_known_issues wi
+            LEFT JOIN windows_products wp ON wi.product_id = wp.id
+            WHERE wi.start_date > ?
+            ORDER BY wi.start_date DESC
+        """, (cutoff_date,))
         
+        updates = [dict(row) for row in cursor.fetchall()]
         conn.close()
-        print(f"Found {len(updates)} windows updates after date filtering")
+        print(f"Found {len(updates)} Windows updates since {cutoff_date}")
         return updates
-    
-    except sqlite3.Error as e:
-        print(f"SQLite error in fetch_windows_updates: {e}")
-        return []
     except Exception as e:
-        print(f"Error in fetch_windows_updates: {e}")
+        print(f"Error fetching Windows updates: {e}")
         return []
 
-def fetch_m365_news(tenant_id, frequency, check_period=True, force_exact_date=False):
-    """Fetch Microsoft 365 news for a tenant with frequency filtering"""
-    print(f"Fetching M365 news for tenant {tenant_id} with frequency {frequency}")
-    print(f"Check period: {check_period}, Force exact date: {force_exact_date}")
+def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact_date=False):
+    """Fetch M365 news for a tenant for the appropriate time period"""
+    # Get days based on frequency
+    days = get_time_period_for_frequency(frequency, check_period)
+    print(f"Fetching M365 news for last {days} days based on {frequency} frequency")
+    
+    # Ensure the tenant database exists
+    db_path = find_tenant_database(tenant_id)
+    if not db_path:
+        db_path = ensure_tenant_database(tenant_id)
+        if not db_path:
+            return []
     
     try:
-        # Get all tenant databases
-        tenant_databases = get_all_tenant_databases(tenant_id)
-        
-        # Determine which database to use
-        if 'tenant' in tenant_databases:
-            tenant_db_path = tenant_databases['tenant']
-        else:
-            tenant_db_path = find_tenant_database(tenant_id)
-        
-        if not tenant_db_path:
-            print(f"No database found for tenant {tenant_id}")
-            return []
-        
-        print(f"Using database: {tenant_db_path}")
-        
-        # Connect to the database
-        conn = sqlite3.connect(tenant_db_path)
+        conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
         # Check if the m365_news table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='m365_news'")
         if not cursor.fetchone():
-            print(f"m365_news table not found in database {tenant_db_path}")
             return []
         
-        # Determine the date range based on frequency
-        now = datetime.now()
-        cutoff_date = None
-        
-        if check_period:
-            if frequency == 'Daily':
-                # Get news from the last day
-                cutoff_date = now - timedelta(days=1)
-                print(f"Using daily cutoff: {cutoff_date}")
-            elif frequency in ['Weekly', 'Monthly']:
-                # Get news from the last week or month
-                days = 7 if frequency == 'Weekly' else 30
-                cutoff_date = now - timedelta(days=days)
-                print(f"Using {frequency} cutoff: {cutoff_date}")
-            else:
-                # Default to 10 days
-                cutoff_date = now - timedelta(days=10)
-                print(f"Using default 10-day cutoff: {cutoff_date}")
-            
-            # If forcing exact date filter, set to start of day
-            if force_exact_date:
-                cutoff_date = datetime(cutoff_date.year, cutoff_date.month, cutoff_date.day, 0, 0, 0)
-                print(f"Using exact date cutoff: {cutoff_date}")
-                
-                # Query with filtered date range
-                cursor.execute('''
-                    SELECT * FROM m365_news
-                    WHERE datetime(published_date) >= datetime(?)
-                    ORDER BY published_date DESC
-                ''', (cutoff_date.isoformat(),))
-            else:
-                # Use date string comparison (less precise but more compatible)
-                cutoff_date_str = cutoff_date.strftime('%Y-%m-%d')
-                print(f"Using string date cutoff: {cutoff_date_str}")
-                
-                # Query with filtered date range using string comparison
-                cursor.execute('''
-                    SELECT * FROM m365_news
-                    WHERE published_date >= ?
-                    ORDER BY published_date DESC
-                ''', (cutoff_date_str,))
+        # Calculate the date range
+        if force_exact_date:
+            # Use exact date (beginning of yesterday for daily)
+            cutoff_date = get_exact_date_for_filter(frequency)
+            print(f"Filtering M365 news using exact date filter since: {cutoff_date}")
         else:
-            # If not checking period, get all news items
-            print("Not applying date filtering, fetching all news")
-            cursor.execute('''
-                SELECT * FROM m365_news
-                ORDER BY published_date DESC
-            ''')
+            # Use relative time from now (for backward compatibility)
+            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            print(f"Filtering M365 news since: {cutoff_date}")
         
-        news_items = []
-        for row in cursor.fetchall():
-            news_item = dict(row)
-            
-            # Parse categories from JSON
-            if 'categories' in news_item and news_item['categories']:
-                try:
-                    if isinstance(news_item['categories'], str):
-                        news_item['categories'] = json.loads(news_item['categories'])
-                except (json.JSONDecodeError, TypeError) as e:
-                    print(f"Error parsing categories JSON: {e}")
-                    news_item['categories'] = []
-            else:
-                news_item['categories'] = []
-            
-            news_items.append(news_item)
+        cursor.execute("""
+            SELECT * FROM m365_news
+            WHERE published_date > ?
+            ORDER BY published_date DESC
+        """, (cutoff_date,))
         
+        news = [dict(row) for row in cursor.fetchall()]
         conn.close()
-        print(f"Found {len(news_items)} news items after date filtering")
-        return news_items
-    
-    except sqlite3.Error as e:
-        print(f"SQLite error in fetch_m365_news: {e}")
-        return []
+        print(f"Found {len(news)} M365 news items since {cutoff_date}")
+        return news
     except Exception as e:
-        print(f"Error in fetch_m365_news: {e}")
+        print(f"Error fetching M365 news: {e}")
         return []
