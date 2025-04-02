@@ -10,9 +10,8 @@ from dateutil import parser
 import time
 
 # Configuration
+# Removed invalid RSS feeds, keeping only the working one
 RSS_FEEDS = [
-    "https://www.microsoft.com/en-us/microsoft-365/roadmap/rss",
-    "https://www.microsoft.com/microsoft-365/roadmap/rss",
     "https://www.microsoft.com/releasecommunications/api/v2/m365/rss",
 ]
 
@@ -180,7 +179,50 @@ def filter_recent_entries(entries, days=10):  # Changed to 10 days to match requ
     print(f"Found {len(recent_entries)} recent entries from the last {days} days")
     return recent_entries
 
-# ... keep existing code (store_news function)
+def store_news(conn, entries):
+    """Store news entries in the database"""
+    cursor = conn.cursor()
+    stored_count = 0
+    
+    for entry in entries:
+        # Check if we already have this entry
+        existing = cursor.execute('SELECT id FROM m365_news WHERE id = ?', (entry.get('id', ''),)).fetchone()
+        
+        if existing:
+            continue  # Skip storing this entry as we already have it
+        
+        # Extract categories
+        categories = json.dumps(entry.get('all_categories', []))
+        
+        # Get the published date
+        published_date = entry.get('published', '')
+        
+        # Get summary
+        summary = entry.get('summary', '')
+        if hasattr(entry, 'summary_detail'):
+            summary = entry.summary_detail.get('value', summary)
+        
+        try:
+            cursor.execute('''
+                INSERT INTO m365_news (
+                    id, title, published_date, link, summary, categories, fetch_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                entry.get('id', f'auto-{datetime.now().timestamp()}'),
+                entry.get('title', 'Untitled'),
+                published_date,
+                entry.get('link', ''),
+                summary,
+                categories,
+                datetime.now().isoformat()
+            ))
+            stored_count += 1
+        except sqlite3.Error as e:
+            print(f"Error storing entry: {str(e)}")
+            print(f"Entry data: {entry}")
+    
+    conn.commit()
+    return stored_count
 
 def main():
     if len(sys.argv) < 2:
@@ -241,7 +283,19 @@ def main():
             all_updates.extend(recent_entries)
 
     # Sort all updates by publication date (newest first)
-    all_updates.sort(key=lambda x: parser.parse(x.get('published', '1970-01-01')), reverse=True)
+    # Fix for the datetime comparison issue: ensure all dates are in the same format
+    def safe_parse_date(date_str):
+        try:
+            # Parse the date and make it offset-naive
+            dt = parser.parse(date_str)
+            if dt.tzinfo is not None:
+                dt = dt.replace(tzinfo=None)
+            return dt
+        except Exception:
+            # Return a very old date as fallback
+            return datetime(1970, 1, 1)
+    
+    all_updates.sort(key=lambda x: safe_parse_date(x.get('published', '1970-01-01')), reverse=True)
     
     # Store the updates
     stored_count = store_news(conn, all_updates)
