@@ -1,18 +1,16 @@
-# Welcome to your Lovable project
+# Welcome to your Chanakya project
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/d1475085-91b3-4850-bf25-e2a6e52a59a8
+
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d1475085-91b3-4850-bf25-e2a6e52a59a8) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+
 
 **Use your preferred IDE**
 
@@ -62,8 +60,5 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/d1475085-91b3-4850-bf25-e2a6e52a59a8) and click on Share -> Publish.
 
-## I want to use a custom domain - is that possible?
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
