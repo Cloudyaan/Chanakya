@@ -53,17 +53,15 @@ const UpdateTabsContent = ({
   return (
     <>
       {hasSystemMessage && (
-        <div className="relative z-20">
-          <SystemMessages 
-            messages={systemMessages} 
-            onFetchUpdates={onFetchMessageCenter}
-            isFetching={messageCenterIsFetching}
-          />
-        </div>
+        <SystemMessages 
+          messages={systemMessages} 
+          onFetchUpdates={onFetchMessageCenter}
+          isFetching={messageCenterIsFetching}
+        />
       )}
       
       <Tabs defaultValue="message-center" className="w-full">
-        <div className="sticky top-[144px] bg-background z-20 pt-2 pb-4">
+        <div className="sticky top-[144px] bg-background z-10 pt-2 pb-4">
           <TabsList className="w-full mb-4 grid grid-cols-3">
             <TabsTrigger value="message-center" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
