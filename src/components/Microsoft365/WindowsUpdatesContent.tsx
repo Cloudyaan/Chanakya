@@ -52,7 +52,7 @@ const WindowsUpdatesContent = ({
   if (!Array.isArray(windowsUpdates) || windowsUpdates.length === 0) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle>Windows Updates</CardTitle>
             <CardDescription>Recent Windows updates and release information</CardDescription>
