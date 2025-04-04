@@ -6,6 +6,8 @@ import { License, LicenseMetric, LicenseDistribution } from '@/utils/types';
 import { tenant as mockTenant } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/licenseMetricsUtils';
+import { useMessageCenterUpdates } from '@/hooks/useMessageCenterUpdates';
+import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 
 // Import components
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
@@ -14,6 +16,7 @@ import TenantInfo from '@/components/Dashboard/TenantInfo';
 import LicenseChart from '@/components/Dashboard/LicenseChart';
 import LoadingIndicator from '@/components/Dashboard/LoadingIndicator';
 import EmptyState from '@/components/Dashboard/EmptyState';
+import UpdatesOverview from '@/components/Dashboard/UpdatesOverview';
 
 const Dashboard = () => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
@@ -22,6 +25,10 @@ const Dashboard = () => {
   const [metrics, setMetrics] = useState<LicenseMetric[]>([]);
   const [licenseDistribution, setLicenseDistribution] = useState<LicenseDistribution[]>([]);
   const { toast } = useToast();
+
+  // Get message center updates and Windows updates
+  const { messageCenterUpdates, isLoading: messageIsLoading } = useMessageCenterUpdates(selectedTenant);
+  const { windowsUpdates, isLoading: windowsIsLoading } = useWindowsUpdates(selectedTenant);
 
   // Listen for tenant changes
   useEffect(() => {
@@ -104,37 +111,44 @@ const Dashboard = () => {
     }
   };
 
+  // Combine license and updates loading states
+  const isPageLoading = isLoading || messageIsLoading || windowsIsLoading;
+
   return (
     <Microsoft365>
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-        <DashboardHeader isLoading={isLoading} onRefresh={refreshData} />
+        <DashboardHeader isLoading={isPageLoading} onRefresh={refreshData} />
         
-        {isLoading ? (
+        {isPageLoading ? (
           <LoadingIndicator />
         ) : (
           <>
+            {/* Tenant Info */}
+            <div className="mb-8">
+              <TenantInfo tenant={mockTenant} />
+            </div>
+            
+            {/* Updates Overview Section */}
+            <UpdatesOverview 
+              messageCenterUpdates={messageCenterUpdates} 
+              windowsUpdates={windowsUpdates}
+            />
+            
+            {/* License Overview Section */}
             {metrics.length > 0 ? (
-              <>
-                {/* Tenant Info moved to the top */}
-                <div className="mb-8">
-                  <TenantInfo tenant={mockTenant} />
-                </div>
+              <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
+                <h2 className="text-xl font-semibold mb-6">License Overview</h2>
                 
-                {/* License Overview Section - Combined Container */}
-                <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
-                  <h2 className="text-xl font-semibold mb-6">License Overview</h2>
-                  
-                  {/* Metrics Cards */}
-                  <DashboardMetrics metrics={metrics} />
-                  
-                  {/* License Distribution Chart */}
-                  {licenses.length > 0 && licenseDistribution.length > 0 && (
-                    <div className="mt-6">
-                      <LicenseChart data={licenseDistribution} />
-                    </div>
-                  )}
-                </div>
-              </>
+                {/* Metrics Cards */}
+                <DashboardMetrics metrics={metrics} />
+                
+                {/* License Distribution Chart */}
+                {licenses.length > 0 && licenseDistribution.length > 0 && (
+                  <div className="mt-6">
+                    <LicenseChart data={licenseDistribution} />
+                  </div>
+                )}
+              </div>
             ) : (
               <EmptyState onRefresh={refreshData} />
             )}
