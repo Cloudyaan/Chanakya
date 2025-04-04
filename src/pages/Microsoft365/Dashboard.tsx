@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Microsoft365 from '../Microsoft365';
 import { getLicenseData, getTenants } from '@/utils/database';
-import { License, LicenseMetric, LicenseDistribution, Tenant } from '@/utils/types';
+import { License, LicenseMetric, LicenseDistribution, Tenant, TenantConfig } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
 import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/licenseMetricsUtils';
 import { useMessageCenterUpdates } from '@/hooks/useMessageCenterUpdates';
@@ -16,6 +16,22 @@ import LicenseChart from '@/components/Dashboard/LicenseChart';
 import LoadingIndicator from '@/components/Dashboard/LoadingIndicator';
 import EmptyState from '@/components/Dashboard/EmptyState';
 import UpdatesOverview from '@/components/Dashboard/UpdatesOverview';
+
+// Helper function to convert TenantConfig to Tenant
+const convertToTenant = (config: TenantConfig): Tenant => {
+  return {
+    id: config.id,
+    tenantId: config.tenantId,
+    name: config.name,
+    domain: '', // Default empty values for required fields
+    countryCode: 'US', // Default country code
+    subscriptionStatus: 'Active', // Default status
+    adminEmail: '', // Default admin email
+    creationDate: config.dateAdded,
+    totalUsers: 0, // Default user counts
+    activeUsers: 0
+  };
+};
 
 const Dashboard = () => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
@@ -40,12 +56,12 @@ const Dashboard = () => {
           if (savedTenantId) {
             const matchingTenant = tenants.find(t => t.id === savedTenantId);
             if (matchingTenant) {
-              setTenantData(matchingTenant);
+              setTenantData(convertToTenant(matchingTenant));
             } else if (tenants[0]) {
-              setTenantData(tenants[0]);
+              setTenantData(convertToTenant(tenants[0]));
             }
           } else if (tenants[0]) {
-            setTenantData(tenants[0]);
+            setTenantData(convertToTenant(tenants[0]));
           }
         }
       } catch (error) {
