@@ -3,15 +3,15 @@ import { TenantUpdate } from './types';
 import { API_URL } from './api';
 
 // Message Center Updates Operations
-export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[]> => {
+export const getTenantUpdates = async (tenantId?: string, limit: number = 100): Promise<TenantUpdate[]> => {
   try {
     if (!tenantId) {
       console.error('No tenant ID provided to getTenantUpdates');
       return [];
     }
     
-    // Build the URL with the tenantId
-    const url = `${API_URL}/updates?tenantId=${tenantId}&source=message-center`;
+    // Build the URL with the tenantId and limit
+    const url = `${API_URL}/updates?tenantId=${tenantId}&source=message-center&limit=${limit}`;
     
     console.log(`Fetching tenant updates from: ${url}`);
     

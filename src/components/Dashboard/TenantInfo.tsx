@@ -19,6 +19,9 @@ const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
     }
   };
 
+  // Format domain name if not present
+  const domainName = tenant.domain || `${tenant.name}.onmicrosoft.com`;
+
   return (
     <motion.div 
       className={cn(
@@ -32,7 +35,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-xl font-semibold text-foreground">{tenant.name}</h2>
-          <p className="text-sm text-m365-gray-500">{tenant.domain}</p>
+          <p className="text-sm text-m365-gray-500">{domainName}</p>
         </div>
         <div className={cn(
           "px-3 py-1 rounded-full text-xs font-medium",
@@ -42,7 +45,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div>
           <p className="text-sm text-m365-gray-500">Admin Contact</p>
           <p className="text-sm font-medium">{tenant.adminEmail}</p>
@@ -62,6 +65,10 @@ const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
         <div>
           <p className="text-sm text-m365-gray-500">Creation Date</p>
           <p className="text-sm font-medium">{new Date(tenant.creationDate).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <p className="text-sm text-m365-gray-500">Tenant ID</p>
+          <p className="text-sm font-medium font-mono text-xs">{tenant.tenantId}</p>
         </div>
       </div>
     </motion.div>

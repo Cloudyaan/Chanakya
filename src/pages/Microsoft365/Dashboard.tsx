@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Microsoft365 from '../Microsoft365';
-import { getLicenseData } from '@/utils/database';
-import { License, LicenseMetric, LicenseDistribution } from '@/utils/types';
-import { tenant as mockTenant } from '@/utils/mockData';
+import { getLicenseData, getTenants } from '@/utils/database';
+import { License, LicenseMetric, LicenseDistribution, Tenant } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
 import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/licenseMetricsUtils';
 import { useMessageCenterUpdates } from '@/hooks/useMessageCenterUpdates';
@@ -24,11 +23,38 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<LicenseMetric[]>([]);
   const [licenseDistribution, setLicenseDistribution] = useState<LicenseDistribution[]>([]);
+  const [tenantData, setTenantData] = useState<Tenant | null>(null);
   const { toast } = useToast();
 
   // Get message center updates and Windows updates
   const { messageCenterUpdates, isLoading: messageIsLoading } = useMessageCenterUpdates(selectedTenant);
   const { windowsUpdates, isLoading: windowsIsLoading } = useWindowsUpdates(selectedTenant);
+
+  // Load tenants data
+  useEffect(() => {
+    const loadTenants = async () => {
+      try {
+        const tenants = await getTenants();
+        if (tenants.length > 0) {
+          const savedTenantId = localStorage.getItem('selectedTenant');
+          if (savedTenantId) {
+            const matchingTenant = tenants.find(t => t.id === savedTenantId);
+            if (matchingTenant) {
+              setTenantData(matchingTenant);
+            } else if (tenants[0]) {
+              setTenantData(tenants[0]);
+            }
+          } else if (tenants[0]) {
+            setTenantData(tenants[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading tenants:", error);
+      }
+    };
+    
+    loadTenants();
+  }, [selectedTenant]);
 
   // Listen for tenant changes
   useEffect(() => {
@@ -125,7 +151,7 @@ const Dashboard = () => {
           <>
             {/* Tenant Info */}
             <div className="mb-8">
-              <TenantInfo tenant={mockTenant} />
+              {tenantData && <TenantInfo tenant={tenantData} />}
             </div>
             
             {/* Updates Overview Section */}

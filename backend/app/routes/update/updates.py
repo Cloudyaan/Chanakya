@@ -1,4 +1,3 @@
-
 from flask import request, jsonify
 import sqlite3
 import os
@@ -13,6 +12,13 @@ from app.routes.update import update_bp
 def get_updates():
     tenant_id = request.args.get('tenantId')
     source = request.args.get('source', 'message-center')  # Default to message-center
+    limit = request.args.get('limit', '100')  # Default to 100
+    
+    try:
+        # Convert limit to integer
+        limit = int(limit)
+    except ValueError:
+        limit = 100  # Default if conversion fails
     
     # If no tenant ID is specified, return an error
     if not tenant_id:
@@ -93,7 +99,7 @@ def get_updates():
             
             # Adapt query based on which table exists
             if table_name == 'updates':
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT 
                         id,
                         title,
@@ -104,10 +110,10 @@ def get_updates():
                         bodyContent as description
                     FROM updates
                     ORDER BY lastModifiedDateTime DESC
-                    LIMIT 100
+                    LIMIT {limit}
                 """)
             else:  # announcements
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT 
                         id,
                         title,
@@ -118,7 +124,7 @@ def get_updates():
                         bodyContent as description
                     FROM announcements
                     ORDER BY lastModifiedDateTime DESC
-                    LIMIT 100
+                    LIMIT {limit}
                 """)
             
             updates = []
