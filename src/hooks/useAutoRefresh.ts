@@ -1,6 +1,8 @@
+
 import { useEffect, useRef } from 'react';
 
-type RefreshFunction = () => void | Promise<void>;
+// Make the RefreshFunction type more flexible to accept different return types
+type RefreshFunction = (...args: any[]) => any;
 
 /**
  * Hook to automatically refresh data at specified intervals

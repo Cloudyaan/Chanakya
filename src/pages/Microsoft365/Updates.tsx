@@ -44,9 +44,23 @@ const Updates = () => {
     handleFetchM365News
   } = useM365News(selectedTenant);
 
-  useAutoRefresh(refreshMessageCenter, 5, !!selectedTenant);
-  useAutoRefresh(refreshWindowsUpdates, 5, !!selectedTenant, 1);
-  useAutoRefresh(refreshNews, 5, !!selectedTenant, 2);
+  const handleRefreshMessageCenter = () => {
+    refreshMessageCenter();
+  };
+  
+  const handleRefreshWindowsUpdates = () => {
+    if (selectedTenant) {
+      refreshWindowsUpdates(selectedTenant);
+    }
+  };
+  
+  const handleRefreshNews = () => {
+    refreshNews();
+  };
+
+  useAutoRefresh(handleRefreshMessageCenter, 5, !!selectedTenant);
+  useAutoRefresh(handleRefreshWindowsUpdates, 5, !!selectedTenant, 1);
+  useAutoRefresh(handleRefreshNews, 5, !!selectedTenant, 2);
 
   useEffect(() => {
     async function loadTenants() {

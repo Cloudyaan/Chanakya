@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Microsoft365 from '../Microsoft365';
 import { getLicenseData, getTenants } from '@/utils/database';
@@ -56,11 +55,22 @@ const Dashboard = () => {
     loadWindowsUpdates: refreshWindowsUpdates
   } = useWindowsUpdates(selectedTenant);
 
+  // Create wrapper functions that match the expected RefreshFunction type
+  const handleRefreshMessageCenter = () => {
+    refreshMessageCenter();
+  };
+  
+  const handleRefreshWindowsUpdates = () => {
+    if (selectedTenant) {
+      refreshWindowsUpdates(selectedTenant);
+    }
+  };
+  
   // Set up auto refresh for Message Center updates (every 5 minutes)
-  useAutoRefresh(refreshMessageCenter, 5, !!selectedTenant);
+  useAutoRefresh(handleRefreshMessageCenter, 5, !!selectedTenant);
   
   // Set up auto refresh for Windows updates (every 5 minutes, with 1 minute delay)
-  useAutoRefresh(refreshWindowsUpdates, 5, !!selectedTenant, 1);
+  useAutoRefresh(handleRefreshWindowsUpdates, 5, !!selectedTenant, 1);
   
   // Load tenants data
   useEffect(() => {
