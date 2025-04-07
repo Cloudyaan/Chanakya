@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { calculateLicenseMetrics, createLicenseDistribution } from '@/utils/licenseMetricsUtils';
 import { useMessageCenterUpdates } from '@/hooks/useMessageCenterUpdates';
 import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 
 // Import components
 import DashboardHeader from '@/components/Dashboard/DashboardHeader';
@@ -43,9 +44,24 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   // Get message center updates and Windows updates
-  const { messageCenterUpdates, isLoading: messageIsLoading } = useMessageCenterUpdates(selectedTenant);
-  const { windowsUpdates, isLoading: windowsIsLoading } = useWindowsUpdates(selectedTenant);
+  const { 
+    messageCenterUpdates, 
+    isLoading: messageIsLoading,
+    refreshData: refreshMessageCenter
+  } = useMessageCenterUpdates(selectedTenant);
+  
+  const { 
+    windowsUpdates, 
+    isLoading: windowsIsLoading,
+    loadWindowsUpdates: refreshWindowsUpdates
+  } = useWindowsUpdates(selectedTenant);
 
+  // Set up auto refresh for Message Center updates (every 5 minutes)
+  useAutoRefresh(refreshMessageCenter, 5, !!selectedTenant);
+  
+  // Set up auto refresh for Windows updates (every 5 minutes, with 1 minute delay)
+  useAutoRefresh(refreshWindowsUpdates, 5, !!selectedTenant, 1);
+  
   // Load tenants data
   useEffect(() => {
     const loadTenants = async () => {

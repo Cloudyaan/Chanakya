@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -11,6 +10,7 @@ import { useUpdates } from '@/hooks/useUpdates';
 import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 import { useM365News } from '@/hooks/useM365News';
 import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
+import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -24,7 +24,7 @@ const Updates = () => {
     hasSystemMessage,
     isLoading: messageIsLoading,
     isFetching: messageIsFetching,
-    refreshData,
+    refreshData: refreshMessageCenter,
     fetchUpdateData
   } = useUpdates(selectedTenant);
   
@@ -32,6 +32,7 @@ const Updates = () => {
     windowsUpdates,
     isLoading: windowsIsLoading,
     isFetching: windowsIsFetching,
+    loadWindowsUpdates: refreshWindowsUpdates,
     handleFetchWindowsUpdates
   } = useWindowsUpdates(selectedTenant);
   
@@ -39,8 +40,13 @@ const Updates = () => {
     newsItems,
     isLoading: newsIsLoading,
     isFetching: newsIsFetching,
+    refreshData: refreshNews,
     handleFetchM365News
   } = useM365News(selectedTenant);
+
+  useAutoRefresh(refreshMessageCenter, 5, !!selectedTenant);
+  useAutoRefresh(refreshWindowsUpdates, 5, !!selectedTenant, 1);
+  useAutoRefresh(refreshNews, 5, !!selectedTenant, 2);
 
   useEffect(() => {
     async function loadTenants() {

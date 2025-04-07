@@ -17,6 +17,8 @@ export const useWindowsUpdates = (tenantId: string | null) => {
   }, [tenantId]);
 
   const loadWindowsUpdates = async (tenantId: string) => {
+    if (!tenantId) return;
+    
     setIsLoading(true);
     try {
       console.log('Loading Windows updates for tenant ID:', tenantId);

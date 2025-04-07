@@ -27,7 +27,7 @@ export const useM365News = (tenantId: string | null) => {
 
   // Console log for debugging
   useEffect(() => {
-    console.log("useM365News hook - received news items:", newsItems);
+    console.log("useM365News hook - received news items:", newsItems.length);
     if (error) {
       console.error("Error fetching M365 news:", error);
     }

@@ -8,13 +8,15 @@ export const useMessageCenterUpdates = (tenantId: string | null) => {
   const {
     data: updates = [],
     isLoading,
-    error
+    error,
+    refetch: refreshData
   } = useQuery<TenantUpdate[]>({
     queryKey: ['message-center-updates', tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
       console.log(`Fetching message center updates for dashboard: ${tenantId}`);
-      return await getTenantUpdates(tenantId, 500); // Increased limit to 500
+      // Remove the limit to get all updates
+      return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -34,6 +36,7 @@ export const useMessageCenterUpdates = (tenantId: string | null) => {
   return {
     messageCenterUpdates: regularUpdates,
     isLoading,
-    error
+    error,
+    refreshData
   };
 };
