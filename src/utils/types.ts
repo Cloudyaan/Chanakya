@@ -18,6 +18,7 @@ export interface License {
 
 export interface Tenant {
   id: string;
+  tenantId: string; // Added tenantId property
   name: string;
   domain: string;
   countryCode: string;
