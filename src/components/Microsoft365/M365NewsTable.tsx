@@ -84,9 +84,16 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
     );
   }
 
+  // Sort news by published date (newest first)
+  const sortedNews = [...news].sort((a, b) => {
+    const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
+    const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
+    return dateB - dateA;
+  });
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Microsoft 365 News</CardTitle>
           <CardDescription>Recent Microsoft 365 news and updates (last 10 days)</CardDescription>
@@ -103,7 +110,7 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {news.map((item, index) => (
+        {sortedNews.map((item, index) => (
           <div 
             key={item.id || `news-item-${index}`} 
             className="border p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
