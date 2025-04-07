@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { TenantUpdate } from '@/utils/types';
+import { TenantUpdate, WindowsUpdate } from '@/utils/types';
 import SystemMessages from './SystemMessages';
 import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
@@ -20,6 +20,7 @@ interface UpdatesContentProps {
   isFetching: boolean;
   onFetchUpdates: () => Promise<void>;
   onUpdateClick: (update: TenantUpdate) => void;
+  onWindowsUpdateClick?: (update: WindowsUpdate) => void; // Adding this prop
 }
 
 const UpdatesContent = ({
@@ -29,7 +30,8 @@ const UpdatesContent = ({
   regularUpdates,
   isFetching,
   onFetchUpdates,
-  onUpdateClick
+  onUpdateClick,
+  onWindowsUpdateClick
 }: UpdatesContentProps) => {
   // Get selected tenant ID from localStorage
   const savedTenant = localStorage.getItem('selectedTenant');
@@ -53,6 +55,15 @@ const UpdatesContent = ({
   if (isLoading) {
     return <UpdatesLoading />;
   }
+  
+  // Handler for Windows updates if not provided
+  const handleWindowsUpdateClick = (update: WindowsUpdate) => {
+    if (onWindowsUpdateClick) {
+      onWindowsUpdateClick(update);
+    } else {
+      console.log("Windows update clicked, but no handler provided:", update);
+    }
+  };
   
   return (
     <>
@@ -104,6 +115,7 @@ const UpdatesContent = ({
             windowsUpdates={windowsUpdates}
             isFetching={windowsIsFetching}
             onFetch={handleFetchWindowsUpdates}
+            onUpdateClick={handleWindowsUpdateClick}
           />
         </TabsContent>
         
