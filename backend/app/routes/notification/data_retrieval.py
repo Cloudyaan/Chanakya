@@ -1,6 +1,6 @@
-
 import sqlite3
 from datetime import datetime, timedelta
+from dateutil import parser
 
 from app.database import find_tenant_database
 from .db_helpers import ensure_tenant_database
@@ -176,26 +176,47 @@ def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact
         if not cursor.fetchone():
             return []
         
-        # Calculate the date range
+        # Calculate the cutoff date
         if force_exact_date:
             # Use exact date (beginning of yesterday for daily)
-            cutoff_date = get_exact_date_for_filter(frequency)
-            print(f"Filtering M365 news using exact date filter since: {cutoff_date}")
+            cutoff_date_str = get_exact_date_for_filter(frequency)
+            print(f"Filtering M365 news using exact date filter since: {cutoff_date_str}")
+            cutoff_date = datetime.fromisoformat(cutoff_date_str)
         else:
-            # Use relative time from now (for backward compatibility)
-            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-            print(f"Filtering M365 news since: {cutoff_date}")
+            # Use relative time from now
+            cutoff_date = datetime.now() - timedelta(days=days)
+            print(f"Filtering M365 news since: {cutoff_date.isoformat()}")
         
-        cursor.execute("""
-            SELECT * FROM m365_news
-            WHERE published_date > ?
-            ORDER BY published_date DESC
-        """, (cutoff_date,))
-        
-        news = [dict(row) for row in cursor.fetchall()]
+        # Get all news entries first
+        cursor.execute("SELECT * FROM m365_news ORDER BY published_date DESC")
+        all_news = [dict(row) for row in cursor.fetchall()]
         conn.close()
-        print(f"Found {len(news)} M365 news items since {cutoff_date}")
-        return news
+        
+        # Filter the news entries manually based on the date
+        filtered_news = []
+        for news_item in all_news:
+            try:
+                # Parse the date using dateutil.parser which handles various formats
+                published_date_str = news_item.get('published_date')
+                if not published_date_str:
+                    continue
+                    
+                published_date = parser.parse(published_date_str)
+                
+                # Make both dates timezone-naive for comparison if published_date has timezone
+                if published_date.tzinfo:
+                    published_date = published_date.replace(tzinfo=None)
+                
+                # Compare dates
+                if published_date >= cutoff_date:
+                    filtered_news.append(news_item)
+            except Exception as e:
+                print(f"Error parsing date '{published_date_str}': {e}")
+                # Skip items with invalid dates
+                continue
+        
+        print(f"Found {len(filtered_news)} M365 news items out of {len(all_news)} total after date filtering")
+        return filtered_news
     except Exception as e:
         print(f"Error fetching M365 news: {e}")
         return []

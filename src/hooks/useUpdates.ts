@@ -20,6 +20,7 @@ export const useUpdates = (tenantId: string | null) => {
     queryFn: async () => {
       if (!tenantId) return [];
       console.log(`Fetching updates for tenant: ${tenantId}`);
+      // Remove limit to get all updates
       return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
@@ -30,7 +31,7 @@ export const useUpdates = (tenantId: string | null) => {
 
   // Debugging log
   useEffect(() => {
-    console.log("useUpdates hook - received updates:", updates);
+    console.log("useUpdates hook - received updates:", updates.length);
     if (error) {
       console.error("Error fetching updates:", error);
     }

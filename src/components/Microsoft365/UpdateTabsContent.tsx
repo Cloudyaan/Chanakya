@@ -8,6 +8,7 @@ import UpdatesTable from './UpdatesTable';
 import UpdatesEmptyState from './UpdatesEmptyState';
 import WindowsUpdatesContent from './WindowsUpdatesContent';
 import M365NewsContent from './M365NewsContent';
+import LastRefreshIndicator from './LastRefreshIndicator';
 
 interface UpdateTabsContentProps {
   // Message Center Props
@@ -18,18 +19,22 @@ interface UpdateTabsContentProps {
   messageCenterIsFetching: boolean;
   onFetchMessageCenter: () => Promise<void>;
   onUpdateClick: (update: TenantUpdate) => void;
+  messageCenterLastRefresh: Date | null;
   
   // Windows Updates Props
   windowsUpdates: WindowsUpdate[];
   windowsIsLoading: boolean;
   windowsIsFetching: boolean;
   onFetchWindows: () => void;
+  onWindowsUpdateClick: (update: WindowsUpdate) => void;
+  windowsLastRefresh: Date | null;
   
   // M365 News Props
   newsItems: M365News[];
   newsIsLoading: boolean;
   newsIsFetching: boolean;
   onFetchNews: () => void;
+  newsLastRefresh: Date | null;
 }
 
 const UpdateTabsContent = ({
@@ -40,14 +45,20 @@ const UpdateTabsContent = ({
   messageCenterIsFetching,
   onFetchMessageCenter,
   onUpdateClick,
+  messageCenterLastRefresh,
+  
   windowsUpdates,
   windowsIsLoading,
   windowsIsFetching,
   onFetchWindows,
+  onWindowsUpdateClick,
+  windowsLastRefresh,
+  
   newsItems,
   newsIsLoading,
   newsIsFetching,
-  onFetchNews
+  onFetchNews,
+  newsLastRefresh
 }: UpdateTabsContentProps) => {
   
   return (
@@ -61,22 +72,32 @@ const UpdateTabsContent = ({
       )}
       
       <Tabs defaultValue="message-center" className="w-full">
-        <TabsList className="w-full mb-4 grid grid-cols-3">
-          <TabsTrigger value="message-center" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message Center
-          </TabsTrigger>
-          <TabsTrigger value="windows-updates" className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" />
-            Windows Updates
-          </TabsTrigger>
-          <TabsTrigger value="news" className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4" />
-            News
-          </TabsTrigger>
-        </TabsList>
+        <div className="sticky top-[144px] bg-background z-50 pt-2 pb-4">
+          <TabsList className="w-full mb-4 grid grid-cols-3">
+            <TabsTrigger value="message-center" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Center
+            </TabsTrigger>
+            <TabsTrigger value="windows-updates" className="flex items-center gap-2">
+              <Monitor className="h-4 w-4" />
+              Windows Updates
+            </TabsTrigger>
+            <TabsTrigger value="news" className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              News
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
-        <TabsContent value="message-center">
+        <TabsContent value="message-center" className="mt-0">
+          <div className="flex justify-end mb-2">
+            <LastRefreshIndicator 
+              lastRefreshTime={messageCenterLastRefresh}
+              onRefresh={onFetchMessageCenter}
+              isFetching={messageCenterIsFetching}
+            />
+          </div>
+          
           {regularUpdates.length > 0 ? (
             <UpdatesTable 
               updates={regularUpdates}
@@ -94,16 +115,33 @@ const UpdateTabsContent = ({
           )}
         </TabsContent>
         
-        <TabsContent value="windows-updates">
+        <TabsContent value="windows-updates" className="mt-0">
+          <div className="flex justify-end mb-2">
+            <LastRefreshIndicator 
+              lastRefreshTime={windowsLastRefresh}
+              onRefresh={onFetchWindows}
+              isFetching={windowsIsFetching}
+            />
+          </div>
+          
           <WindowsUpdatesContent 
             isLoading={windowsIsLoading}
             windowsUpdates={windowsUpdates}
             isFetching={windowsIsFetching}
             onFetch={onFetchWindows}
+            onUpdateClick={onWindowsUpdateClick}
           />
         </TabsContent>
         
-        <TabsContent value="news">
+        <TabsContent value="news" className="mt-0">
+          <div className="flex justify-end mb-2">
+            <LastRefreshIndicator 
+              lastRefreshTime={newsLastRefresh}
+              onRefresh={onFetchNews}
+              isFetching={newsIsFetching}
+            />
+          </div>
+          
           <M365NewsContent 
             isLoading={newsIsLoading}
             newsItems={newsItems}

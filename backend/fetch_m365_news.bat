@@ -31,4 +31,3 @@ python fetch_m365_news.py %1
 
 echo.
 echo Done!
-
