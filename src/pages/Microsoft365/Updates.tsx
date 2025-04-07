@@ -61,9 +61,29 @@ const Updates = () => {
     return refreshNews();
   };
 
-  const messageCenterLastRefresh = useAutoRefresh(handleRefreshMessageCenter, 5, !!selectedTenant);
-  const windowsLastRefresh = useAutoRefresh(handleRefreshWindowsUpdates, 5, !!selectedTenant, 1);
-  const newsLastRefresh = useAutoRefresh(handleRefreshNews, 5, !!selectedTenant, 2);
+  const messageCenterLastRefresh = useAutoRefresh(
+    handleRefreshMessageCenter, 
+    60, 
+    !!selectedTenant, 
+    0, 
+    `message-center-last-refresh-${selectedTenant}`
+  );
+  
+  const windowsLastRefresh = useAutoRefresh(
+    handleRefreshWindowsUpdates, 
+    60, 
+    !!selectedTenant, 
+    10, 
+    `windows-updates-last-refresh-${selectedTenant}`
+  );
+  
+  const newsLastRefresh = useAutoRefresh(
+    handleRefreshNews, 
+    60, 
+    !!selectedTenant, 
+    20, 
+    `m365-news-last-refresh-${selectedTenant}`
+  );
 
   useEffect(() => {
     async function loadTenants() {

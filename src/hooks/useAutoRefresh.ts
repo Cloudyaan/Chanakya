@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 
 // Make the RefreshFunction type more flexible to accept different return types
@@ -9,19 +10,28 @@ type RefreshFunction = (...args: any[]) => any;
  * @param intervalMinutes The interval in minutes between refreshes
  * @param enabled Whether the auto-refresh is enabled
  * @param delay Optional delay in minutes before the first scheduled refresh
+ * @param storageKey Optional key for localStorage to persist last refresh time
  * @returns Last refresh timestamp
  */
 export const useAutoRefresh = (
   refreshFunction: RefreshFunction,
-  intervalMinutes: number = 5,
+  intervalMinutes: number = 60, // Changed default from 5 to 60 minutes
   enabled: boolean = true,
-  delay: number = 0
+  delay: number = 0,
+  storageKey?: string
 ): Date | null => {
   // Use ref to keep track of the interval ID
   const intervalRef = useRef<number | null>(null);
   
   // Track last refresh time
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(() => {
+    // Initialize from localStorage if a storageKey is provided
+    if (storageKey) {
+      const storedTime = localStorage.getItem(storageKey);
+      return storedTime ? new Date(storedTime) : null;
+    }
+    return null;
+  });
   
   // Use ref to store the refresh function to avoid dependency issues
   const refreshFunctionRef = useRef<RefreshFunction>(refreshFunction);
@@ -34,7 +44,13 @@ export const useAutoRefresh = (
   // Function to execute refresh and update timestamp
   const executeRefresh = async () => {
     await refreshFunctionRef.current();
-    setLastRefreshTime(new Date());
+    const now = new Date();
+    setLastRefreshTime(now);
+    
+    // Persist to localStorage if storageKey is provided
+    if (storageKey) {
+      localStorage.setItem(storageKey, now.toISOString());
+    }
   };
 
   useEffect(() => {
@@ -75,7 +91,7 @@ export const useAutoRefresh = (
         }
       };
     }
-  }, [intervalMinutes, enabled, delay]);
+  }, [intervalMinutes, enabled, delay, storageKey]);
 
   return lastRefreshTime;
 };

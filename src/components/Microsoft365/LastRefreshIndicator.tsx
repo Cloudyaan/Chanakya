@@ -1,20 +1,17 @@
 
 import React from 'react';
-import { Clock, RefreshCcw } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface LastRefreshIndicatorProps {
   lastRefreshTime: Date | null;
-  onRefresh: () => void;
-  isFetching: boolean;
+  onRefresh?: () => void;
+  isFetching?: boolean;
 }
 
 const LastRefreshIndicator: React.FC<LastRefreshIndicatorProps> = ({
-  lastRefreshTime,
-  onRefresh,
-  isFetching
+  lastRefreshTime
 }) => {
   // Format the last refresh time
   const formattedTime = lastRefreshTime 
@@ -38,15 +35,6 @@ const LastRefreshIndicator: React.FC<LastRefreshIndicatorProps> = ({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 rounded-full p-0"
-        onClick={onRefresh}
-        disabled={isFetching}
-      >
-        <RefreshCcw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
-      </Button>
     </div>
   );
 };

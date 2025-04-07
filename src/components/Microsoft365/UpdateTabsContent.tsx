@@ -91,11 +91,7 @@ const UpdateTabsContent = ({
         
         <TabsContent value="message-center" className="mt-0">
           <div className="flex justify-end mb-2">
-            <LastRefreshIndicator 
-              lastRefreshTime={messageCenterLastRefresh}
-              onRefresh={onFetchMessageCenter}
-              isFetching={messageCenterIsFetching}
-            />
+            <LastRefreshIndicator lastRefreshTime={messageCenterLastRefresh} />
           </div>
           
           {regularUpdates.length > 0 ? (
@@ -117,11 +113,7 @@ const UpdateTabsContent = ({
         
         <TabsContent value="windows-updates" className="mt-0">
           <div className="flex justify-end mb-2">
-            <LastRefreshIndicator 
-              lastRefreshTime={windowsLastRefresh}
-              onRefresh={onFetchWindows}
-              isFetching={windowsIsFetching}
-            />
+            <LastRefreshIndicator lastRefreshTime={windowsLastRefresh} />
           </div>
           
           <WindowsUpdatesContent 
@@ -135,11 +127,7 @@ const UpdateTabsContent = ({
         
         <TabsContent value="news" className="mt-0">
           <div className="flex justify-end mb-2">
-            <LastRefreshIndicator 
-              lastRefreshTime={newsLastRefresh}
-              onRefresh={onFetchNews}
-              isFetching={newsIsFetching}
-            />
+            <LastRefreshIndicator lastRefreshTime={newsLastRefresh} />
           </div>
           
           <M365NewsContent 
