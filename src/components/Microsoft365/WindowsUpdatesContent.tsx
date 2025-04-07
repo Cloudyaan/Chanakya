@@ -25,13 +25,15 @@ interface WindowsUpdatesContentProps {
   windowsUpdates: WindowsUpdate[];
   isFetching: boolean;
   onFetch: () => void;
+  onUpdateClick: (update: WindowsUpdate) => void;
 }
 
 const WindowsUpdatesContent = ({
   isLoading,
   windowsUpdates,
   isFetching,
-  onFetch
+  onFetch,
+  onUpdateClick
 }: WindowsUpdatesContentProps) => {
   
   const formatDate = (dateString: string | undefined) => {
@@ -117,6 +119,7 @@ const WindowsUpdatesContent = ({
           <div 
             key={update.id || `win-update-${index}`} 
             className="border p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => onUpdateClick(update)}
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">

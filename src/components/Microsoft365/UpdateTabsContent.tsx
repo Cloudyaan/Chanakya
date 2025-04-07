@@ -24,6 +24,7 @@ interface UpdateTabsContentProps {
   windowsIsLoading: boolean;
   windowsIsFetching: boolean;
   onFetchWindows: () => void;
+  onWindowsUpdateClick: (update: WindowsUpdate) => void;
   
   // M365 News Props
   newsItems: M365News[];
@@ -44,6 +45,7 @@ const UpdateTabsContent = ({
   windowsIsLoading,
   windowsIsFetching,
   onFetchWindows,
+  onWindowsUpdateClick,
   newsItems,
   newsIsLoading,
   newsIsFetching,
@@ -102,6 +104,7 @@ const UpdateTabsContent = ({
             windowsUpdates={windowsUpdates}
             isFetching={windowsIsFetching}
             onFetch={onFetchWindows}
+            onUpdateClick={onWindowsUpdateClick}
           />
         </TabsContent>
         

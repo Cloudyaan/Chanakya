@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
 import { getTenants } from '@/utils/database';
-import { TenantConfig, TenantUpdate } from '@/utils/types';
+import { TenantConfig, TenantUpdate, WindowsUpdate } from '@/utils/types';
 import UpdateDetailsDialog from '@/components/Microsoft365/UpdateDetailsDialog';
+import WindowsUpdateDetailsDialog from '@/components/Microsoft365/WindowsUpdateDetailsDialog';
 import UpdatesHeader from '@/components/Microsoft365/UpdatesHeader';
 import NoTenantsMessage from '@/components/Microsoft365/NoTenantsMessage';
 import { useUpdates } from '@/hooks/useUpdates';
@@ -16,7 +18,9 @@ const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
+  const [selectedWindowsUpdate, setSelectedWindowsUpdate] = useState<WindowsUpdate | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isWindowsDialogOpen, setIsWindowsDialogOpen] = useState(false);
 
   const {
     regularUpdates,
@@ -112,6 +116,11 @@ const Updates = () => {
     setIsDialogOpen(true);
   };
 
+  const handleWindowsUpdateClick = (update: WindowsUpdate) => {
+    setSelectedWindowsUpdate(update);
+    setIsWindowsDialogOpen(true);
+  };
+
   const activeTenants = tenants.filter(t => t.isActive);
 
   return (
@@ -150,6 +159,7 @@ const Updates = () => {
               windowsIsLoading={windowsIsLoading}
               windowsIsFetching={windowsIsFetching}
               onFetchWindows={handleFetchWindowsUpdates}
+              onWindowsUpdateClick={handleWindowsUpdateClick}
               
               newsItems={newsItems}
               newsIsLoading={newsIsLoading}
@@ -157,10 +167,18 @@ const Updates = () => {
               onFetchNews={handleFetchM365News}
             />
 
+            {/* Message Center Update Dialog */}
             <UpdateDetailsDialog 
               isOpen={isDialogOpen}
               onOpenChange={setIsDialogOpen}
               update={selectedUpdate}
+            />
+            
+            {/* Windows Update Dialog */}
+            <WindowsUpdateDetailsDialog 
+              isOpen={isWindowsDialogOpen}
+              onOpenChange={setIsWindowsDialogOpen}
+              update={selectedWindowsUpdate}
             />
           </div>
         )}
