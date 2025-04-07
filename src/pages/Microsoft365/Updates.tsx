@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -49,22 +48,22 @@ const Updates = () => {
   } = useM365News(selectedTenant);
 
   const handleRefreshMessageCenter = () => {
-    refreshMessageCenter();
+    return refreshMessageCenter();
   };
   
   const handleRefreshWindowsUpdates = () => {
     if (selectedTenant) {
-      refreshWindowsUpdates(selectedTenant);
+      return refreshWindowsUpdates(selectedTenant);
     }
   };
   
   const handleRefreshNews = () => {
-    refreshNews();
+    return refreshNews();
   };
 
-  useAutoRefresh(handleRefreshMessageCenter, 5, !!selectedTenant);
-  useAutoRefresh(handleRefreshWindowsUpdates, 5, !!selectedTenant, 1);
-  useAutoRefresh(handleRefreshNews, 5, !!selectedTenant, 2);
+  const messageCenterLastRefresh = useAutoRefresh(handleRefreshMessageCenter, 5, !!selectedTenant);
+  const windowsLastRefresh = useAutoRefresh(handleRefreshWindowsUpdates, 5, !!selectedTenant, 1);
+  const newsLastRefresh = useAutoRefresh(handleRefreshNews, 5, !!selectedTenant, 2);
 
   useEffect(() => {
     async function loadTenants() {
@@ -154,17 +153,20 @@ const Updates = () => {
               messageCenterIsFetching={messageIsFetching}
               onFetchMessageCenter={fetchUpdateData}
               onUpdateClick={handleUpdateClick}
+              messageCenterLastRefresh={messageCenterLastRefresh}
               
               windowsUpdates={windowsUpdates}
               windowsIsLoading={windowsIsLoading}
               windowsIsFetching={windowsIsFetching}
               onFetchWindows={handleFetchWindowsUpdates}
               onWindowsUpdateClick={handleWindowsUpdateClick}
+              windowsLastRefresh={windowsLastRefresh}
               
               newsItems={newsItems}
               newsIsLoading={newsIsLoading}
               newsIsFetching={newsIsFetching}
               onFetchNews={handleFetchM365News}
+              newsLastRefresh={newsLastRefresh}
             />
 
             {/* Message Center Update Dialog */}

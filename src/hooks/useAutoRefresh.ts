@@ -1,5 +1,4 @@
-
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Make the RefreshFunction type more flexible to accept different return types
 type RefreshFunction = (...args: any[]) => any;
@@ -10,15 +9,19 @@ type RefreshFunction = (...args: any[]) => any;
  * @param intervalMinutes The interval in minutes between refreshes
  * @param enabled Whether the auto-refresh is enabled
  * @param delay Optional delay in minutes before the first scheduled refresh
+ * @returns Last refresh timestamp
  */
 export const useAutoRefresh = (
   refreshFunction: RefreshFunction,
   intervalMinutes: number = 5,
   enabled: boolean = true,
   delay: number = 0
-): void => {
+): Date | null => {
   // Use ref to keep track of the interval ID
   const intervalRef = useRef<number | null>(null);
+  
+  // Track last refresh time
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   
   // Use ref to store the refresh function to avoid dependency issues
   const refreshFunctionRef = useRef<RefreshFunction>(refreshFunction);
@@ -27,6 +30,12 @@ export const useAutoRefresh = (
   useEffect(() => {
     refreshFunctionRef.current = refreshFunction;
   }, [refreshFunction]);
+
+  // Function to execute refresh and update timestamp
+  const executeRefresh = async () => {
+    await refreshFunctionRef.current();
+    setLastRefreshTime(new Date());
+  };
 
   useEffect(() => {
     // Clear any existing interval
@@ -44,7 +53,7 @@ export const useAutoRefresh = (
         const initialDelayMs = delay * 60 * 1000;
         const initialTimeoutId = setTimeout(() => {
           console.log(`Executing first scheduled refresh after ${delay} minutes delay`);
-          refreshFunctionRef.current();
+          executeRefresh();
         }, initialDelayMs);
         
         // Clean up timeout if component unmounts during delay
@@ -55,7 +64,7 @@ export const useAutoRefresh = (
       const intervalMs = intervalMinutes * 60 * 1000;
       intervalRef.current = window.setInterval(() => {
         console.log(`Auto-refreshing data every ${intervalMinutes} minutes`);
-        refreshFunctionRef.current();
+        executeRefresh();
       }, intervalMs);
       
       // Clean up the interval on unmount
@@ -67,4 +76,6 @@ export const useAutoRefresh = (
       };
     }
   }, [intervalMinutes, enabled, delay]);
+
+  return lastRefreshTime;
 };
