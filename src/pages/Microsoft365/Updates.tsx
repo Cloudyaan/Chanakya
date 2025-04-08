@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
@@ -12,6 +13,7 @@ import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 import { useM365News } from '@/hooks/useM365News';
 import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
+import { useToast } from '@/hooks/use-toast';
 
 const Updates = () => {
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
@@ -20,6 +22,7 @@ const Updates = () => {
   const [selectedWindowsUpdate, setSelectedWindowsUpdate] = useState<WindowsUpdate | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isWindowsDialogOpen, setIsWindowsDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const {
     regularUpdates,
@@ -47,38 +50,56 @@ const Updates = () => {
     handleFetchM365News
   } = useM365News(selectedTenant);
 
-  const handleRefreshMessageCenter = () => {
+  // Manual refresh functions that also update refresh timestamps
+  const handleManualMessageCenterRefresh = async () => {
+    toast({
+      title: "Refreshing Message Center Updates",
+      description: "Fetching latest data from Microsoft Graph API",
+    });
+    await fetchUpdateData();
     return refreshMessageCenter();
   };
   
-  const handleRefreshWindowsUpdates = () => {
+  const handleManualWindowsRefresh = async () => {
+    toast({
+      title: "Refreshing Windows Updates",
+      description: "Fetching latest data from Microsoft Graph API",
+    });
+    await handleFetchWindowsUpdates();
     if (selectedTenant) {
       return refreshWindowsUpdates(selectedTenant);
     }
+    return Promise.resolve();
   };
   
-  const handleRefreshNews = () => {
+  const handleManualNewsRefresh = async () => {
+    toast({
+      title: "Refreshing Microsoft 365 News",
+      description: "Fetching latest news and announcements",
+    });
+    await handleFetchM365News();
     return refreshNews();
   };
 
-  const messageCenterLastRefresh = useAutoRefresh(
-    handleRefreshMessageCenter, 
+  // Setup auto-refresh with the updated hook
+  const [messageCenterLastRefresh, refreshMessageCenterManually] = useAutoRefresh(
+    handleManualMessageCenterRefresh, 
     60, 
     !!selectedTenant, 
     0, 
     `message-center-last-refresh-${selectedTenant}`
   );
   
-  const windowsLastRefresh = useAutoRefresh(
-    handleRefreshWindowsUpdates, 
+  const [windowsLastRefresh, refreshWindowsManually] = useAutoRefresh(
+    handleManualWindowsRefresh, 
     60, 
     !!selectedTenant, 
     10, 
     `windows-updates-last-refresh-${selectedTenant}`
   );
   
-  const newsLastRefresh = useAutoRefresh(
-    handleRefreshNews, 
+  const [newsLastRefresh, refreshNewsManually] = useAutoRefresh(
+    handleManualNewsRefresh, 
     60, 
     !!selectedTenant, 
     20, 
@@ -174,6 +195,7 @@ const Updates = () => {
               onFetchMessageCenter={fetchUpdateData}
               onUpdateClick={handleUpdateClick}
               messageCenterLastRefresh={messageCenterLastRefresh}
+              onRefreshMessageCenter={refreshMessageCenterManually}
               
               windowsUpdates={windowsUpdates}
               windowsIsLoading={windowsIsLoading}
@@ -181,12 +203,14 @@ const Updates = () => {
               onFetchWindows={handleFetchWindowsUpdates}
               onWindowsUpdateClick={handleWindowsUpdateClick}
               windowsLastRefresh={windowsLastRefresh}
+              onRefreshWindows={refreshWindowsManually}
               
               newsItems={newsItems}
               newsIsLoading={newsIsLoading}
               newsIsFetching={newsIsFetching}
               onFetchNews={handleFetchM365News}
               newsLastRefresh={newsLastRefresh}
+              onRefreshNews={refreshNewsManually}
             />
 
             {/* Message Center Update Dialog */}

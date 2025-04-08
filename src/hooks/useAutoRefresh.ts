@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Make the RefreshFunction type more flexible to accept different return types
 type RefreshFunction = (...args: any[]) => any;
@@ -11,22 +10,22 @@ type RefreshFunction = (...args: any[]) => any;
  * @param enabled Whether the auto-refresh is enabled
  * @param delay Optional delay in minutes before the first scheduled refresh
  * @param storageKey Optional key for localStorage to persist last refresh time
- * @returns Last refresh timestamp
+ * @returns Last refresh timestamp and a manual refresh function
  */
 export const useAutoRefresh = (
   refreshFunction: RefreshFunction,
-  intervalMinutes: number = 60, // Changed default from 5 to 60 minutes
+  intervalMinutes: number = 60,
   enabled: boolean = true,
   delay: number = 0,
   storageKey?: string
-): Date | null => {
+): [Date | null, () => Promise<void>] => {
   // Use ref to keep track of the interval ID
   const intervalRef = useRef<number | null>(null);
   
   // Track last refresh time
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(() => {
     // Initialize from localStorage if a storageKey is provided
-    if (storageKey) {
+    if (storageKey && typeof window !== 'undefined') {
       const storedTime = localStorage.getItem(storageKey);
       return storedTime ? new Date(storedTime) : null;
     }
@@ -42,16 +41,28 @@ export const useAutoRefresh = (
   }, [refreshFunction]);
 
   // Function to execute refresh and update timestamp
-  const executeRefresh = async () => {
-    await refreshFunctionRef.current();
-    const now = new Date();
-    setLastRefreshTime(now);
-    
-    // Persist to localStorage if storageKey is provided
-    if (storageKey) {
-      localStorage.setItem(storageKey, now.toISOString());
+  const executeRefresh = useCallback(async () => {
+    console.log('Executing refresh...');
+    try {
+      await refreshFunctionRef.current();
+      const now = new Date();
+      setLastRefreshTime(now);
+      
+      // Persist to localStorage if storageKey is provided
+      if (storageKey && typeof window !== 'undefined') {
+        console.log(`Storing last refresh time to localStorage key: ${storageKey}`);
+        localStorage.setItem(storageKey, now.toISOString());
+      }
+    } catch (error) {
+      console.error('Error during refresh:', error);
     }
-  };
+  }, [storageKey]);
+
+  // Manual refresh function that users can call
+  const manualRefresh = useCallback(async () => {
+    console.log('Manual refresh triggered');
+    await executeRefresh();
+  }, [executeRefresh]);
 
   useEffect(() => {
     // Clear any existing interval
@@ -76,10 +87,16 @@ export const useAutoRefresh = (
         return () => clearTimeout(initialTimeoutId);
       }
       
+      // Immediately refresh on mount if no delay is set
+      if (delay === 0 && !lastRefreshTime) {
+        console.log('Executing initial refresh on mount');
+        executeRefresh();
+      }
+      
       // Set up the interval
       const intervalMs = intervalMinutes * 60 * 1000;
       intervalRef.current = window.setInterval(() => {
-        console.log(`Auto-refreshing data every ${intervalMinutes} minutes`);
+        console.log(`Auto-refreshing data after ${intervalMinutes} minutes interval`);
         executeRefresh();
       }, intervalMs);
       
@@ -91,7 +108,7 @@ export const useAutoRefresh = (
         }
       };
     }
-  }, [intervalMinutes, enabled, delay, storageKey]);
+  }, [intervalMinutes, enabled, delay, executeRefresh, lastRefreshTime]);
 
-  return lastRefreshTime;
+  return [lastRefreshTime, manualRefresh];
 };
