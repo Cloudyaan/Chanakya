@@ -20,6 +20,7 @@ interface UpdateTabsContentProps {
   onFetchMessageCenter: () => Promise<void>;
   onUpdateClick: (update: TenantUpdate) => void;
   messageCenterLastRefresh: Date | null;
+  onRefreshMessageCenter?: () => Promise<void>;
   
   // Windows Updates Props
   windowsUpdates: WindowsUpdate[];
@@ -28,6 +29,7 @@ interface UpdateTabsContentProps {
   onFetchWindows: () => void;
   onWindowsUpdateClick: (update: WindowsUpdate) => void;
   windowsLastRefresh: Date | null;
+  onRefreshWindows?: () => Promise<void>;
   
   // M365 News Props
   newsItems: M365News[];
@@ -35,6 +37,7 @@ interface UpdateTabsContentProps {
   newsIsFetching: boolean;
   onFetchNews: () => void;
   newsLastRefresh: Date | null;
+  onRefreshNews?: () => Promise<void>;
 }
 
 const UpdateTabsContent = ({
