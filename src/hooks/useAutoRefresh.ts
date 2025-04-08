@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Make the RefreshFunction type more flexible to accept different return types
@@ -21,6 +22,7 @@ export const useAutoRefresh = (
 ): [Date | null, () => Promise<void>] => {
   // Use ref to keep track of the interval ID
   const intervalRef = useRef<number | null>(null);
+  const initialLoadRef = useRef<boolean>(true);
   
   // Track last refresh time
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(() => {
@@ -75,6 +77,31 @@ export const useAutoRefresh = (
     if (enabled) {
       console.log(`Setting up auto-refresh every ${intervalMinutes} minutes with ${delay} minutes initial delay`);
       
+      // Determine if we need to run an initial refresh
+      const shouldRunInitialRefresh = () => {
+        // If we have a storage key, check when the last refresh was
+        if (storageKey && lastRefreshTime) {
+          const now = new Date();
+          const lastRefresh = new Date(lastRefreshTime);
+          const hoursSinceLastRefresh = (now.getTime() - lastRefresh.getTime()) / (1000 * 60 * 60);
+          
+          // If it's been more than intervalMinutes since last refresh, run it again
+          return hoursSinceLastRefresh >= intervalMinutes / 60;
+        }
+        
+        // If no last refresh or no storage key, run initial refresh if delay is 0
+        return delay === 0 && !lastRefreshTime;
+      };
+      
+      // Only run initial refresh if this is first load AND conditions are met
+      if (initialLoadRef.current && shouldRunInitialRefresh()) {
+        console.log('Running initial refresh based on conditions');
+        setTimeout(() => executeRefresh(), 500); // Small delay to avoid immediate refresh
+      }
+      
+      // Mark initial load as completed
+      initialLoadRef.current = false;
+      
       // Initial delay before first scheduled refresh
       if (delay > 0) {
         const initialDelayMs = delay * 60 * 1000;
@@ -85,12 +112,6 @@ export const useAutoRefresh = (
         
         // Clean up timeout if component unmounts during delay
         return () => clearTimeout(initialTimeoutId);
-      }
-      
-      // Immediately refresh on mount if no delay is set
-      if (delay === 0 && !lastRefreshTime) {
-        console.log('Executing initial refresh on mount');
-        executeRefresh();
       }
       
       // Set up the interval
@@ -108,7 +129,7 @@ export const useAutoRefresh = (
         }
       };
     }
-  }, [intervalMinutes, enabled, delay, executeRefresh, lastRefreshTime]);
+  }, [intervalMinutes, enabled, delay, executeRefresh, lastRefreshTime, storageKey]);
 
   return [lastRefreshTime, manualRefresh];
 };

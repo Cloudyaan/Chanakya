@@ -20,7 +20,6 @@ interface UpdateTabsContentProps {
   onFetchMessageCenter: () => Promise<void>;
   onUpdateClick: (update: TenantUpdate) => void;
   messageCenterLastRefresh: Date | null;
-  onRefreshMessageCenter: () => Promise<void>;
   
   // Windows Updates Props
   windowsUpdates: WindowsUpdate[];
@@ -29,7 +28,6 @@ interface UpdateTabsContentProps {
   onFetchWindows: () => void;
   onWindowsUpdateClick: (update: WindowsUpdate) => void;
   windowsLastRefresh: Date | null;
-  onRefreshWindows: () => Promise<void>;
   
   // M365 News Props
   newsItems: M365News[];
@@ -37,7 +35,6 @@ interface UpdateTabsContentProps {
   newsIsFetching: boolean;
   onFetchNews: () => void;
   newsLastRefresh: Date | null;
-  onRefreshNews: () => Promise<void>;
 }
 
 const UpdateTabsContent = ({
@@ -49,7 +46,6 @@ const UpdateTabsContent = ({
   onFetchMessageCenter,
   onUpdateClick,
   messageCenterLastRefresh,
-  onRefreshMessageCenter,
   
   windowsUpdates,
   windowsIsLoading,
@@ -57,14 +53,12 @@ const UpdateTabsContent = ({
   onFetchWindows,
   onWindowsUpdateClick,
   windowsLastRefresh,
-  onRefreshWindows,
   
   newsItems,
   newsIsLoading,
   newsIsFetching,
   onFetchNews,
-  newsLastRefresh,
-  onRefreshNews
+  newsLastRefresh
 }: UpdateTabsContentProps) => {
   
   return (
@@ -99,7 +93,6 @@ const UpdateTabsContent = ({
           <div className="flex justify-end mb-2">
             <LastRefreshIndicator 
               lastRefreshTime={messageCenterLastRefresh} 
-              onRefresh={onRefreshMessageCenter}
               isFetching={messageCenterIsFetching}
             />
           </div>
@@ -125,7 +118,6 @@ const UpdateTabsContent = ({
           <div className="flex justify-end mb-2">
             <LastRefreshIndicator 
               lastRefreshTime={windowsLastRefresh} 
-              onRefresh={onRefreshWindows}
               isFetching={windowsIsFetching}
             />
           </div>
@@ -143,7 +135,6 @@ const UpdateTabsContent = ({
           <div className="flex justify-end mb-2">
             <LastRefreshIndicator 
               lastRefreshTime={newsLastRefresh} 
-              onRefresh={onRefreshNews}
               isFetching={newsIsFetching}
             />
           </div>
