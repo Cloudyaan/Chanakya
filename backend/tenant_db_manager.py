@@ -1,4 +1,3 @@
-
 import sqlite3
 import os
 import sys
@@ -68,6 +67,16 @@ def find_tenant_databases(tenant_id):
         if os.path.exists(tenant_db_exact):
             databases['tenant'] = tenant_db_exact
             print(f"Found exact tenant database: {tenant_db_exact}")
+        
+        # Look for service announcements database with Microsoft tenant ID
+        sa_path_ms = f"service_announcements_{ms_tenant_id}.db"
+        if os.path.exists(sa_path_ms):
+            databases['service_announcements'] = sa_path_ms
+    
+    # Look for service announcements database with internal ID
+    sa_path = get_tenant_service_announcements_db_path(tenant_id)
+    if os.path.exists(sa_path):
+        databases['service_announcements'] = sa_path
     
     # If tenant database not found yet, look for pattern matches
     if 'tenant' not in databases:
@@ -108,6 +117,11 @@ def initialize_tenant_database(tenant, skip_service_announcements=False):
     tenant_name = tenant["name"]
     tenant_id = tenant["tenantId"]
     db_path = get_tenant_database_path(tenant_name, tenant_id)
+    
+    # Initialize the service announcements database unless skipped
+    if not skip_service_announcements:
+        sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
+        initialize_service_announcements_db(sa_db_path)
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -213,6 +227,39 @@ def initialize_tenant_database(tenant, skip_service_announcements=False):
     conn.close()
     
     print(f"Initialized database for tenant: {tenant_name} (ID: {tenant_id}) at {db_path}")
+    return db_path
+
+def initialize_service_announcements_db(db_path):
+    """Create or update the service announcements database structure."""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create updates table specifically for service announcements
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS updates (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            category TEXT,
+            severity TEXT,
+            startDateTime TEXT DEFAULT '',
+            lastModifiedDateTime TEXT DEFAULT '',
+            isMajorChange TEXT,
+            actionRequiredByDateTime TEXT DEFAULT '',
+            services TEXT DEFAULT '',
+            hasAttachments BOOLEAN,
+            roadmapId TEXT DEFAULT '',
+            platform TEXT DEFAULT '',
+            status TEXT DEFAULT '',
+            lastUpdateTime TEXT DEFAULT '',
+            bodyContent TEXT DEFAULT '',
+            tags TEXT DEFAULT ''
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+    
+    print(f"Initialized service announcements database at {db_path}")
     return db_path
 
 def get_access_token(tenant):
