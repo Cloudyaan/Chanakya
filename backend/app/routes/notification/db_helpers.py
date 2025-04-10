@@ -48,7 +48,8 @@ def ensure_tenant_database(tenant_id):
         return None
     
     tenant_name = tenant_data['name']
-    db_path = f"service_announcements_{tenant_data['tenantId']}.db"
+    safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
+    db_path = f"{safe_name}_{tenant_data['tenantId']}.db"
     print(f"Ensuring database exists for tenant {tenant_name}: {db_path}")
     
     # Create database with required tables
@@ -105,7 +106,9 @@ def ensure_tenant_database(tenant_id):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS windows_products (
             id TEXT PRIMARY KEY,
-            name TEXT
+            name TEXT,
+            group_name TEXT,
+            friendly_names TEXT
         )
     ''')
     
