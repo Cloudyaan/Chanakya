@@ -1,8 +1,8 @@
 
 // Base API utilities for communicating with the backend
 
-// Use the exact URL that's shown in the Flask terminal output
-export const API_URL = 'http://127.0.0.1:5000/api';
+// Use HTTPS URL to avoid Mixed Content errors when frontend is served via HTTPS
+export const API_URL = 'https://mc-backend-dte2cedre8d6arg7.westeurope-01.azurewebsites.net/api';
 
 // Initialize backend connection
 export const initDatabases = async (): Promise<boolean> => {
