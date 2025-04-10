@@ -2,7 +2,7 @@
 // Base API utilities for communicating with the backend
 
 // Use HTTPS instead of HTTP for the Azure Web App
-export const API_URL = 'https://mc-backend-dte2cedre8d6arg7.westeurope-01.azurewebsites.net/api';
+export const API_URL = 'http://127.0.0.1:5000/api';
 
 // Initialize backend connection
 export const initDatabases = async (): Promise<boolean> => {
