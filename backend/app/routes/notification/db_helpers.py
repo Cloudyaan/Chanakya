@@ -48,7 +48,9 @@ def ensure_tenant_database(tenant_id):
         return None
     
     tenant_name = tenant_data['name']
-    db_path = f"service_announcements_{tenant_data['tenantId']}.db"
+    # Create database with tenant name and tenant ID
+    safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
+    db_path = f"{safe_name}_{tenant_data['tenantId']}.db"
     print(f"Ensuring database exists for tenant {tenant_name}: {db_path}")
     
     # Create database with required tables
@@ -95,7 +97,7 @@ def ensure_tenant_database(tenant_id):
             product_id TEXT,
             title TEXT,
             description TEXT,
-            webViewUrl TEXT,
+            web_view_url TEXT,
             status TEXT,
             start_date TEXT,
             resolved_date TEXT
@@ -105,7 +107,9 @@ def ensure_tenant_database(tenant_id):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS windows_products (
             id TEXT PRIMARY KEY,
-            name TEXT
+            name TEXT,
+            group_name TEXT,
+            friendly_names TEXT
         )
     ''')
     
@@ -185,8 +189,8 @@ def add_test_data_to_tenant_db(db_path):
             
             # Add test Windows updates
             cursor.execute('''
-                INSERT INTO windows_products (id, name) VALUES (?, ?)
-            ''', ('win11-22h2', 'Windows 11 22H2'))
+                INSERT INTO windows_products (id, name, group_name, friendly_names) VALUES (?, ?, ?, ?)
+            ''', ('win11-22h2', 'Windows 11 22H2', 'Windows 11', 'Windows 11 Version 22H2'))
             
             for i in range(1, 8):
                 days_ago = i
@@ -195,7 +199,7 @@ def add_test_data_to_tenant_db(db_path):
                     'product_id': 'win11-22h2',
                     'title': f'Test Windows Known Issue {i}',
                     'description': f'This is a test Windows known issue {i} created {days_ago} days ago.',
-                    'webViewUrl': 'https://learn.microsoft.com/windows/release-health',
+                    'web_view_url': 'https://learn.microsoft.com/windows/release-health',
                     'status': 'Investigation',
                     'start_date': (datetime.now() - timedelta(days=days_ago)).isoformat(),
                     'resolved_date': None
@@ -203,14 +207,14 @@ def add_test_data_to_tenant_db(db_path):
                 
                 cursor.execute('''
                     INSERT INTO windows_known_issues (
-                        id, product_id, title, description, webViewUrl, status, start_date, resolved_date
+                        id, product_id, title, description, web_view_url, status, start_date, resolved_date
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     win_update['id'],
                     win_update['product_id'],
                     win_update['title'],
                     win_update['description'],
-                    win_update['webViewUrl'],
+                    win_update['web_view_url'],
                     win_update['status'],
                     win_update['start_date'],
                     win_update['resolved_date']

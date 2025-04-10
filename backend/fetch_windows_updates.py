@@ -40,7 +40,7 @@ def create_windows_updates_tables(db_path):
             product_id TEXT,
             title TEXT,
             description TEXT,
-            webViewUrl TEXT,
+            web_view_url TEXT,
             status TEXT,
             start_date TEXT,
             resolved_date TEXT,
@@ -111,7 +111,7 @@ def store_known_issues(db_path, product_id, known_issues):
     for issue in known_issues:
         cursor.execute("""
             INSERT OR REPLACE INTO windows_known_issues 
-            (id, product_id, title, description, webViewUrl, status, start_date, resolved_date) 
+            (id, product_id, title, description, web_view_url, status, start_date, resolved_date) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             issue.get("id"),

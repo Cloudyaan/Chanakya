@@ -1,3 +1,4 @@
+
 import sqlite3
 import os
 import sys
@@ -118,11 +119,6 @@ def initialize_tenant_database(tenant, skip_service_announcements=False):
     tenant_id = tenant["tenantId"]
     db_path = get_tenant_database_path(tenant_name, tenant_id)
     
-    # Initialize the service announcements database unless skipped
-    if not skip_service_announcements:
-        sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
-        initialize_service_announcements_db(sa_db_path)
-    
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -200,11 +196,13 @@ def initialize_tenant_database(tenant, skip_service_announcements=False):
         )
     """)
     
-    # Create windows_products table
+    # Create windows_products table with group_name and friendly_names columns
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS windows_products (
             id TEXT PRIMARY KEY,
-            name TEXT
+            name TEXT,
+            group_name TEXT,
+            friendly_names TEXT
         )
     """)
     
@@ -227,39 +225,6 @@ def initialize_tenant_database(tenant, skip_service_announcements=False):
     conn.close()
     
     print(f"Initialized database for tenant: {tenant_name} (ID: {tenant_id}) at {db_path}")
-    return db_path
-
-def initialize_service_announcements_db(db_path):
-    """Create or update the service announcements database structure."""
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    # Create updates table specifically for service announcements
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS updates (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            category TEXT,
-            severity TEXT,
-            startDateTime TEXT DEFAULT '',
-            lastModifiedDateTime TEXT DEFAULT '',
-            isMajorChange TEXT,
-            actionRequiredByDateTime TEXT DEFAULT '',
-            services TEXT DEFAULT '',
-            hasAttachments BOOLEAN,
-            roadmapId TEXT DEFAULT '',
-            platform TEXT DEFAULT '',
-            status TEXT DEFAULT '',
-            lastUpdateTime TEXT DEFAULT '',
-            bodyContent TEXT DEFAULT '',
-            tags TEXT DEFAULT ''
-        )
-    """)
-    
-    conn.commit()
-    conn.close()
-    
-    print(f"Initialized service announcements database at {db_path}")
     return db_path
 
 def get_access_token(tenant):
