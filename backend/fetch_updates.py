@@ -15,8 +15,6 @@ except ImportError:
 from tenant_db_manager import (
     fetch_tenants, initialize_tenant_database, 
     get_access_token, get_tenant_database_path,
-    get_tenant_service_announcements_db_path,
-    initialize_service_announcements_db,
     get_tenant_details
 )
 
@@ -33,12 +31,8 @@ def fetch_data_for_tenant(tenant):
         print(f"Failed to get access token for tenant: {tenant_name}")
         return False
     
-    # Initialize both databases
-    # 1. Regular tenant database
+    # Initialize tenant database
     db_path = initialize_tenant_database(tenant)
-    # 2. Service announcements database
-    sa_db_path = get_tenant_service_announcements_db_path(tenant_id)
-    initialize_service_announcements_db(sa_db_path)
     
     # Endpoint for message center announcements
     ENDPOINT = "https://graph.microsoft.com/beta/admin/serviceAnnouncement/messages?$top=1000"
@@ -149,19 +143,16 @@ def fetch_data_for_tenant(tenant):
                                 announcement_data["status"] = feature.get("Status", "")
                                 announcement_data["lastUpdateTime"] = feature.get("LastUpdateTime", "")
 
-                                # Store each platform-status combination in both databases
+                                # Store each platform-status combination in the tenant database
                                 insert_update(announcement_data, db_path)
-                                insert_update(announcement_data, sa_db_path)
                     except json.JSONDecodeError:
                         print(f"Error decoding FeatureStatusJson for message ID: {message.get('id', 'N/A')}")
                         # Insert the message anyway without the feature status data
                         insert_update(announcement_data, db_path)
-                        insert_update(announcement_data, sa_db_path)
 
             # Insert the base message even if FeatureStatusJson is missing
             if not any(detail["name"] == "FeatureStatusJson" for detail in message.get("details", [])):
                 insert_update(announcement_data, db_path)
-                insert_update(announcement_data, sa_db_path)
 
         print(f"Completed processing for tenant: {tenant_name}")
         return True

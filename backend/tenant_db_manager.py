@@ -40,10 +40,6 @@ def get_tenant_database_path(tenant_name, tenant_id):
     safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
     return f"{safe_name}_{tenant_id}.db"
 
-def get_tenant_service_announcements_db_path(tenant_id):
-    """Get the path for a tenant-specific service announcements database."""
-    return f"service_announcements_{tenant_id}.db"
-
 def find_tenant_databases(tenant_id):
     """Find all databases related to a specific tenant.
     
@@ -68,16 +64,6 @@ def find_tenant_databases(tenant_id):
         if os.path.exists(tenant_db_exact):
             databases['tenant'] = tenant_db_exact
             print(f"Found exact tenant database: {tenant_db_exact}")
-        
-        # Look for service announcements database with Microsoft tenant ID
-        sa_path_ms = f"service_announcements_{ms_tenant_id}.db"
-        if os.path.exists(sa_path_ms):
-            databases['service_announcements'] = sa_path_ms
-    
-    # Look for service announcements database with internal ID
-    sa_path = get_tenant_service_announcements_db_path(tenant_id)
-    if os.path.exists(sa_path):
-        databases['service_announcements'] = sa_path
     
     # If tenant database not found yet, look for pattern matches
     if 'tenant' not in databases:
