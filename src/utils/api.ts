@@ -2,10 +2,7 @@
 // Base API utilities for communicating with the backend
 
 // Use the exact URL that's shown in the Flask terminal output
-// Updated to use HTTPS for backend when deployed to Azure
-export const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://127.0.0.1:5000/api'
-  : 'https://mc-backend-dte2cedre8d6arg7.westeurope-01.azurewebsites.net/api';
+export const API_URL = 'http://127.0.0.1:5000/api';
 
 // Initialize backend connection
 export const initDatabases = async (): Promise<boolean> => {

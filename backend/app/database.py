@@ -53,7 +53,8 @@ def find_tenant_database(tenant_id, prefer_service_announcements=False):
     
     This function searches for database files in the following order (unless prefer_service_announcements is True):
     1. *_{tenant_id}.db (standard tenant DB)
-    2. *{tenant_id}*.db (any DB containing the tenant ID)
+    2. service_announcements_{tenant_id}.db (only if it already exists)
+    3. *{tenant_id}*.db (any DB containing the tenant ID)
     
     Returns the path to the first matching database file, or None if not found.
     """
@@ -82,13 +83,26 @@ def find_tenant_database(tenant_id, prefer_service_announcements=False):
             return tenant_specific_pattern
     
     # Look for database files matching different naming patterns
-    patterns = [
-        f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
-        f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
-    ]
+    if prefer_service_announcements:
+        # When service announcements are preferred (for message-center source)
+        patterns = [
+            f"service_announcements_{tenant_id}.db",  # Preferred for service announcements
+            f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
+            f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
+        ]
+    else:
+        # Default priority - regular tenant DB first
+        patterns = [
+            f"*_{tenant_id}.db",                      # Standard tenant DB format (name_id.db)
+            f"service_announcements_{tenant_id}.db",  # Service announcements DB (only if exists)
+            f"*{tenant_id}*.db"                       # Any DB containing the tenant ID
+        ]
     
     for pattern in patterns:
         matching_files = glob.glob(pattern)
+        # Filter out service_announcements if not preferred
+        if not prefer_service_announcements and pattern != f"service_announcements_{tenant_id}.db":
+            matching_files = [f for f in matching_files if not f.startswith("service_announcements_")]
         
         if matching_files:
             print(f"Found database: {matching_files[0]} using pattern: {pattern}")
@@ -102,6 +116,7 @@ def find_tenant_database(tenant_id, prefer_service_announcements=False):
         # Try patterns with Microsoft tenant ID
         alt_patterns = [
             f"*_{ms_tenant_id}.db",                      # Standard tenant DB format with MS tenant ID
+            f"service_announcements_{ms_tenant_id}.db",  # Service announcements DB with MS tenant ID
             f"*{ms_tenant_id}*.db"                       # Any DB containing the MS tenant ID
         ]
         
@@ -142,22 +157,34 @@ def get_all_tenant_databases(tenant_id):
             databases['tenant'] = tenant_db
             print(f"Found exact tenant database: {tenant_db}")
     
-    # If we have tenant details but didn't find tenant DB, try other patterns
+    # Check for service announcements database
+    service_db = f"service_announcements_{tenant_id}.db"
+    if os.path.exists(service_db):
+        databases['service_announcements'] = service_db
+    
+    # If we have tenant details but didn't find tenant DB, try with MS tenant ID
     if tenant and 'tenant' not in databases:
         ms_tenant_id = tenant['tenantId']
-        
-        # Fallback: check for any databases matching tenant_id pattern
+        service_db_ms = f"service_announcements_{ms_tenant_id}.db"
+        if os.path.exists(service_db_ms):
+            databases['service_announcements'] = service_db_ms
+    
+    # Fallback: check for any databases matching the pattern
+    if 'tenant' not in databases:
         tenant_dbs = glob.glob(f"*_{tenant_id}.db")
         for db in tenant_dbs:
-            databases['tenant'] = db
-            break
-        
-        # If still not found, try with MS tenant ID
-        if 'tenant' not in databases:
-            tenant_dbs = glob.glob(f"*_{ms_tenant_id}.db")
-            for db in tenant_dbs:
+            if 'service_announcements' not in db:
                 databases['tenant'] = db
                 break
+        
+        # If still not found, try with MS tenant ID if available
+        if tenant and 'tenant' not in databases:
+            ms_tenant_id = tenant['tenantId']
+            tenant_dbs = glob.glob(f"*_{ms_tenant_id}.db")
+            for db in tenant_dbs:
+                if 'service_announcements' not in db:
+                    databases['tenant'] = db
+                    break
     
     print(f"Found databases for tenant {tenant_id}: {databases}")
     return databases
