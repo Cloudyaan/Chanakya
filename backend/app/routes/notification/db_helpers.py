@@ -105,9 +105,7 @@ def ensure_tenant_database(tenant_id):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS windows_products (
             id TEXT PRIMARY KEY,
-            name TEXT,
-            group_name TEXT,
-            friendly_names TEXT
+            name TEXT
         )
     ''')
     
