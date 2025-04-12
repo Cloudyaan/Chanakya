@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./utils/authContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
 import Index from "./pages/Index";
 import Licenses from "./pages/Microsoft365/Licenses";
 import M365Dashboard from "./pages/Microsoft365/Dashboard";
@@ -29,27 +32,78 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/microsoft-365" element={<Microsoft365 />} />
-          <Route path="/microsoft-365/dashboard" element={<M365Dashboard />} />
-          <Route path="/microsoft-365/licenses" element={<Licenses />} />
-          <Route path="/microsoft-365/updates" element={<Updates />} />
-          <Route path="/microsoft-365/notifications" element={<Notifications />} />
-          <Route path="/microsoft-365/dsc" element={<M365DSC />} />
-          <Route path="/microsoft-365/reports" element={<Reports />} />
-          <Route path="/azure" element={<Azure />} />
-          <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365" element={
+              <ProtectedRoute>
+                <Microsoft365 />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/dashboard" element={
+              <ProtectedRoute>
+                <M365Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/licenses" element={
+              <ProtectedRoute>
+                <Licenses />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/updates" element={
+              <ProtectedRoute>
+                <Updates />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/notifications" element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/dsc" element={
+              <ProtectedRoute>
+                <M365DSC />
+              </ProtectedRoute>
+            } />
+            <Route path="/microsoft-365/reports" element={
+              <ProtectedRoute>
+                <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/azure" element={
+              <ProtectedRoute>
+                <Azure />
+              </ProtectedRoute>
+            } />
+            <Route path="/azure/cost-analysis" element={
+              <ProtectedRoute>
+                <AzureCostAnalysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={
+              <ProtectedRoute>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
