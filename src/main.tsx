@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { initDatabases } from './utils/database';
+import { initDatabases } from './utils/api';
 
 // Initialize databases at application startup
 // Add error handling to prevent application failure if backend is not available

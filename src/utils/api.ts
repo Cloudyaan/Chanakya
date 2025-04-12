@@ -3,7 +3,7 @@
 import { useAuth } from './authContext';
 
 // Use the exact URL that's shown in the Flask terminal output, but with https for production
-export const API_URL = process.env.NODE_ENV === 'production' 
+export const API_URL = import.meta.env.NODE_ENV === 'production' 
   ? 'https://your-azure-app-url.azurewebsites.net/api'
   : 'http://127.0.0.1:5000/api';
 

@@ -4,8 +4,8 @@
 // Replace these values with your Azure AD application registration details
 export const msalConfig = {
   auth: {
-    clientId: process.env.REACT_APP_CLIENT_ID || "YOUR_CLIENT_ID",
-    authority: `https://login.microsoftonline.com/${process.env.REACT_APP_TENANT_ID || "YOUR_TENANT_ID"}`,
+    clientId: import.meta.env.VITE_CLIENT_ID || "YOUR_CLIENT_ID",
+    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_TENANT_ID || "YOUR_TENANT_ID"}`,
     redirectUri: window.location.origin,
   },
   cache: {
@@ -22,7 +22,7 @@ export const loginRequest = {
 // Add API endpoints that need authentication
 export const protectedResources = {
   apiEndpoint: {
-    endpoint: `${process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api'}`,
+    endpoint: `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api'}`,
     scopes: ["api://YOUR_API_SCOPE/user_impersonation"]
   }
 };

@@ -22,5 +22,7 @@ export default defineConfig(({ mode }) => ({
   define: {
     // Define the missing WebSocket token to fix the error
     __WS_TOKEN__: JSON.stringify("development-ws-token"),
+    // Polyfill process.env for libraries that use it
+    'process.env': {}
   },
 }));
