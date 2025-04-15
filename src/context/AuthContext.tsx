@@ -23,18 +23,39 @@ const AuthContext = createContext<AuthContextProps>({
 
 export const useAuth = () => useContext(AuthContext);
 
+// Create the MSAL instance but don't use it until initialization is complete
 export const msalInstance = new PublicClientApplication(msalConfig);
+
+// Initialize MSAL instance
+const initializeMsal = async () => {
+  try {
+    await msalInstance.initialize();
+    console.log("MSAL initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("MSAL initialization failed:", error);
+    return false;
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<AccountInfo | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [msalInitialized, setMsalInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Check if user is already logged in
+        // First initialize MSAL
+        const initialized = await initializeMsal();
+        if (!initialized) {
+          throw new Error("Failed to initialize MSAL");
+        }
+        setMsalInitialized(true);
+
+        // Then check if user is already logged in
         const accounts = msalInstance.getAllAccounts();
         if (accounts.length > 0) {
           msalInstance.setActiveAccount(accounts[0]);
@@ -53,6 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async () => {
+    if (!msalInitialized) {
+      setError("Authentication service is not initialized yet. Please try again.");
+      return;
+    }
+
     try {
       const response: AuthenticationResult = await msalInstance.loginPopup({
         scopes: ["User.Read", "profile", "openid", "email"],
@@ -70,6 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    if (!msalInitialized) {
+      setError("Authentication service is not initialized yet.");
+      return;
+    }
+
     msalInstance.logoutPopup().then(() => {
       setUser(null);
       setIsAuthenticated(false);
