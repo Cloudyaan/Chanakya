@@ -4,20 +4,17 @@ import { WindowsUpdate } from '@/utils/types';
 import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/updatesOperations';
 import { useToast } from '@/hooks/use-toast';
 
-export const useWindowsUpdates = (tenantId: string | null, autoFetch: boolean = true) => {
+export const useWindowsUpdates = (tenantId: string | null) => {
   const [windowsUpdates, setWindowsUpdates] = useState<WindowsUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (tenantId && autoFetch) {
+    if (tenantId) {
       loadWindowsUpdates(tenantId);
-    } else if (tenantId) {
-      // Just set loading to false if we're not auto-fetching
-      setIsLoading(false);
     }
-  }, [tenantId, autoFetch]);
+  }, [tenantId]);
 
   const loadWindowsUpdates = async (tenantId: string) => {
     if (!tenantId) return;

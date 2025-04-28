@@ -5,7 +5,7 @@ import { TenantUpdate } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 
-export const useUpdates = (tenantId: string | null, autoFetch: boolean = true) => {
+export const useUpdates = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
@@ -25,7 +25,7 @@ export const useUpdates = (tenantId: string | null, autoFetch: boolean = true) =
     },
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnMount: autoFetch, // Only auto-fetch when enabled
+    refetchOnMount: true,
     retry: 2
   });
 
