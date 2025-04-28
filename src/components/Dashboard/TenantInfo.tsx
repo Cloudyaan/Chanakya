@@ -44,6 +44,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
         <div>
           <h2 className="text-xl font-semibold text-foreground">{tenant.name}</h2>
           <p className="text-sm text-m365-gray-500">{domainName}</p>
+          <p className="text-xs text-gray-500 mt-1">Tenant ID: {tenant.tenantId}</p>
         </div>
         <div className={cn(
           "px-3 py-1 rounded-full text-xs font-medium",
@@ -60,7 +61,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <div className="p-2 bg-blue-100 rounded-full">
               <MessageSquare className="h-5 w-5 text-blue-600" />
             </div>
-            <h3 className="font-medium">Total Message Center Updates</h3>
+            <h3 className="font-medium">Message Center Updates</h3>
           </div>
           <div className="text-2xl font-semibold pl-2">{messageCenterCount}</div>
         </div>
@@ -71,7 +72,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <div className="p-2 bg-purple-100 rounded-full">
               <Monitor className="h-5 w-5 text-purple-600" />
             </div>
-            <h3 className="font-medium">Total Windows Updates</h3>
+            <h3 className="font-medium">Windows Updates</h3>
           </div>
           <div className="text-2xl font-semibold pl-2">{windowsUpdatesCount}</div>
         </div>

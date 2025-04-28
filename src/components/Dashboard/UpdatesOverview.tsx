@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
 import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle } from 'lucide-react';
+import LatestActionRequired from './LatestActionRequired';
 
 interface UpdatesOverviewProps {
   messageCenterUpdates: TenantUpdate[];
@@ -43,107 +44,139 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   ).length;
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
-      <div className="grid grid-cols-1 gap-6">
-        {/* Message Center Updates Section */}
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
-            <MessageSquare className="h-5 w-5" />
-            Message Center Updates ({messageCenterUpdates.length})
-          </h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Informational
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-blue-100">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{informationalUpdates}</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Plan for Change
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-amber-100">
-                    <BellRing className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{planForChangeUpdates}</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Action Required
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-red-100">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{actionRequiredUpdates}</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Message Center Updates Section */}
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
+        <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+          <MessageSquare className="h-5 w-5" />
+          Message Center Updates ({messageCenterUpdates.length})
+        </h3>
         
-        {/* Windows Updates Section */}
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
-            <Monitor className="h-5 w-5" />
-            Windows Updates ({windowsUpdates.length})
-          </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Informational
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-full bg-blue-100">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold">{informationalUpdates}</div>
+              </div>
+            </CardContent>
+          </Card>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Issues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-amber-100">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{activeWindowsIssues}</div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Plan for Change
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-full bg-amber-100">
+                  <BellRing className="h-4 w-4 text-amber-600" />
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Resolved Issues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-green-100">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{resolvedWindowsIssues}</div>
+                <div className="text-2xl font-bold">{planForChangeUpdates}</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Action Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-full bg-red-100">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="text-2xl font-bold">{actionRequiredUpdates}</div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Latest Action Required Updates */}
+        <LatestActionRequired updates={messageCenterUpdates} />
+      </div>
+      
+      {/* Windows Updates Section */}
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
+        <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
+          <Monitor className="h-5 w-5" />
+          Windows Updates ({windowsUpdates.length})
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Active Issues
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-full bg-amber-100">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                </div>
+                <div className="text-2xl font-bold">{activeWindowsIssues}</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Resolved Issues
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-full bg-green-100">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="text-2xl font-bold">{resolvedWindowsIssues}</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Latest Active Windows Issues */}
+        {activeWindowsIssues > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                Latest Active Windows Issues
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {windowsUpdates
+                  .filter(update => 
+                    update.status?.toLowerCase() === 'active' || 
+                    update.status?.toLowerCase() === 'investigating' ||
+                    update.status?.toLowerCase() === 'confirmed'
+                  )
+                  .slice(0, 3)
+                  .map((update) => (
+                    <div key={update.id} className="flex gap-3">
+                      <div className="w-1 bg-amber-500 rounded-full" />
+                      <p className="text-sm text-gray-700 line-clamp-2">
+                        {update.title || 'No title available'}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
