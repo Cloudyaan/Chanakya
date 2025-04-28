@@ -16,47 +16,50 @@ const DashboardOverview = ({
   totalWindowsUpdates 
 }: DashboardOverviewProps) => {
   return (
-    <>
+    <div className="grid gap-6">
       {/* Tenant Overview Section */}
-      <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-6">
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
         <h2 className="text-xl font-semibold">{tenant.name} Dashboard Overview</h2>
         <p className="text-sm text-muted-foreground">Tenant ID: {tenant.tenantId}</p>
       </div>
 
-      {/* Message Center Updates Section */}
-      <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-6">
-        <h3 className="text-lg font-medium text-blue-600 mb-4 flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          Message Center Updates Dashboard
-        </h3>
-        <Card className="bg-blue-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Total Updates</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{totalMessageCenterUpdates}</div>
-            <div className="text-sm text-gray-600">Message Center Updates</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Updates Dashboard Grid */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Message Center Updates Section */}
+        <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
+          <h3 className="text-lg font-medium text-blue-600 mb-4 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Message Center Updates Dashboard
+          </h3>
+          <Card className="bg-blue-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Total Updates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600">{totalMessageCenterUpdates}</div>
+              <div className="text-sm text-gray-600">Message Center Updates</div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Windows Updates Section */}
-      <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
-        <h3 className="text-lg font-medium text-purple-600 mb-4 flex items-center gap-2">
-          <Monitor className="h-5 w-5" />
-          Windows Updates Dashboard
-        </h3>
-        <Card className="bg-purple-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Total Updates</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{totalWindowsUpdates}</div>
-            <div className="text-sm text-gray-600">Windows Updates</div>
-          </CardContent>
-        </Card>
+        {/* Windows Updates Section */}
+        <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
+          <h3 className="text-lg font-medium text-purple-600 mb-4 flex items-center gap-2">
+            <Monitor className="h-5 w-5" />
+            Windows Updates Dashboard
+          </h3>
+          <Card className="bg-purple-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Total Updates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-purple-600">{totalWindowsUpdates}</div>
+              <div className="text-sm text-gray-600">Windows Updates</div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
