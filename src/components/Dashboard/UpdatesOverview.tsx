@@ -50,7 +50,12 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
       update.status?.toLowerCase() === 'investigating' ||
       update.status?.toLowerCase() === 'confirmed'
     )
-    .sort((a, b) => new Date(b.lastUpdatedTime || '').getTime() - new Date(a.lastUpdatedTime || '').getTime())
+    .sort((a, b) => {
+      // Use startDate instead of lastUpdatedTime
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return dateB - dateA;
+    })
     .slice(0, 3);
 
   return (
@@ -176,7 +181,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
                         {update.title || 'No title available'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {update.lastUpdatedTime ? new Date(update.lastUpdatedTime).toLocaleDateString() : 'No date available'}
+                        {update.startDate ? new Date(update.startDate).toLocaleDateString() : 'No date available'}
                       </p>
                     </div>
                   </div>
