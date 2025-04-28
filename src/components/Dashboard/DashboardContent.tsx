@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import TenantInfo from './TenantInfo';
 import UpdatesOverview from './UpdatesOverview';
@@ -12,8 +12,21 @@ interface DashboardContentProps {
 }
 
 const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
-  const { messageCenterUpdates } = useMessageCenterUpdates(tenant.tenantId);
-  const { windowsUpdates } = useWindowsUpdates(tenant.tenantId);
+  const { 
+    messageCenterUpdates,
+    isLoading: messageIsLoading 
+  } = useMessageCenterUpdates(tenant.tenantId);
+  
+  const { 
+    windowsUpdates,
+    isLoading: windowsIsLoading 
+  } = useWindowsUpdates(tenant.tenantId);
+
+  // Debug logging to check if data is being received
+  useEffect(() => {
+    console.log("Dashboard receiving message center updates:", messageCenterUpdates?.length || 0);
+    console.log("Dashboard receiving windows updates:", windowsUpdates?.length || 0);
+  }, [messageCenterUpdates, windowsUpdates]);
 
   return (
     <div className="space-y-6">

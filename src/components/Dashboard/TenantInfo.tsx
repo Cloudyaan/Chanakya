@@ -59,6 +59,15 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
     u.status?.toLowerCase() === 'completed'
   ).length;
 
+  // Log actual counts for debugging
+  console.log('Message Center Updates:', messageCenterUpdates.length);
+  console.log('Windows Updates:', windowsUpdates.length);
+  console.log('Informational:', informationalUpdates);
+  console.log('Plan for Change:', planForChangeUpdates);
+  console.log('Action Required:', actionRequiredUpdates);
+  console.log('Active Windows:', activeWindowsIssues);
+  console.log('Resolved Windows:', resolvedWindowsIssues);
+
   return (
     <motion.div 
       className={cn(
