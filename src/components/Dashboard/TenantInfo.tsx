@@ -4,6 +4,7 @@ import { Tenant } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { MessageSquare, Monitor } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface TenantInfoProps {
   tenant: Tenant;
@@ -58,7 +59,10 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 hover:shadow-md transition-all duration-300">
+        <Link 
+          to="/microsoft-365/updates?tab=message-center"
+          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 hover:shadow-md transition-all duration-300"
+        >
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 bg-blue-100 rounded-full">
               <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -66,9 +70,12 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <h3 className="font-medium text-gray-800">Message Center Updates</h3>
           </div>
           <div className="text-2xl font-semibold text-gray-900 pl-2">{messageCenterCount}</div>
-        </div>
+        </Link>
         
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 hover:shadow-md transition-all duration-300">
+        <Link 
+          to="/microsoft-365/updates?tab=windows-updates"
+          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 hover:shadow-md transition-all duration-300"
+        >
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 bg-purple-100 rounded-full">
               <Monitor className="h-5 w-5 text-purple-600" />
@@ -76,10 +83,11 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <h3 className="font-medium text-gray-800">Windows Updates</h3>
           </div>
           <div className="text-2xl font-semibold text-gray-900 pl-2">{windowsUpdatesCount}</div>
-        </div>
+        </Link>
       </div>
     </motion.div>
   );
 };
 
 export default TenantInfo;
+

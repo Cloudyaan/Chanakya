@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TenantUpdate, WindowsUpdate, M365News } from '@/utils/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +10,7 @@ import M365NewsContent from './M365NewsContent';
 import LastRefreshIndicator from './LastRefreshIndicator';
 
 interface UpdateTabsContentProps {
+  defaultTab?: string;
   // Message Center Props
   regularUpdates: TenantUpdate[];
   hasSystemMessage: boolean;
@@ -41,6 +41,7 @@ interface UpdateTabsContentProps {
 }
 
 const UpdateTabsContent = ({
+  defaultTab = 'message-center',
   regularUpdates,
   hasSystemMessage,
   systemMessages,
@@ -74,7 +75,7 @@ const UpdateTabsContent = ({
         />
       )}
       
-      <Tabs defaultValue="message-center" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <div className="sticky top-[144px] bg-background z-50 pt-2 pb-4">
           <TabsList className="w-full mb-4 grid grid-cols-3">
             <TabsTrigger value="message-center" className="flex items-center gap-2">

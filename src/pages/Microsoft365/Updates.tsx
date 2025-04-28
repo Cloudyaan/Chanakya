@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import Microsoft365 from '../Microsoft365';
 import { getTenants } from '@/utils/database';
 import { TenantConfig, TenantUpdate, WindowsUpdate } from '@/utils/types';
@@ -16,6 +16,9 @@ import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useToast } from '@/hooks/use-toast';
 
 const Updates = () => {
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
@@ -50,7 +53,6 @@ const Updates = () => {
     handleFetchM365News
   } = useM365News(selectedTenant);
 
-  // Manual refresh functions that also update refresh timestamps
   const handleManualMessageCenterRefresh = async () => {
     toast({
       title: "Refreshing Message Center Updates",
@@ -81,7 +83,6 @@ const Updates = () => {
     return refreshNews();
   };
 
-  // Setup auto-refresh with the updated hook
   const [messageCenterLastRefresh, refreshMessageCenterManually] = useAutoRefresh(
     handleManualMessageCenterRefresh, 
     60, 
@@ -187,6 +188,7 @@ const Updates = () => {
         ) : (
           <div className="space-y-6 pb-8">
             <UpdateTabsContent 
+              defaultTab={tabFromUrl || 'message-center'}
               regularUpdates={regularUpdates}
               hasSystemMessage={hasSystemMessage}
               systemMessages={systemMessages}
@@ -213,14 +215,12 @@ const Updates = () => {
               onRefreshNews={refreshNewsManually}
             />
 
-            {/* Message Center Update Dialog */}
             <UpdateDetailsDialog 
               isOpen={isDialogOpen}
               onOpenChange={setIsDialogOpen}
               update={selectedUpdate}
             />
             
-            {/* Windows Update Dialog */}
             <WindowsUpdateDetailsDialog 
               isOpen={isWindowsDialogOpen}
               onOpenChange={setIsWindowsDialogOpen}
