@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import TenantInfo from './TenantInfo';
 import { Tenant } from '@/utils/types';
@@ -71,7 +71,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
         </div>
       </div>
 
-      {/* Second Display Card - Message Center Details */}
+      {/* Second Display Card - Message Center Updates */}
       <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
