@@ -3,13 +3,21 @@ import React from 'react';
 import { Tenant } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { MessageSquare, Monitor } from 'lucide-react';
 
 interface TenantInfoProps {
   tenant: Tenant;
   className?: string;
+  messageCenterCount?: number;
+  windowsUpdatesCount?: number;
 }
 
-const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
+const TenantInfo: React.FC<TenantInfoProps> = ({ 
+  tenant, 
+  className,
+  messageCenterCount = 0,
+  windowsUpdatesCount = 0
+}) => {
   const statusColor = () => {
     switch (tenant.subscriptionStatus) {
       case 'Active': return 'bg-green-100 text-green-700';
@@ -45,30 +53,24 @@ const TenantInfo: React.FC<TenantInfoProps> = ({ tenant, className }) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div>
-          <p className="text-sm text-m365-gray-500">Admin Contact</p>
-          <p className="text-sm font-medium">{tenant.adminEmail}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+          <div className="p-2 bg-blue-100 rounded-full">
+            <MessageSquare className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm text-m365-gray-500">Message Center Updates</p>
+            <p className="text-lg font-semibold">{messageCenterCount}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm text-m365-gray-500">Country</p>
-          <p className="text-sm font-medium">{tenant.countryCode}</p>
-        </div>
-        <div>
-          <p className="text-sm text-m365-gray-500">Total Users</p>
-          <p className="text-sm font-medium">{tenant.totalUsers}</p>
-        </div>
-        <div>
-          <p className="text-sm text-m365-gray-500">Active Users</p>
-          <p className="text-sm font-medium">{tenant.activeUsers}</p>
-        </div>
-        <div>
-          <p className="text-sm text-m365-gray-500">Creation Date</p>
-          <p className="text-sm font-medium">{new Date(tenant.creationDate).toLocaleDateString()}</p>
-        </div>
-        <div>
-          <p className="text-sm text-m365-gray-500">Tenant ID</p>
-          <p className="text-sm font-medium font-mono text-xs">{tenant.tenantId}</p>
+        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+          <div className="p-2 bg-purple-100 rounded-full">
+            <Monitor className="h-5 w-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-sm text-m365-gray-500">Windows Updates</p>
+            <p className="text-lg font-semibold">{windowsUpdatesCount}</p>
+          </div>
         </div>
       </div>
     </motion.div>
