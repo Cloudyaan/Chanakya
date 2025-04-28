@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
 import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle } from 'lucide-react';
-import LatestActionRequired from './LatestActionRequired';
 
 interface UpdatesOverviewProps {
   messageCenterUpdates: TenantUpdate[];
@@ -28,7 +28,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   const actionRequiredUpdates = messageCenterUpdates.filter(u => 
     u.actionType === 'Action Required' ||
     (!u.actionType && u.severity === 'High')
-  ).length;
+  );
   
   // Count Windows updates by status
   const activeWindowsIssues = windowsUpdates.filter(u => 
@@ -55,6 +55,11 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       return dateB - dateA;
     })
+    .slice(0, 3);
+
+  // Get the latest action required updates
+  const latestActionRequired = actionRequiredUpdates
+    .sort((a, b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime())
     .slice(0, 3);
 
   return (
@@ -110,35 +115,37 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
                 <div className="p-1.5 rounded-full bg-red-100">
                   <AlertCircle className="h-4 w-4 text-red-600" />
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{actionRequiredUpdates}</div>
+                <div className="text-2xl font-bold text-gray-900">{actionRequiredUpdates.length}</div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Latest Action Required Updates */}
-        <Card className="mt-6 border-l-4 border-l-red-500 bg-gradient-to-br from-white to-red-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-800">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              Latest Action Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {actionRequiredUpdates.slice(0, 3).map((update) => (
-                <div key={update.id} className="flex gap-3 hover:bg-red-50/50 p-2 rounded-md transition-all duration-300">
-                  <div className="w-1 bg-red-500 rounded-full" />
-                  <div>
-                    <p className="text-sm text-gray-700 line-clamp-2 font-medium">
-                      {update.title}
-                    </p>
+        {latestActionRequired.length > 0 && (
+          <Card className="mt-6 border-l-4 border-l-red-500 bg-gradient-to-br from-white to-red-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-800">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                Latest Action Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {latestActionRequired.map((update) => (
+                  <div key={update.id} className="flex gap-3 hover:bg-red-50/50 p-2 rounded-md transition-all duration-300">
+                    <div className="w-1 bg-red-500 rounded-full" />
+                    <div>
+                      <p className="text-sm text-gray-700 line-clamp-2 font-medium">
+                        {update.title}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
       {/* Windows Updates Section */}
