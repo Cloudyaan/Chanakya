@@ -16,9 +16,7 @@ export const useMessageCenterUpdates = (tenantId: string | null) => {
       if (!tenantId) return [];
       console.log(`Fetching message center updates for dashboard: ${tenantId}`);
       // Get all updates without limit
-      const result = await getTenantUpdates(tenantId);
-      console.log(`Retrieved ${result.length} message center updates`);
-      return result;
+      return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
