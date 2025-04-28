@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Monitor } from 'lucide-react';
+import { MessageSquare, Monitor, Database, Info } from 'lucide-react';
 import { Tenant } from '@/utils/types';
 
 interface DashboardOverviewProps {
@@ -19,8 +19,17 @@ const DashboardOverview = ({
     <div className="grid gap-6">
       {/* Tenant Overview Section */}
       <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
-        <h2 className="text-xl font-semibold">{tenant.name} Dashboard Overview</h2>
-        <p className="text-sm text-muted-foreground">Tenant ID: {tenant.tenantId}</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+          <div>
+            <h2 className="text-xl font-semibold">{tenant.name} Dashboard Overview</h2>
+            <div className="flex items-center mt-1">
+              <span className="text-sm font-medium bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md inline-flex items-center">
+                <Database className="h-3.5 w-3.5 mr-1" />
+                Tenant ID: {tenant.tenantId}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Updates Dashboard Grid */}
@@ -37,7 +46,11 @@ const DashboardOverview = ({
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">{totalMessageCenterUpdates}</div>
-              <div className="text-sm text-gray-600">Message Center Updates</div>
+              <div className="text-sm text-gray-600 mb-2">Message Center Updates</div>
+              <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-md inline-flex items-center">
+                <Info className="h-3 w-3 mr-1" />
+                Stored in "updates" table
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -54,7 +67,11 @@ const DashboardOverview = ({
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">{totalWindowsUpdates}</div>
-              <div className="text-sm text-gray-600">Windows Updates</div>
+              <div className="text-sm text-gray-600 mb-2">Windows Updates</div>
+              <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-md inline-flex items-center">
+                <Info className="h-3 w-3 mr-1" />
+                Stored in "windows_known_issues" table
+              </div>
             </CardContent>
           </Card>
         </div>
