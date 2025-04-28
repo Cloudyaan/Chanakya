@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import TenantInfo from './TenantInfo';
@@ -38,11 +37,23 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
     u.status?.toLowerCase() === 'completed'
   );
 
+  // Show loading state if either data is loading
+  if (messageIsLoading || windowsIsLoading) {
+    return <div>Loading...</div>;
+  }
+
+  // Calculate total updates from database results
+  const totalMessageCenterUpdates = messageCenterUpdates.length;
+  const totalWindowsUpdates = windowsUpdates.length;
+
   return (
     <div className="space-y-8">
       {/* First Display Card - Tenant Overview */}
       <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
-        <h2 className="text-xl font-semibold mb-4">{tenant.name} Dashboard Overview</h2>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold">{tenant.name} Dashboard Overview</h2>
+          <p className="text-sm text-muted-foreground">Tenant ID: {tenant.tenantId}</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="bg-blue-50">
             <CardHeader className="pb-2">
@@ -52,7 +63,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{messageCenterUpdates.length}</div>
+              <div className="text-3xl font-bold text-blue-600">{totalMessageCenterUpdates}</div>
               <div className="text-sm text-gray-600">Total Updates</div>
             </CardContent>
           </Card>
@@ -64,7 +75,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{windowsUpdates.length}</div>
+              <div className="text-3xl font-bold text-purple-600">{totalWindowsUpdates}</div>
               <div className="text-sm text-gray-600">Total Updates</div>
             </CardContent>
           </Card>
