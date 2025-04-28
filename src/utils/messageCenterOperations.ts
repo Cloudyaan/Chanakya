@@ -1,3 +1,4 @@
+
 import { TenantUpdate } from './types';
 import { API_URL } from './api';
 
@@ -9,7 +10,7 @@ export const getTenantUpdates = async (tenantId?: string): Promise<TenantUpdate[
       return [];
     }
     
-    // Remove the limit parameter from the URL
+    // Use URL without any limit parameter to get all updates
     const url = `${API_URL}/updates?tenantId=${tenantId}&source=message-center`;
     
     console.log(`Fetching tenant updates from: ${url}`);

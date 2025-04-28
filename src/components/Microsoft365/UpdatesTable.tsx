@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { TenantUpdate } from '@/utils/types';
 import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
@@ -28,6 +29,7 @@ const UpdatesTable = ({
   const [actionTypeFilter, setActionTypeFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   
+  // Get unique action types and categories for filters
   const actionTypes = useMemo(() => {
     const types = [...new Set(updates.map(u => u.actionType || 'Informational'))];
     return ['all', ...types];
@@ -38,6 +40,7 @@ const UpdatesTable = ({
     return ['all', ...cats];
   }, [updates]);
   
+  // Apply filters to updates
   const filteredUpdates = useMemo(() => {
     return updates.filter(update => {
       const matchesActionType = actionTypeFilter === 'all' || 

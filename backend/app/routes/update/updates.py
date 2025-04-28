@@ -12,13 +12,6 @@ from app.routes.update import update_bp
 def get_updates():
     tenant_id = request.args.get('tenantId')
     source = request.args.get('source', 'message-center')  # Default to message-center
-    limit = request.args.get('limit', '100')  # Default to 100
-    
-    try:
-        # Convert limit to integer
-        limit = int(limit)
-    except ValueError:
-        limit = 100  # Default if conversion fails
     
     # If no tenant ID is specified, return an error
     if not tenant_id:
@@ -97,9 +90,9 @@ def get_updates():
             table_name = table_result['name']
             print(f"Found table: {table_name} in database: {tenant_db_path}")
             
-            # Adapt query based on which table exists
+            # Adapt query based on which table exists - without any LIMIT
             if table_name == 'updates':
-                cursor.execute(f"""
+                cursor.execute("""
                     SELECT 
                         id,
                         title,
@@ -110,10 +103,9 @@ def get_updates():
                         bodyContent as description
                     FROM updates
                     ORDER BY lastModifiedDateTime DESC
-                    LIMIT {limit}
                 """)
             else:  # announcements
-                cursor.execute(f"""
+                cursor.execute("""
                     SELECT 
                         id,
                         title,
@@ -124,7 +116,6 @@ def get_updates():
                         bodyContent as description
                     FROM announcements
                     ORDER BY lastModifiedDateTime DESC
-                    LIMIT {limit}
                 """)
             
             updates = []

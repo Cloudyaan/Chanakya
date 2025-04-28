@@ -15,7 +15,7 @@ export const useMessageCenterUpdates = (tenantId: string | null) => {
     queryFn: async () => {
       if (!tenantId) return [];
       console.log(`Fetching message center updates for dashboard: ${tenantId}`);
-      // Remove the limit to get all updates
+      // Get all updates without limit
       return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
