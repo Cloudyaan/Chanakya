@@ -3,22 +3,13 @@ import React from 'react';
 import { Tenant } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { MessageSquare, Monitor, BellRing, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { MessageSquare, Monitor } from 'lucide-react';
 
 interface TenantInfoProps {
   tenant: Tenant;
   className?: string;
   messageCenterCount?: number;
   windowsUpdatesCount?: number;
-  messageCenterUpdates?: {
-    informational: number;
-    planForChange: number;
-    actionRequired: number;
-  };
-  windowsUpdates?: {
-    active: number;
-    resolved: number;
-  };
 }
 
 const TenantInfo: React.FC<TenantInfoProps> = ({ 
@@ -26,8 +17,6 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
   className,
   messageCenterCount = 0,
   windowsUpdatesCount = 0,
-  messageCenterUpdates = { informational: 0, planForChange: 0, actionRequired: 0 },
-  windowsUpdates = { active: 0, resolved: 0 }
 }) => {
   const statusColor = () => {
     switch (tenant.subscriptionStatus) {
@@ -71,34 +60,9 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <div className="p-2 bg-blue-100 rounded-full">
               <MessageSquare className="h-5 w-5 text-blue-600" />
             </div>
-            <h3 className="font-medium">Message Center Updates ({messageCenterCount})</h3>
+            <h3 className="font-medium">Total Message Center Updates</h3>
           </div>
-          
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <Clock className="h-3 w-3" />
-                <span>Info</span>
-              </div>
-              <span className="text-lg font-semibold">{messageCenterUpdates.informational}</span>
-            </div>
-            
-            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <BellRing className="h-3 w-3" />
-                <span>Plan</span>
-              </div>
-              <span className="text-lg font-semibold">{messageCenterUpdates.planForChange}</span>
-            </div>
-            
-            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <AlertCircle className="h-3 w-3" />
-                <span>Action</span>
-              </div>
-              <span className="text-lg font-semibold">{messageCenterUpdates.actionRequired}</span>
-            </div>
-          </div>
+          <div className="text-2xl font-semibold pl-2">{messageCenterCount}</div>
         </div>
         
         {/* Windows Updates Section */}
@@ -107,26 +71,9 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <div className="p-2 bg-purple-100 rounded-full">
               <Monitor className="h-5 w-5 text-purple-600" />
             </div>
-            <h3 className="font-medium">Windows Updates ({windowsUpdatesCount})</h3>
+            <h3 className="font-medium">Total Windows Updates</h3>
           </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <AlertCircle className="h-3 w-3" />
-                <span>Active</span>
-              </div>
-              <span className="text-lg font-semibold">{windowsUpdates.active}</span>
-            </div>
-            
-            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <CheckCircle className="h-3 w-3" />
-                <span>Resolved</span>
-              </div>
-              <span className="text-lg font-semibold">{windowsUpdates.resolved}</span>
-            </div>
-          </div>
+          <div className="text-2xl font-semibold pl-2">{windowsUpdatesCount}</div>
         </div>
       </div>
     </motion.div>
