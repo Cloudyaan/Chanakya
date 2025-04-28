@@ -23,8 +23,8 @@ export const useWindowsUpdates = (tenantId: string | null) => {
     try {
       console.log('Loading Windows updates for tenant ID:', tenantId);
       const data = await getWindowsUpdates(tenantId);
-      console.log('Windows updates loaded:', data);
-      setWindowsUpdates(data);
+      console.log('Windows updates loaded:', data.length, data);
+      setWindowsUpdates(data || []);
     } catch (error) {
       console.error('Error loading Windows updates:', error);
       toast({
