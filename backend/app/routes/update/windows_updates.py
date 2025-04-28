@@ -1,4 +1,3 @@
-
 from flask import request, jsonify
 import sqlite3
 import os
@@ -90,7 +89,7 @@ def get_windows_updates():
                 select_fields.append("wi.web_view_url as webViewUrl")
                 
             if 'status' in column_names:
-                select_fields.append("wi.status")
+                select_fields.append("LOWER(wi.status) as status")
             else:
                 select_fields.append("'Unknown' as status")
                 
@@ -143,6 +142,10 @@ def get_windows_updates():
                 
                 # Add tenant information
                 update['tenantId'] = tenant['tenantId']
+                
+                # Make sure status is normalized to lowercase for easier filtering
+                if 'status' in update and update['status']:
+                    update['status'] = update['status'].lower()
                 
                 updates.append(update)
             

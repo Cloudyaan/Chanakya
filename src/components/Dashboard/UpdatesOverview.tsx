@@ -21,6 +21,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   
   const planForChangeUpdates = messageCenterUpdates.filter(u => 
     u.actionType === 'Plan for Change' ||
+    u.actionType === 'planForChange' ||
     (!u.actionType && u.severity === 'Medium')
   ).length;
   
@@ -32,7 +33,8 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   // Count Windows updates by status
   const activeWindowsIssues = windowsUpdates.filter(u => 
     u.status?.toLowerCase() === 'active' || 
-    u.status?.toLowerCase() === 'investigating'
+    u.status?.toLowerCase() === 'investigating' ||
+    u.status?.toLowerCase() === 'confirmed'
   ).length;
   
   const resolvedWindowsIssues = windowsUpdates.filter(u => 
@@ -42,14 +44,12 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
-      <h2 className="text-xl font-semibold mb-6">Updates Overview</h2>
-      
       <div className="grid grid-cols-1 gap-6">
         {/* Message Center Updates Section */}
         <div>
           <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
             <MessageSquare className="h-5 w-5" />
-            Message Center Updates
+            Message Center Updates ({messageCenterUpdates.length})
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -100,22 +100,6 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
                 </div>
               </CardContent>
             </Card>
-            
-            <Card className="sm:col-span-2 lg:col-span-3">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Message Center Updates
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-green-100">
-                    <MessageSquare className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{messageCenterUpdates.length}</div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
         
@@ -123,7 +107,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
         <div>
           <h3 className="text-lg font-medium flex items-center gap-2 mb-4">
             <Monitor className="h-5 w-5" />
-            Windows Updates
+            Windows Updates ({windowsUpdates.length})
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -155,22 +139,6 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   </div>
                   <div className="text-2xl font-bold">{resolvedWindowsIssues}</div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Windows Issues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-full bg-blue-100">
-                    <Monitor className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="text-2xl font-bold">{windowsUpdates.length}</div>
                 </div>
               </CardContent>
             </Card>

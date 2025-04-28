@@ -127,6 +127,8 @@ def get_updates():
                 action_type = update.get('actionType')
                 if action_type == 'MajorChange':
                     update['actionType'] = 'Action Required'
+                elif action_type == 'planForChange' or (update.get('severity') == 'Medium'):
+                    update['actionType'] = 'Plan for Change'
                 else:
                     update['actionType'] = 'Informational'
                 

@@ -3,20 +3,31 @@ import React from 'react';
 import { Tenant } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { MessageSquare, Monitor } from 'lucide-react';
+import { MessageSquare, Monitor, BellRing, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 
 interface TenantInfoProps {
   tenant: Tenant;
   className?: string;
   messageCenterCount?: number;
   windowsUpdatesCount?: number;
+  messageCenterUpdates?: {
+    informational: number;
+    planForChange: number;
+    actionRequired: number;
+  };
+  windowsUpdates?: {
+    active: number;
+    resolved: number;
+  };
 }
 
 const TenantInfo: React.FC<TenantInfoProps> = ({ 
   tenant, 
   className,
   messageCenterCount = 0,
-  windowsUpdatesCount = 0
+  windowsUpdatesCount = 0,
+  messageCenterUpdates = { informational: 0, planForChange: 0, actionRequired: 0 },
+  windowsUpdates = { active: 0, resolved: 0 }
 }) => {
   const statusColor = () => {
     switch (tenant.subscriptionStatus) {
@@ -53,23 +64,68 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-          <div className="p-2 bg-blue-100 rounded-full">
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Message Center Updates Section */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+            </div>
+            <h3 className="font-medium">Message Center Updates ({messageCenterCount})</h3>
           </div>
-          <div>
-            <p className="text-sm text-m365-gray-500">Message Center Updates</p>
-            <p className="text-lg font-semibold">{messageCenterCount}</p>
+          
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
+              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                <Clock className="h-3 w-3" />
+                <span>Info</span>
+              </div>
+              <span className="text-lg font-semibold">{messageCenterUpdates.informational}</span>
+            </div>
+            
+            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
+              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                <BellRing className="h-3 w-3" />
+                <span>Plan</span>
+              </div>
+              <span className="text-lg font-semibold">{messageCenterUpdates.planForChange}</span>
+            </div>
+            
+            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
+              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>Action</span>
+              </div>
+              <span className="text-lg font-semibold">{messageCenterUpdates.actionRequired}</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-          <div className="p-2 bg-purple-100 rounded-full">
-            <Monitor className="h-5 w-5 text-purple-600" />
+        
+        {/* Windows Updates Section */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 bg-purple-100 rounded-full">
+              <Monitor className="h-5 w-5 text-purple-600" />
+            </div>
+            <h3 className="font-medium">Windows Updates ({windowsUpdatesCount})</h3>
           </div>
-          <div>
-            <p className="text-sm text-m365-gray-500">Windows Updates</p>
-            <p className="text-lg font-semibold">{windowsUpdatesCount}</p>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
+              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>Active</span>
+              </div>
+              <span className="text-lg font-semibold">{windowsUpdates.active}</span>
+            </div>
+            
+            <div className="flex flex-col items-center bg-white p-2 rounded shadow-sm">
+              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                <CheckCircle className="h-3 w-3" />
+                <span>Resolved</span>
+              </div>
+              <span className="text-lg font-semibold">{windowsUpdates.resolved}</span>
+            </div>
           </div>
         </div>
       </div>
