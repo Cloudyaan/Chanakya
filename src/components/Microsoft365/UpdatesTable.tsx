@@ -1,11 +1,11 @@
-
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { TenantUpdate } from '@/utils/types';
-import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw } from 'lucide-react';
+import { InfoIcon, ClockIcon, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface UpdatesTableProps {
@@ -25,6 +25,29 @@ const UpdatesTable = ({
   isFetching,
   onFetch
 }: UpdatesTableProps) => {
+  const [actionTypeFilter, setActionTypeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  
+  const actionTypes = useMemo(() => {
+    const types = [...new Set(updates.map(u => u.actionType || 'Informational'))];
+    return ['all', ...types];
+  }, [updates]);
+  
+  const categories = useMemo(() => {
+    const cats = [...new Set(updates.map(u => u.category || 'General'))];
+    return ['all', ...cats];
+  }, [updates]);
+  
+  const filteredUpdates = useMemo(() => {
+    return updates.filter(update => {
+      const matchesActionType = actionTypeFilter === 'all' || 
+        (update.actionType || 'Informational') === actionTypeFilter;
+      const matchesCategory = categoryFilter === 'all' || 
+        (update.category || 'General') === categoryFilter;
+      return matchesActionType && matchesCategory;
+    });
+  }, [updates, actionTypeFilter, categoryFilter]);
+
   const getBadgeVariant = (actionType: string | undefined) => {
     if (!actionType) return 'default';
     if (actionType === 'Action Required') return 'destructive';
@@ -62,13 +85,60 @@ const UpdatesTable = ({
   
   return (
     <Card>
-      <CardHeader className="sticky top-[200px] z-40 bg-background pb-2 flex flex-row items-center justify-between">
-        <CardTitle>Message Center Announcements</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="flex items-center gap-1">
-            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-            Refresh
-          </Button>
+      <CardHeader className="sticky top-[200px] z-40 bg-background pb-2">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle>Message Center Announcements</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="flex items-center gap-1">
+                <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filters:</span>
+            </div>
+            
+            <Select
+              value={actionTypeFilter}
+              onValueChange={setActionTypeFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Action Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {actionTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type === 'all' ? 'All Action Types' : type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat === 'all' ? 'All Categories' : formatCategory(cat)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredUpdates.length} of {updates.length} updates
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -84,7 +154,7 @@ const UpdatesTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {updates.map(update => {
+              {filteredUpdates.map(update => {
                 const isPlanForChange = update.actionType === 'Plan for Change';
                 const isNotStayInformed = update.category !== 'stayInformed';
                 return (

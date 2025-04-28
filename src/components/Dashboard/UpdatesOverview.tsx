@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
@@ -39,7 +38,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
     u.status?.toLowerCase() === 'resolved' || 
     u.status?.toLowerCase() === 'completed'
   ).length;
-  
+
   return (
     <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-8">
       <h2 className="text-xl font-semibold mb-6">Updates Overview</h2>
