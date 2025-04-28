@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNow, parseISO, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface M365NewsTableProps {
   news: M365News[];
@@ -27,25 +27,16 @@ interface M365NewsTableProps {
 
 const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
   // Add debugging console logs
-  console.log('M365NewsTable received news:', news.length);
+  console.log('M365NewsTable received news:', news);
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
-      const date = parseISO(dateString);
+      const date = new Date(dateString);
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (e) {
-      // If parseISO fails, try regular Date object
-      try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-          return dateString;
-        }
-        return formatDistanceToNow(date, { addSuffix: true });
-      } catch (e2) {
-        console.error('Error formatting date:', e2);
-        return dateString || 'N/A';
-      }
+      console.error('Error formatting date:', e);
+      return dateString || 'N/A';
     }
   };
 
@@ -105,9 +96,7 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
       <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Microsoft 365 News</CardTitle>
-          <CardDescription>
-            Recent Microsoft 365 news and updates (last 10 days) - {sortedNews.length} items
-          </CardDescription>
+          <CardDescription>Recent Microsoft 365 news and updates (last 10 days)</CardDescription>
         </div>
         <Button 
           variant="outline" 
@@ -137,7 +126,6 @@ const M365NewsTable = ({ news, onFetch, isFetching }: M365NewsTableProps) => {
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
                   <span>{formatDate(item.published_date)}</span>
-                  <span className="text-xs">({item.published_date ? format(new Date(item.published_date), 'PPP') : 'Unknown date'})</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
