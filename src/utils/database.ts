@@ -26,11 +26,6 @@ export {
 } from './updatesOperations';
 
 export {
-  getLicenseData,
-  fetchTenantLicenses
-} from './licenseOperations';
-
-export {
   getM365News,
   fetchM365News
 } from './m365NewsOperations';
