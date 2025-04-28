@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -35,7 +36,7 @@ const Updates = () => {
     isFetching: messageIsFetching,
     refreshData: refreshMessageCenter,
     fetchUpdateData
-  } = useUpdates(selectedTenant);
+  } = useUpdates(selectedTenant, false); // Pass false to prevent auto-fetching
   
   const {
     windowsUpdates,
@@ -43,7 +44,7 @@ const Updates = () => {
     isFetching: windowsIsFetching,
     loadWindowsUpdates: refreshWindowsUpdates,
     handleFetchWindowsUpdates
-  } = useWindowsUpdates(selectedTenant);
+  } = useWindowsUpdates(selectedTenant, false); // Pass false to prevent auto-fetching
   
   const {
     newsItems,
@@ -51,7 +52,7 @@ const Updates = () => {
     isFetching: newsIsFetching,
     refreshData: refreshNews,
     handleFetchM365News
-  } = useM365News(selectedTenant);
+  } = useM365News(selectedTenant, false); // Pass false to prevent auto-fetching
 
   const handleManualMessageCenterRefresh = async () => {
     toast({

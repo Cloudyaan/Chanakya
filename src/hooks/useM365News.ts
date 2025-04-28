@@ -1,119 +1,102 @@
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { M365News } from '@/utils/types';
 import { getM365News, fetchM365News } from '@/utils/m365NewsOperations';
-import { parseISO, differenceInDays, parse, isValid } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
-export const useM365News = (tenantId: string | null) => {
+export const useM365News = (tenantId: string | null, autoFetch: boolean = true) => {
+  const [newsItems, setNewsItems] = useState<M365News[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
+  const { toast } = useToast();
 
-  // React Query for M365 news with retry and stale time config
-  const {
-    data: newsItems = [],
-    isLoading,
-    refetch: refreshData,
-    error
-  } = useQuery<M365News[]>({
-    queryKey: ['m365-news', tenantId],
-    queryFn: () => (tenantId ? getM365News(tenantId) : Promise.resolve([])),
-    enabled: !!tenantId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnMount: true,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-  });
-
-  // Console log for debugging
   useEffect(() => {
-    console.log("useM365News hook - received news items:", newsItems.length);
-    if (error) {
-      console.error("Error fetching M365 news:", error);
+    if (tenantId && autoFetch) {
+      loadM365News(tenantId);
+    } else if (tenantId) {
+      // Just set loading to false if we're not auto-fetching
+      setIsLoading(false);
     }
-  }, [newsItems, error]);
+  }, [tenantId, autoFetch]);
 
-  // Filter to get only items from the last 10 days with robust date parsing
-  const recentNewsItems = newsItems.filter(item => {
-    if (!item.published_date) return false;
+  const loadM365News = async (tenantId: string) => {
+    if (!tenantId) return;
     
+    setIsLoading(true);
     try {
-      let publishedDate: Date | null = null;
-      const dateStr = item.published_date;
-      
-      // Try parsing as ISO format first
-      publishedDate = parseISO(dateStr);
-      
-      // If not valid ISO format, try other common formats
-      if (!isValid(publishedDate)) {
-        // Format like "Mon, 10 Mar 2025 23:30:35 Z"
-        publishedDate = parse(dateStr, 'EEE, dd MMM yyyy HH:mm:ss X', new Date());
-      }
-      
-      // If still not valid, try to use Date constructor as fallback
-      if (!isValid(publishedDate)) {
-        publishedDate = new Date(dateStr);
-      }
-      
-      // If we have a valid date now
-      if (isValid(publishedDate)) {
-        const tenDaysAgo = new Date();
-        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-        return publishedDate >= tenDaysAgo;
-      }
-      
-      console.error(`Could not parse date: ${dateStr}`);
-      return false;
-    } catch (e) {
-      console.error("Error parsing date:", e, item);
-      return false;
+      console.log('Loading M365 news for tenant ID:', tenantId);
+      const data = await getM365News(tenantId);
+      console.log('M365 news loaded:', data);
+      setNewsItems(data);
+    } catch (error) {
+      console.error('Error loading M365 news:', error);
+      toast({
+        title: "Error loading M365 news",
+        description: "Could not load news and announcements",
+        variant: "destructive",
+      });
+      setNewsItems([]);
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
 
-  // Fetch M365 news from the backend
   const handleFetchM365News = async () => {
     if (!tenantId) {
-      toast.error('No tenant selected');
+      console.error('No tenant selected');
+      toast({
+        title: "Error",
+        description: "No tenant selected. Please select a tenant first.",
+        variant: "destructive",
+      });
       return;
     }
-
+    
     setIsFetching(true);
     try {
-      toast.info('Fetching Microsoft 365 news updates...');
+      console.log(`Triggering fetch M365 news for tenant: ${tenantId}`);
       const success = await fetchM365News(tenantId);
       
       if (success) {
-        toast.success('Microsoft 365 news updates fetched successfully');
-        // Wait a moment before refreshing to allow backend processing
-        setTimeout(async () => {
-          await refreshData();
-          setIsFetching(false);
-        }, 1000);
+        toast({
+          title: "Fetching M365 news succeeded",
+          description: "News data is being retrieved",
+          variant: "default",
+        });
+        // Reload the data after fetching with a small delay
+        setTimeout(() => loadM365News(tenantId), 2000);
       } else {
-        toast.error('Failed to fetch Microsoft 365 news updates');
-        setIsFetching(false);
+        toast({
+          title: "Fetching M365 news failed",
+          description: "Could not fetch news data",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error fetching M365 news:', error);
-      toast.error('An error occurred while fetching news updates');
+      toast({
+        title: "Error",
+        description: "Failed to trigger news data fetch",
+        variant: "destructive",
+      });
+    } finally {
       setIsFetching(false);
     }
   };
 
-  // Refresh data when tenantId changes
-  useEffect(() => {
+  const refreshData = async () => {
     if (tenantId) {
-      console.log("Tenant ID changed, refreshing M365 news data");
-      refreshData();
+      return loadM365News(tenantId);
     }
-  }, [tenantId, refreshData]);
+    return Promise.resolve();
+  };
 
   return {
-    newsItems: recentNewsItems,
+    newsItems,
     isLoading,
     isFetching,
-    handleFetchM365News,
     refreshData,
-    error
+    loadM365News,
+    handleFetchM365News
   };
 };
