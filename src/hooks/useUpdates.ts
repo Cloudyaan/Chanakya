@@ -9,7 +9,7 @@ export const useUpdates = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
-  // Use React Query for better data fetching and caching
+  // Use React Query for better data fetching and caching, but disable automatic fetching
   const {
     data: updates = [],
     isLoading,
@@ -20,12 +20,11 @@ export const useUpdates = (tenantId: string | null) => {
     queryFn: async () => {
       if (!tenantId) return [];
       console.log(`Fetching updates for tenant: ${tenantId}`);
-      // Remove limit to get all updates
       return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent auto-fetch when component mounts
     retry: 2
   });
 

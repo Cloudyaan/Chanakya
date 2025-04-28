@@ -10,13 +10,14 @@ export const useWindowsUpdates = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
+  // Load Windows updates on initial mount or tenantId change, but don't show loading toast
   useEffect(() => {
     if (tenantId) {
-      loadWindowsUpdates(tenantId);
+      loadWindowsUpdates(tenantId, false);
     }
   }, [tenantId]);
 
-  const loadWindowsUpdates = async (tenantId: string) => {
+  const loadWindowsUpdates = async (tenantId: string, showToast = true) => {
     if (!tenantId) return;
     
     setIsLoading(true);
@@ -27,11 +28,13 @@ export const useWindowsUpdates = (tenantId: string | null) => {
       setWindowsUpdates(data);
     } catch (error) {
       console.error('Error loading Windows updates:', error);
-      toast({
-        title: "Error loading Windows updates",
-        description: "Could not load Windows update information",
-        variant: "destructive",
-      });
+      if (showToast) {
+        toast({
+          title: "Error loading Windows updates",
+          description: "Could not load Windows update information",
+          variant: "destructive",
+        });
+      }
       setWindowsUpdates([]);
     } finally {
       setIsLoading(false);
@@ -52,6 +55,12 @@ export const useWindowsUpdates = (tenantId: string | null) => {
     setIsFetching(true);
     try {
       console.log(`Triggering fetch Windows updates for tenant: ${tenantId}`);
+      toast({
+        title: "Fetching Windows updates...",
+        description: "Requesting updates from Microsoft Graph API",
+        variant: "default",
+      });
+      
       const success = await fetchWindowsUpdates(tenantId);
       
       if (success) {

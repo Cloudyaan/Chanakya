@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { TenantUpdate, WindowsUpdate, M365News } from '@/utils/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

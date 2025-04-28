@@ -10,6 +10,7 @@ export const useM365News = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
 
   // React Query for M365 news with retry and stale time config
+  // Disabled refetchOnMount to prevent auto-fetch on page load
   const {
     data: newsItems = [],
     isLoading,
@@ -20,7 +21,7 @@ export const useM365News = (tenantId: string | null) => {
     queryFn: () => (tenantId ? getM365News(tenantId) : Promise.resolve([])),
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent auto-fetch when component mounts
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
@@ -100,13 +101,8 @@ export const useM365News = (tenantId: string | null) => {
     }
   };
 
-  // Refresh data when tenantId changes
-  useEffect(() => {
-    if (tenantId) {
-      console.log("Tenant ID changed, refreshing M365 news data");
-      refreshData();
-    }
-  }, [tenantId, refreshData]);
+  // We'll no longer automatically refresh data when tenantId changes
+  // to prevent unexpected auto-fetches
 
   return {
     newsItems: recentNewsItems,
