@@ -41,7 +41,6 @@ const App = () => (
           <Route path="/azure" element={<Azure />} />
           <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
           <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

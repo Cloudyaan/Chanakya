@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import MetricsCard from './MetricsCard';
 import { LicenseMetric } from '@/utils/types';
 
@@ -14,8 +13,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metrics }) => {
       {metrics.map((metric, index) => (
         <MetricsCard 
           key={metric.name} 
-          metric={metric} 
-          className={`animation-delay-${index * 100}`}
+          metric={metric}
         />
       ))}
     </div>

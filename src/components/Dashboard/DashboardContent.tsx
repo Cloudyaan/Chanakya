@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import TenantInfo from './TenantInfo';
 import UpdatesOverview from './UpdatesOverview';
 import { Tenant } from '@/utils/types';
