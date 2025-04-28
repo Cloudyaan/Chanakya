@@ -19,14 +19,16 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
     }
     
     const news: M365News[] = await response.json();
-    console.log(`Retrieved ${news.length} M365 news items:`, news);
+    console.log(`Retrieved ${news.length} M365 news items`);
     
     // Log the date formats for debugging
     if (news.length > 0) {
       console.log('Sample M365 news date format:', news[0].published_date);
+      console.log('First item title:', news[0].title);
+      console.log('First item date:', new Date(news[0].published_date || '').toISOString());
     }
     
-    // Handle possible issues with news item structure
+    // Handle possible issues with news item structure and ensure proper date formatting
     return news.map(item => ({
       id: item.id || `news-${Math.random().toString(36).substring(2, 11)}`,
       title: item.title || 'Untitled',
@@ -63,9 +65,10 @@ export const fetchM365News = async (tenantId: string): Promise<boolean> => {
         tenantId,
         skipDatabaseCreation: false,
         forceUseExistingDatabase: true,
-        fixCompatibility: true, // Add flag to ensure compatibility fixes
-        checkPeriod: true,      // Enable period checking based on frequency
-        forceExactDateFilter: true // Use exact date filtering
+        fixCompatibility: true, 
+        checkPeriod: true,   
+        forceExactDateFilter: true,
+        useCompleteDay: true // Use complete day for filtering
       }),
     });
     
