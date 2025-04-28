@@ -16,14 +16,15 @@ const DashboardOverview = ({
   totalWindowsUpdates 
 }: DashboardOverviewProps) => {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
-      <div className="mb-6">
+    <>
+      {/* Tenant Overview Section */}
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-6">
         <h2 className="text-xl font-semibold">{tenant.name} Dashboard Overview</h2>
         <p className="text-sm text-muted-foreground">Tenant ID: {tenant.tenantId}</p>
       </div>
 
       {/* Message Center Updates Section */}
-      <div className="mb-6">
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border mb-6">
         <h3 className="text-lg font-medium text-blue-600 mb-4 flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
           Message Center Updates Dashboard
@@ -40,7 +41,7 @@ const DashboardOverview = ({
       </div>
 
       {/* Windows Updates Section */}
-      <div>
+      <div className="bg-white rounded-xl p-6 shadow-soft border border-border">
         <h3 className="text-lg font-medium text-purple-600 mb-4 flex items-center gap-2">
           <Monitor className="h-5 w-5" />
           Windows Updates Dashboard
@@ -55,7 +56,7 @@ const DashboardOverview = ({
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 };
 
