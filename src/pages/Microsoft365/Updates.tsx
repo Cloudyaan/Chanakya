@@ -1,7 +1,5 @@
 
-import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Microsoft365 from '../Microsoft365';
 import { getTenants } from '@/utils/database';
@@ -18,17 +16,6 @@ import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useToast } from '@/hooks/use-toast';
 
 const Updates = () => {
-  const location = useLocation();
-  const defaultTab = location.state?.defaultTab || 'message-center';
-
-  useEffect(() => {
-    // Find and click the appropriate tab trigger
-    const tabTrigger = document.querySelector(`[data-state][value="${defaultTab}"]`) as HTMLButtonElement;
-    if (tabTrigger) {
-      tabTrigger.click();
-    }
-  }, [defaultTab]);
-
   const [tenants, setTenants] = useState<TenantConfig[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);

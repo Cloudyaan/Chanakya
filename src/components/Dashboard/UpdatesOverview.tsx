@@ -1,5 +1,5 @@
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
 import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle } from 'lucide-react';
@@ -13,17 +13,6 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   messageCenterUpdates, 
   windowsUpdates 
 }) => {
-  const navigate = useNavigate();
-
-  // Navigation handlers
-  const handleMessageCenterClick = () => {
-    navigate('/microsoft-365/updates', { state: { defaultTab: 'message-center' } });
-  };
-
-  const handleWindowsUpdatesClick = () => {
-    navigate('/microsoft-365/updates', { state: { defaultTab: 'windows-updates' } });
-  };
-
   // Count Message Center updates by type
   const informationalUpdates = messageCenterUpdates.filter(u => 
     u.actionType === 'Informational' || 
@@ -76,10 +65,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Message Center Updates Section */}
-      <div 
-        onClick={handleMessageCenterClick}
-        className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl"
-      >
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-gray-800">
           <MessageSquare className="h-5 w-5 text-blue-600" />
           Message Center Updates ({messageCenterUpdates.length})
@@ -163,10 +149,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
       </div>
       
       {/* Windows Updates Section */}
-      <div 
-        onClick={handleWindowsUpdatesClick}
-        className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl"
-      >
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 shadow-lg border border-gray-100">
         <h3 className="text-lg font-medium flex items-center gap-2 mb-4 text-gray-800">
           <Monitor className="h-5 w-5 text-purple-600" />
           Windows Updates ({windowsUpdates.length})
