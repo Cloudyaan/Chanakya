@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
-import { MessageSquare, Monitor, AlertCircle, BellRing, CheckCircle, Clock } from 'lucide-react';
+import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle } from 'lucide-react';
 
 interface UpdatesOverviewProps {
   messageCenterUpdates: TenantUpdate[];

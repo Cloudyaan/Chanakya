@@ -73,7 +73,7 @@ export interface TenantUpdate {
   description: string;
   category: string;
   severity?: 'High' | 'Medium' | 'Low' | 'Normal';
-  actionType?: 'Action Required' | 'Plan for Change' | 'Informational';
+  actionType?: 'Action Required' | 'Plan for Change' | 'Informational' | 'planForChange';
   publishedDate: string;
   lastModifiedDate?: string;
   isRead?: boolean;
