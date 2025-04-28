@@ -128,10 +128,16 @@ const Dashboard = () => {
         {isPageLoading ? (
           <LoadingIndicator />
         ) : (
-          <>
-            {/* Tenant Info */}
-            <div className="mb-8">
-              {tenantData && <TenantInfo tenant={tenantData} />}
+          <div className="space-y-8">
+            {/* Tenant Info with actual counts */}
+            <div>
+              {tenantData && (
+                <TenantInfo 
+                  tenant={tenantData} 
+                  messageCenterCount={messageCenterUpdates?.length || 0} 
+                  windowsUpdatesCount={windowsUpdates?.length || 0}
+                />
+              )}
             </div>
             
             {/* Updates Overview Section */}
@@ -139,7 +145,7 @@ const Dashboard = () => {
               messageCenterUpdates={messageCenterUpdates} 
               windowsUpdates={windowsUpdates}
             />
-          </>
+          </div>
         )}
       </main>
     </Microsoft365>

@@ -42,9 +42,11 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
     >
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">{tenant.name}</h2>
-          <p className="text-sm text-m365-gray-500">{domainName}</p>
-          <p className="text-xs text-gray-500 mt-1">Tenant ID: {tenant.tenantId}</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-foreground">{tenant.name}</h2>
+            <span className="text-sm text-m365-gray-500 bg-gray-100 px-2 py-1 rounded">ID: {tenant.tenantId}</span>
+          </div>
+          <p className="text-sm text-m365-gray-500 mt-1">{domainName}</p>
         </div>
         <div className={cn(
           "px-3 py-1 rounded-full text-xs font-medium",
@@ -56,7 +58,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Message Center Updates Section */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 bg-blue-100 rounded-full">
               <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -64,10 +66,11 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <h3 className="font-medium">Message Center Updates</h3>
           </div>
           <div className="text-2xl font-semibold pl-2">{messageCenterCount}</div>
+          <p className="text-xs text-gray-500 pl-2">Stored in updates table</p>
         </div>
         
         {/* Windows Updates Section */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 bg-purple-100 rounded-full">
               <Monitor className="h-5 w-5 text-purple-600" />
@@ -75,6 +78,7 @@ const TenantInfo: React.FC<TenantInfoProps> = ({
             <h3 className="font-medium">Windows Updates</h3>
           </div>
           <div className="text-2xl font-semibold pl-2">{windowsUpdatesCount}</div>
+          <p className="text-xs text-gray-500 pl-2">Stored in windows_known_issues table</p>
         </div>
       </div>
     </motion.div>

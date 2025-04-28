@@ -43,6 +43,16 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
     u.status?.toLowerCase() === 'completed'
   ).length;
 
+  // Get active windows issues for display
+  const activeIssues = windowsUpdates
+    .filter(update => 
+      update.status?.toLowerCase() === 'active' || 
+      update.status?.toLowerCase() === 'investigating' ||
+      update.status?.toLowerCase() === 'confirmed'
+    )
+    .sort((a, b) => new Date(b.lastUpdatedTime || '').getTime() - new Date(a.lastUpdatedTime || '').getTime())
+    .slice(0, 3);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Message Center Updates Section */}
@@ -53,7 +63,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
         </h3>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Informational
@@ -69,7 +79,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Plan for Change
@@ -85,7 +95,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Action Required
@@ -114,7 +124,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
         </h3>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Active Issues
@@ -130,7 +140,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Resolved Issues
@@ -148,8 +158,8 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
         </div>
 
         {/* Latest Active Windows Issues */}
-        {activeWindowsIssues > 0 && (
-          <Card className="mt-6">
+        {activeIssues.length > 0 && (
+          <Card className="mt-6 border-l-4 border-l-amber-500">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
@@ -158,21 +168,19 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {windowsUpdates
-                  .filter(update => 
-                    update.status?.toLowerCase() === 'active' || 
-                    update.status?.toLowerCase() === 'investigating' ||
-                    update.status?.toLowerCase() === 'confirmed'
-                  )
-                  .slice(0, 3)
-                  .map((update) => (
-                    <div key={update.id} className="flex gap-3">
-                      <div className="w-1 bg-amber-500 rounded-full" />
-                      <p className="text-sm text-gray-700 line-clamp-2">
+                {activeIssues.map((update) => (
+                  <div key={update.id} className="flex gap-3 hover:bg-gray-50 p-2 rounded-md transition-colors">
+                    <div className="w-1 bg-amber-500 rounded-full" />
+                    <div>
+                      <p className="text-sm text-gray-700 line-clamp-2 font-medium">
                         {update.title || 'No title available'}
                       </p>
+                      <p className="text-xs text-gray-500">
+                        {update.lastUpdatedTime ? new Date(update.lastUpdatedTime).toLocaleDateString() : 'No date available'}
+                      </p>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
