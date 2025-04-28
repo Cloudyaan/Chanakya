@@ -24,12 +24,10 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Subnav items for Microsoft 365 - Notifications moved to the end after Reports
+  // Updated subnav items without Licenses and M365 DSC
   const subNavItems = [
     { name: 'Dashboard', path: '/microsoft-365/dashboard' },
-    { name: 'Licenses', path: '/microsoft-365/licenses' },
     { name: 'Updates', path: '/microsoft-365/updates' },
-    { name: 'M365 DSC', path: '/microsoft-365/dsc' },
     { name: 'Reports', path: '/microsoft-365/reports' },
     { name: 'Notifications', path: '/microsoft-365/notifications' }
   ];
