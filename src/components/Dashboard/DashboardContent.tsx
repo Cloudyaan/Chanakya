@@ -17,18 +17,21 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ tenant }) => {
 
   return (
     <div className="space-y-6">
-      {/* Top Card - Total Updates */}
+      {/* Enhanced Tenant Info Card with all update information */}
       <TenantInfo 
         tenant={tenant}
-        messageCenterCount={messageCenterUpdates.length}
-        windowsUpdatesCount={windowsUpdates.length}
-      />
-      
-      {/* Detailed Updates Overview Card */}
-      <UpdatesOverview 
-        messageCenterUpdates={messageCenterUpdates} 
+        messageCenterUpdates={messageCenterUpdates}
         windowsUpdates={windowsUpdates}
       />
+      
+      {/* Detailed breakdown section below */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Detailed Updates Breakdown</h2>
+        <UpdatesOverview 
+          messageCenterUpdates={messageCenterUpdates} 
+          windowsUpdates={windowsUpdates}
+        />
+      </div>
     </div>
   );
 };
