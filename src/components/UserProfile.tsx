@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { User, LogOut, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +12,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   if (!user) return null;
@@ -52,6 +54,11 @@ const UserProfile = () => {
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem onClick={() => navigate('/settings')}>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
         
         <DropdownMenuItem disabled={isLoggingOut} onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

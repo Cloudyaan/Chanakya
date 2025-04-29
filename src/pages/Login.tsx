@@ -38,8 +38,8 @@ const Login = () => {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      // Trigger the login process
       await login();
+      // Successful login will trigger the useEffect above
     } catch (error) {
       toast({
         title: 'Authentication Error',
@@ -47,6 +47,7 @@ const Login = () => {
         variant: 'destructive',
       });
       console.error('Login error:', error);
+    } finally {
       setIsLoading(false);
     }
   };
