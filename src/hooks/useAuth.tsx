@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAuthEnabled: boolean;
   isLoading: boolean;
-  login: (email?: string) => Promise<void>;
+  login: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -49,9 +49,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuthSettings();
   }, []);
 
-  // For this implementation, we'll simulate a Microsoft login flow
-  // In a real implementation, this would redirect to Microsoft
-  const login = async (userEmail?: string) => {
+  // Redirect to Microsoft Entra ID login page
+  const login = async () => {
     try {
       console.log('Initiating Microsoft login flow');
       
@@ -63,31 +62,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('No active identity provider configured');
       }
       
-      // In a real implementation, this would redirect to Microsoft Entra ID
-      console.log('Using identity provider:', activeProvider.name);
-      
-      // Create a simulated user based on the provider's tenant
-      let email = userEmail;
-      if (!email) {
-        email = `user@${activeProvider.tenantId.split('-')[0]}.onmicrosoft.com`;
-      }
-      
-      const mockUser = {
-        id: 'user-' + Math.random().toString(36).substr(2, 9),
-        email: email,
-        displayName: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' '),
-        roles: ['User'],
-        isActive: true
-      };
-      
-      // Store user in local storage
-      localStorage.setItem('chanakya_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: 'Signed in successfully',
-        description: `Welcome, ${mockUser.displayName}!`,
+      // In a real implementation, this would create the authorization URL
+      // with the proper client ID, tenant ID, and redirect URI
+      const authParams = new URLSearchParams({
+        client_id: activeProvider.clientId,
+        response_type: 'code',
+        redirect_uri: activeProvider.redirectUri,
+        response_mode: 'query',
+        scope: 'openid profile email',
+        state: Math.random().toString(36).substring(2)
       });
+      
+      const authUrl = `https://login.microsoftonline.com/${activeProvider.tenantId}/oauth2/v2.0/authorize?${authParams.toString()}`;
+      console.log('Redirecting to:', authUrl);
+      
+      // Redirect to Microsoft login
+      window.location.href = authUrl;
       
       return;
     } catch (error) {

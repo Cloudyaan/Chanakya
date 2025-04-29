@@ -5,16 +5,6 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const Login = () => {
   const { isAuthenticated, login, isAuthEnabled } = useAuth();
@@ -22,9 +12,6 @@ const Login = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showMicrosoftDialog, setShowMicrosoftDialog] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   
   // Get the intended destination from location state or default to dashboard
   const from = location.state?.from?.pathname || '/microsoft-365/dashboard';
@@ -48,32 +35,20 @@ const Login = () => {
     return null;
   }
   
-  const handleLoginClick = () => {
-    setShowMicrosoftDialog(true);
-  };
-
-  const handleMicrosoftLogin = async () => {
+  const handleLoginClick = async () => {
     setIsLoading(true);
     try {
-      // Pass the email to the login function to create a more personalized mock user
-      await login(email);
-      // Successful login will redirect through useEffect above
+      await login();
+      // Successful login will redirect to Microsoft
     } catch (error) {
       console.error('Login error:', error);
       toast({
         title: 'Authentication Error',
-        description: 'Failed to sign in with Microsoft. Please try again.',
+        description: 'Failed to initiate sign in with Microsoft. Please try again.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
-      setShowMicrosoftDialog(false);
     }
-  };
-
-  const handleDialogClose = () => {
-    setShowMicrosoftDialog(false);
-    setIsLoading(false);
   };
   
   return (
@@ -95,58 +70,9 @@ const Login = () => {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Signing in...' : 'Sign in with Microsoft'}
+          {isLoading ? 'Redirecting...' : 'Sign in with Microsoft'}
         </Button>
       </motion.div>
-
-      <Dialog open={showMicrosoftDialog} onOpenChange={setShowMicrosoftDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Sign in with Microsoft</DialogTitle>
-            <DialogDescription>
-              Enter your Microsoft account email and password to continue.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="col-span-3"
-                placeholder="your.email@company.com"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleDialogClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleMicrosoftLogin} 
-              disabled={isLoading || !email || !password}
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

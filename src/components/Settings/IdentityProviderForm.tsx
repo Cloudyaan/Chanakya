@@ -79,6 +79,11 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
     } else {
       onSubmit(values);
     }
+    
+    toast({
+      title: initialData ? 'Identity provider updated' : 'Identity provider added',
+      description: `Successfully ${initialData ? 'updated' : 'added'} ${values.name}`,
+    });
   };
 
   return (
