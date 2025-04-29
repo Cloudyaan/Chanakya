@@ -1,4 +1,3 @@
-
 from flask import request, jsonify
 import sqlite3
 import os
@@ -7,17 +6,12 @@ import importlib.util
 
 from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
 from app.dependencies import check_dependencies, check_numpy_pandas_compatibility
+from app.routes.update import update_bp
 
-# Change the blueprint name from update_bp to updates_bp to match the import in __init__.py
-from flask import Blueprint
-updates_bp = Blueprint('updates', __name__)
-
-@updates_bp.route('/updates', methods=['GET'])
+@update_bp.route('/updates', methods=['GET'])
 def get_updates():
     tenant_id = request.args.get('tenantId')
     source = request.args.get('source', 'message-center')  # Default to message-center
-    
-    # ... keep existing code (for tenant validation and error handling)
     
     # If no tenant ID is specified, return an error
     if not tenant_id:
@@ -38,8 +32,6 @@ def get_updates():
             'message': f'No tenant found with ID {tenant_id}'
         }), 404
     
-    # ... keep existing code (for MSAL check and database operations)
-    
     # Check if MSAL is installed
     msal_spec = importlib.util.find_spec('msal')
     if msal_spec is None:
@@ -56,8 +48,6 @@ def get_updates():
         }]), 200
     
     try:
-        # ... keep existing code (for database handling and updates fetching)
-        
         # Get all databases for this tenant
         tenant_databases = get_all_tenant_databases(tenant['tenantId'])
         
@@ -68,8 +58,6 @@ def get_updates():
         else:
             # Fall back to the regular tenant database or any found database
             tenant_db_path = find_tenant_database(tenant['tenantId'])
-        
-        # ... keep existing code (for database connection and error handling)
         
         # If no database found, return a system message
         if not tenant_db_path:
@@ -85,8 +73,7 @@ def get_updates():
                 'category': 'preventOrFixIssue'
             }]), 200
         
-        # ... keep existing code (for database connection and query execution)
-        
+        # Connect to the database and fetch updates
         try:
             conn = sqlite3.connect(tenant_db_path)
             conn.row_factory = sqlite3.Row
@@ -102,8 +89,6 @@ def get_updates():
                 
             table_name = table_result['name']
             print(f"Found table: {table_name} in database: {tenant_db_path}")
-            
-            # ... keep existing code (for querying data and creating response)
             
             # Adapt query based on which table exists - without any LIMIT
             if table_name == 'updates':
@@ -188,10 +173,8 @@ def get_updates():
             'category': 'preventOrFixIssue'
         }]), 200
 
-@updates_bp.route('/fetch-updates', methods=['POST'])
+@update_bp.route('/fetch-updates', methods=['POST'])
 def trigger_fetch_updates():
-    # ... keep existing code (for the fetch updates function)
-    
     tenant_id = request.json.get('tenantId')
     
     if not tenant_id:
