@@ -2,7 +2,7 @@
 import { API_URL } from './api';
 import { IdentityProviderConfig } from './types';
 
-// Mock data for development
+// Mock data storage key
 const MOCK_IDENTITY_PROVIDERS_KEY = 'chanakya_identity_providers';
 
 // Initialize with empty array if not exists

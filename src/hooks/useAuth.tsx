@@ -1,10 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  getIdentityProviders, 
-  updateIdentityProvider 
-} from '@/utils/identityOperations';
+import { getIdentityProviders } from '@/utils/identityOperations';
 import { UserInfo } from '@/utils/types';
 
 interface AuthContextType {
@@ -32,12 +29,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const providers = await getIdentityProviders();
         const enabled = providers.some(provider => provider.isEnabled);
         setIsAuthEnabled(enabled);
+        console.log('Auth enabled:', enabled);
 
         // If authentication is enabled, try to restore session
         if (enabled) {
           const storedUser = localStorage.getItem('chanakya_user');
           if (storedUser) {
             setUser(JSON.parse(storedUser));
+            console.log('User restored from session');
           }
         }
       } catch (error) {
@@ -50,17 +49,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuthSettings();
   }, []);
 
-  // For demo purposes, login function that simulates Microsoft authentication
+  // For this implementation, we'll simulate a Microsoft login flow
+  // In a real implementation, this would redirect to Microsoft
   const login = async () => {
     try {
-      // In a real implementation, this would redirect to Microsoft login page
-      // For demo, we'll create a mock user after a brief delay
+      console.log('Initiating Microsoft login flow');
+      
+      // Get active identity provider
+      const providers = await getIdentityProviders();
+      const activeProvider = providers.find(p => p.isEnabled);
+      
+      if (!activeProvider) {
+        throw new Error('No active identity provider configured');
+      }
+      
+      // In a real implementation, this would redirect to Microsoft Entra ID
+      // For demo purposes, we'll create a simulated login after a brief delay
+      console.log('Using identity provider:', activeProvider.name);
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Create a simulated user based on the provider's tenant
       const mockUser = {
         id: 'user-' + Math.random().toString(36).substr(2, 9),
-        email: 'user@example.com',
-        displayName: 'Demo User',
+        email: `user@${activeProvider.tenantId.split('-')[0]}.onmicrosoft.com`,
+        displayName: 'Microsoft User',
         roles: ['User'],
         isActive: true
       };
@@ -79,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Login error:', error);
       toast({
         title: 'Authentication Error',
-        description: 'Failed to sign in. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to sign in. Please try again.',
         variant: 'destructive',
       });
       throw error;

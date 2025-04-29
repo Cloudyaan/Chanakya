@@ -39,14 +39,14 @@ const Login = () => {
     setIsLoading(true);
     try {
       await login();
-      // Successful login will trigger the useEffect above
+      // Successful login will redirect through useEffect above
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: 'Authentication Error',
-        description: 'Failed to sign in. Please try again.',
+        description: 'Failed to sign in with Microsoft. Please try again.',
         variant: 'destructive',
       });
-      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }

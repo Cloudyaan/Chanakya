@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { IdentityProviderConfig } from '@/utils/types';
+import { useToast } from '@/hooks/use-toast';
 
 const identityProviderFormSchema = z.object({
   name: z.string().min(2, {
@@ -50,6 +51,8 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const { toast } = useToast();
+  
   const form = useForm<IdentityProviderFormValues>({
     resolver: zodResolver(identityProviderFormSchema),
     defaultValues: initialData || {
@@ -62,9 +65,25 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
     },
   });
 
+  const handleSubmit = (values: IdentityProviderFormValues) => {
+    console.log('Submitting form with values:', values);
+    
+    // If this is an update (initialData exists), make sure we include the ID
+    if (initialData?.id) {
+      const updatedValues = {
+        ...values,
+        id: initialData.id,
+        dateAdded: initialData.dateAdded,
+      };
+      onSubmit(updatedValues as any);
+    } else {
+      onSubmit(values);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
