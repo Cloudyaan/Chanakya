@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAuthEnabled: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
+  login: (email?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // For this implementation, we'll simulate a Microsoft login flow
   // In a real implementation, this would redirect to Microsoft
-  const login = async () => {
+  const login = async (userEmail?: string) => {
     try {
       console.log('Initiating Microsoft login flow');
       
@@ -64,15 +64,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       // In a real implementation, this would redirect to Microsoft Entra ID
-      // For demo purposes, we'll create a simulated login after a brief delay
       console.log('Using identity provider:', activeProvider.name);
-      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Create a simulated user based on the provider's tenant
+      let email = userEmail;
+      if (!email) {
+        email = `user@${activeProvider.tenantId.split('-')[0]}.onmicrosoft.com`;
+      }
+      
       const mockUser = {
         id: 'user-' + Math.random().toString(36).substr(2, 9),
-        email: `user@${activeProvider.tenantId.split('-')[0]}.onmicrosoft.com`,
-        displayName: 'Microsoft User',
+        email: email,
+        displayName: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' '),
         roles: ['User'],
         isActive: true
       };
