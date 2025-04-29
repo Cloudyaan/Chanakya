@@ -20,15 +20,24 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   ).length;
   
   const planForChangeUpdates = messageCenterUpdates.filter(u => 
-    u.actionType === 'Plan for Change' ||
-    u.actionType === 'planForChange' ||
-    (!u.actionType && u.severity === 'Medium')
+    u.actionType === 'Plan for Change' || 
+    u.actionType === 'planForChange' || 
+    (!u.actionType && u.severity === 'Medium') ||
+    u.category === 'planForChange'
   ).length;
   
   const actionRequiredUpdates = messageCenterUpdates.filter(u => 
     u.actionType === 'Action Required' ||
     (!u.actionType && u.severity === 'High')
   );
+  
+  console.log("Planning for change updates count:", planForChangeUpdates);
+  console.log("Planning for change updates:", messageCenterUpdates.filter(u => 
+    u.actionType === 'Plan for Change' || 
+    u.actionType === 'planForChange' || 
+    (!u.actionType && u.severity === 'Medium') ||
+    u.category === 'planForChange'
+  ));
   
   // Count Windows updates by status
   const activeWindowsIssues = windowsUpdates.filter(u => 
@@ -39,13 +48,23 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   
   const resolvedWindowsIssues = windowsUpdates.filter(u => 
     u.status?.toLowerCase() === 'resolved' || 
-    u.status?.toLowerCase() === 'completed'
+    u.status?.toLowerCase() === 'completed' ||
+    u.status?.toLowerCase() === 'resolvedexternal'
   ).length;
 
   // Count mitigated Windows issues
   const mitigatedWindowsIssues = windowsUpdates.filter(u => 
     u.status?.toLowerCase() === 'mitigated'
   ).length;
+
+  // Log Windows updates statuses for debugging
+  console.log("Windows updates statuses:", windowsUpdates.map(u => u.status?.toLowerCase()));
+  console.log("Resolved Windows issues count:", resolvedWindowsIssues);
+  console.log("Resolved Windows issues:", windowsUpdates.filter(u => 
+    u.status?.toLowerCase() === 'resolved' || 
+    u.status?.toLowerCase() === 'completed' ||
+    u.status?.toLowerCase() === 'resolvedexternal'
+  ));
 
   // Get active windows issues for display
   const activeIssues = windowsUpdates
