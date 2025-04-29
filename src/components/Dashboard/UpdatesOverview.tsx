@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TenantUpdate, WindowsUpdate } from '@/utils/types';
-import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle } from 'lucide-react';
+import { MessageSquare, Monitor, AlertCircle, BellRing, Clock, CheckCircle, ShieldCheck } from 'lucide-react';
 
 interface UpdatesOverviewProps {
   messageCenterUpdates: TenantUpdate[];
@@ -40,6 +40,11 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
   const resolvedWindowsIssues = windowsUpdates.filter(u => 
     u.status?.toLowerCase() === 'resolved' || 
     u.status?.toLowerCase() === 'completed'
+  ).length;
+
+  // Count mitigated Windows issues
+  const mitigatedWindowsIssues = windowsUpdates.filter(u => 
+    u.status?.toLowerCase() === 'mitigated'
   ).length;
 
   // Get active windows issues for display
@@ -155,7 +160,7 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
           Windows Updates ({windowsUpdates.length})
         </h3>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-br from-amber-50 to-white hover:shadow-md transition-all duration-300">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -168,6 +173,22 @@ const UpdatesOverview: React.FC<UpdatesOverviewProps> = ({
                   <AlertCircle className="h-4 w-4 text-amber-600" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">{activeWindowsIssues}</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-50 to-white hover:shadow-md transition-all duration-300">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                Mitigated Issues
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-full bg-purple-100">
+                  <ShieldCheck className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{mitigatedWindowsIssues}</div>
               </div>
             </CardContent>
           </Card>
