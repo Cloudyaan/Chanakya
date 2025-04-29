@@ -1,3 +1,4 @@
+
 from flask import request, jsonify
 import sqlite3
 import os
@@ -5,9 +6,12 @@ import subprocess
 
 from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
 from app.dependencies import check_dependencies
-from app.routes.update import update_bp
+from flask import Blueprint
 
-@update_bp.route('/windows-updates', methods=['GET'])
+# Create the windows_bp blueprint
+windows_bp = Blueprint('windows', __name__)
+
+@windows_bp.route('/windows-updates', methods=['GET'])
 def get_windows_updates():
     tenant_id = request.args.get('tenantId')
     
@@ -17,6 +21,8 @@ def get_windows_updates():
             'error': 'Tenant ID is required',
             'message': 'Please specify a tenantId parameter'
         }), 400
+    
+    # ... keep existing code (for tenant validation and database handling)
     
     # Try to find the tenant
     conn = get_db_connection()
@@ -166,7 +172,7 @@ def get_windows_updates():
             'message': str(e)
         }), 500
 
-@update_bp.route('/fetch-windows-updates', methods=['POST'])
+@windows_bp.route('/fetch-windows-updates', methods=['POST'])
 def trigger_fetch_windows_updates():
     tenant_id = request.json.get('tenantId')
     fix_compatibility = request.json.get('fixCompatibility', False)
@@ -176,6 +182,8 @@ def trigger_fetch_windows_updates():
             'error': 'Tenant ID is required',
             'message': 'Please specify a tenantId in the request body'
         }), 400
+    
+    # ... keep existing code (for tenant validation and error handling)
     
     # Check if the tenant exists
     conn = get_db_connection()
