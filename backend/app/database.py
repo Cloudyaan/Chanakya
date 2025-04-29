@@ -1,4 +1,3 @@
-
 import sqlite3
 import glob
 import os
@@ -37,6 +36,20 @@ def init_db():
         clientId TEXT NOT NULL,
         clientSecret TEXT NOT NULL,
         isActive INTEGER NOT NULL,
+        dateAdded TEXT NOT NULL
+    )
+    ''')
+    
+    # Create identity providers table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS identity_providers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        tenantId TEXT NOT NULL,
+        clientId TEXT NOT NULL,
+        clientSecret TEXT NOT NULL,
+        redirectUri TEXT NOT NULL,
+        isEnabled INTEGER NOT NULL,
         dateAdded TEXT NOT NULL
     )
     ''')

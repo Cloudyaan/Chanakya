@@ -2,24 +2,14 @@
 import { API_URL } from './api';
 import { IdentityProviderConfig } from './types';
 
-// Mock data storage key
-const MOCK_IDENTITY_PROVIDERS_KEY = 'chanakya_identity_providers';
-
-// Initialize with empty array if not exists
-const initMockProviders = () => {
-  if (!localStorage.getItem(MOCK_IDENTITY_PROVIDERS_KEY)) {
-    localStorage.setItem(MOCK_IDENTITY_PROVIDERS_KEY, JSON.stringify([]));
-  }
-};
-
-// Get all identity providers
+// Get all identity providers from the database
 export const getIdentityProviders = async (): Promise<IdentityProviderConfig[]> => {
   try {
-    // In a real implementation, this would call the backend API
-    // For demo, we'll use localStorage
-    initMockProviders();
-    const providers = localStorage.getItem(MOCK_IDENTITY_PROVIDERS_KEY);
-    return providers ? JSON.parse(providers) : [];
+    const response = await fetch(`${API_URL}/identity-providers`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch identity providers: ${response.status}`);
+    }
+    return await response.json();
   } catch (error) {
     console.error('Error fetching identity providers:', error);
     return [];
@@ -29,19 +19,17 @@ export const getIdentityProviders = async (): Promise<IdentityProviderConfig[]> 
 // Add a new identity provider
 export const addIdentityProvider = async (provider: Omit<IdentityProviderConfig, 'id' | 'dateAdded'>): Promise<boolean> => {
   try {
-    initMockProviders();
-    const providers = await getIdentityProviders();
+    const response = await fetch(`${API_URL}/identity-providers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(provider),
+    });
     
-    const newProvider: IdentityProviderConfig = {
-      ...provider,
-      id: crypto.randomUUID(),
-      dateAdded: new Date().toISOString(),
-    };
-    
-    localStorage.setItem(
-      MOCK_IDENTITY_PROVIDERS_KEY, 
-      JSON.stringify([...providers, newProvider])
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to add identity provider: ${response.status}`);
+    }
     
     return true;
   } catch (error) {
@@ -53,17 +41,17 @@ export const addIdentityProvider = async (provider: Omit<IdentityProviderConfig,
 // Update an existing identity provider
 export const updateIdentityProvider = async (provider: IdentityProviderConfig): Promise<boolean> => {
   try {
-    initMockProviders();
-    const providers = await getIdentityProviders();
+    const response = await fetch(`${API_URL}/identity-providers/${provider.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(provider),
+    });
     
-    const updatedProviders = providers.map(p => 
-      p.id === provider.id ? provider : p
-    );
-    
-    localStorage.setItem(
-      MOCK_IDENTITY_PROVIDERS_KEY, 
-      JSON.stringify(updatedProviders)
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to update identity provider: ${response.status}`);
+    }
     
     return true;
   } catch (error) {
@@ -75,15 +63,13 @@ export const updateIdentityProvider = async (provider: IdentityProviderConfig): 
 // Delete an identity provider
 export const deleteIdentityProvider = async (id: string): Promise<boolean> => {
   try {
-    initMockProviders();
-    const providers = await getIdentityProviders();
+    const response = await fetch(`${API_URL}/identity-providers/${id}`, {
+      method: 'DELETE',
+    });
     
-    const updatedProviders = providers.filter(p => p.id !== id);
-    
-    localStorage.setItem(
-      MOCK_IDENTITY_PROVIDERS_KEY, 
-      JSON.stringify(updatedProviders)
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to delete identity provider: ${response.status}`);
+    }
     
     return true;
   } catch (error) {
