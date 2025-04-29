@@ -1,4 +1,3 @@
-
 export interface License {
   id: string;
   name: string;
@@ -113,4 +112,26 @@ export interface NotificationSetting {
   frequency: 'Daily' | 'Weekly';
   created_at: string;
   updated_at: string;
+}
+
+// Identity provider configuration
+export interface IdentityProviderConfig {
+  id: string;
+  name: string;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  isEnabled: boolean;
+  dateAdded: string;
+}
+
+// User information
+export interface UserInfo {
+  id: string;
+  email: string;
+  displayName?: string;
+  photoUrl?: string;
+  roles: string[];
+  isActive: boolean;
 }
