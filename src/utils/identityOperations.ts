@@ -91,3 +91,14 @@ export const deleteIdentityProvider = async (id: string): Promise<boolean> => {
     return false;
   }
 };
+
+// Get the auth redirect URL - ensures it matches what we expect
+export const getAuthRedirectUrl = (): string => {
+  return `${window.location.origin}/auth/callback`;
+};
+
+// Validate the redirect URI in the provider config
+export const validateProviderConfig = (provider: IdentityProviderConfig): boolean => {
+  const expectedRedirectUri = getAuthRedirectUrl();
+  return provider.redirectUri === expectedRedirectUri;
+};

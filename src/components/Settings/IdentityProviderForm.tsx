@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Save, X } from 'lucide-react';
+import { Save, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { IdentityProviderConfig } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthRedirectUrl } from '@/utils/identityOperations';
 
 const identityProviderFormSchema = z.object({
   name: z.string().min(2, {
@@ -52,6 +53,7 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
   onCancel,
 }) => {
   const { toast } = useToast();
+  const redirectUri = getAuthRedirectUrl();
   
   const form = useForm<IdentityProviderFormValues>({
     resolver: zodResolver(identityProviderFormSchema),
@@ -60,24 +62,35 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
       tenantId: '',
       clientId: '',
       clientSecret: '',
-      redirectUri: window.location.origin + '/auth/callback',
+      redirectUri: redirectUri,
       isEnabled: false,
     },
   });
 
+  // Ensure redirect URI is always set correctly
+  useEffect(() => {
+    form.setValue('redirectUri', redirectUri);
+  }, [form, redirectUri]);
+
   const handleSubmit = (values: IdentityProviderFormValues) => {
     console.log('Submitting form with values:', values);
+    
+    // Ensure redirectUri is correct
+    const formValues = {
+      ...values,
+      redirectUri: redirectUri
+    };
     
     // If this is an update (initialData exists), make sure we include the ID
     if (initialData?.id) {
       const updatedValues = {
-        ...values,
+        ...formValues,
         id: initialData.id,
         dateAdded: initialData.dateAdded,
       };
       onSubmit(updatedValues as any);
     } else {
-      onSubmit(values);
+      onSubmit(formValues);
     }
     
     toast({
@@ -89,6 +102,19 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6">
+          <div className="flex gap-2 items-start">
+            <Info size={20} className="text-amber-600 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-amber-800">Important: Microsoft Entra ID App Registration Required</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                You must register the Redirect URI shown below in your Microsoft Entra ID app registration. 
+                This exact URL must be added to the app's "Authentication" tab under "Redirect URIs" section.
+              </p>
+            </div>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -157,24 +183,41 @@ const IdentityProviderForm: React.FC<IdentityProviderFormProps> = ({
               </FormItem>
             )}
           />
-          
-          <FormField
-            control={form.control}
-            name="redirectUri"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Redirect URI</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://your-app.com/auth/callback" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Authentication callback URL (must match Entra ID app configuration)
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
+        
+        <FormField
+          control={form.control}
+          name="redirectUri"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Redirect URI (Required in Entra ID)</FormLabel>
+              <FormControl>
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    value={redirectUri} 
+                    readOnly 
+                    className="bg-gray-50 font-mono text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(redirectUri);
+                      toast({ title: "Copied to clipboard" });
+                    }}
+                    className="shrink-0"
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </FormControl>
+              <FormDescription>
+                This URL must be registered in your Microsoft Entra ID app registration
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}

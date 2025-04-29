@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { getAuthRedirectUrl } from '@/utils/identityOperations';
 
 const Login = () => {
   const { isAuthenticated, login, isAuthEnabled } = useAuth();
@@ -29,6 +30,21 @@ const Login = () => {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
+
+  // Check for authentication error params in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+    
+    if (error) {
+      toast({
+        title: 'Authentication Error',
+        description: errorDescription || 'There was an error during sign in. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
   
   // Skip login if auth is not enabled
   if (!isAuthEnabled) {
@@ -65,13 +81,23 @@ const Login = () => {
           <p className="text-gray-600 mt-2">Please sign in to continue</p>
         </div>
         
-        <Button 
-          onClick={handleLoginClick} 
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? 'Redirecting...' : 'Sign in with Microsoft'}
-        </Button>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            This application uses Microsoft Entra ID for authentication. 
+            Your organization's administrator must register this app's redirect URI: 
+            <code className="block mt-1 p-2 bg-gray-100 rounded text-xs overflow-auto break-all">
+              {getAuthRedirectUrl()}
+            </code>
+          </p>
+          
+          <Button 
+            onClick={handleLoginClick} 
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? 'Redirecting...' : 'Sign in with Microsoft'}
+          </Button>
+        </div>
       </motion.div>
     </div>
   );

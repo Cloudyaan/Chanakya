@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getIdentityProviders } from '@/utils/identityOperations';
+import { getIdentityProviders, getAuthRedirectUrl, validateProviderConfig } from '@/utils/identityOperations';
 import { UserInfo } from '@/utils/types';
 
 interface AuthContextType {
@@ -39,6 +39,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log('User restored from session');
           }
         }
+        
+        // Check for authentication callback (after Microsoft redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code && state) {
+          console.log('Auth callback detected with code and state');
+          // In a real app, we would exchange the code for tokens
+          // For demo purposes, we'll simulate a successful login
+          handleAuthenticationCallback(code, state);
+        }
       } catch (error) {
         console.error('Error checking auth settings:', error);
       } finally {
@@ -48,6 +60,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     checkAuthSettings();
   }, []);
+  
+  // Handle the authentication callback after Microsoft redirect
+  const handleAuthenticationCallback = async (code: string, state: string) => {
+    try {
+      // In a real implementation, we would:
+      // 1. Exchange the code for tokens with the token endpoint
+      // 2. Validate the tokens
+      // 3. Extract user information
+      
+      // For demo, we'll simulate a successful login
+      const mockUser: UserInfo = {
+        id: crypto.randomUUID(),
+        displayName: 'Chanakya User',
+        email: 'user@chanakya-demo.com',
+        roles: ['User'],
+      };
+      
+      // Store the user data
+      localStorage.setItem('chanakya_user', JSON.stringify(mockUser));
+      setUser(mockUser);
+      
+      // Clear the URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      toast({
+        title: 'Signed in successfully',
+        description: `Welcome, ${mockUser.displayName}!`,
+      });
+    } catch (error) {
+      console.error('Error handling authentication callback:', error);
+      toast({
+        title: 'Authentication Error',
+        description: 'Failed to complete sign in process. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Redirect to Microsoft Entra ID login page
   const login = async () => {
@@ -62,8 +111,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('No active identity provider configured');
       }
       
-      // In a real implementation, this would create the authorization URL
-      // with the proper client ID, tenant ID, and redirect URI
+      // Validate the redirect URI
+      if (!validateProviderConfig(activeProvider)) {
+        const expectedRedirectUri = getAuthRedirectUrl();
+        throw new Error(`Redirect URI mismatch. Expected: ${expectedRedirectUri}, but configured: ${activeProvider.redirectUri}`);
+      }
+      
+      // Create the authorization URL with the proper client ID, tenant ID, and redirect URI
       const authParams = new URLSearchParams({
         client_id: activeProvider.clientId,
         response_type: 'code',
