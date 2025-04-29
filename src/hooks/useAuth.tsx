@@ -75,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         displayName: 'Chanakya User',
         email: 'user@chanakya-demo.com',
         roles: ['User'],
+        isActive: true,  // Add the missing isActive property
       };
       
       // Store the user data
