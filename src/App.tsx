@@ -4,11 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
 import M365Dashboard from "./pages/Microsoft365/Dashboard";
 import Updates from "./pages/Microsoft365/Updates";
 import Notifications from "./pages/Microsoft365/Notifications";
@@ -31,56 +27,24 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/microsoft-365" element={
-              <ProtectedRoute>
-                <Microsoft365 />
-              </ProtectedRoute>
-            } />
-            <Route path="/microsoft-365/dashboard" element={
-              <ProtectedRoute>
-                <M365Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/microsoft-365/updates" element={
-              <ProtectedRoute>
-                <Updates />
-              </ProtectedRoute>
-            } />
-            <Route path="/microsoft-365/notifications" element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            } />
-            <Route path="/microsoft-365/reports" element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            } />
-            <Route path="/azure" element={
-              <ProtectedRoute>
-                <Azure />
-              </ProtectedRoute>
-            } />
-            <Route path="/azure/cost-analysis" element={
-              <ProtectedRoute>
-                <AzureCostAnalysis />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/microsoft-365" element={<Microsoft365 />} />
+          <Route path="/microsoft-365/dashboard" element={<M365Dashboard />} />
+          <Route path="/microsoft-365/updates" element={<Updates />} />
+          <Route path="/microsoft-365/notifications" element={<Notifications />} />
+          <Route path="/microsoft-365/reports" element={<Reports />} />
+          <Route path="/azure" element={<Azure />} />
+          <Route path="/azure/cost-analysis" element={<AzureCostAnalysis />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 
