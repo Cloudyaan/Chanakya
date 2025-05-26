@@ -25,11 +25,6 @@ export default defineConfig(({ mode }) => ({
   },
   // Add optimizeDeps configuration to handle dependency conflicts
   optimizeDeps: {
-    force: true,
     include: ["lovable-tagger"],
   },
-  // Add legacy peer deps handling
-  legacy: {
-    buildRollupOptions: true
-  }
 }));
