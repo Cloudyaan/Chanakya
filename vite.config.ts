@@ -23,8 +23,11 @@ export default defineConfig(({ mode }) => ({
     // Define the missing WebSocket token to fix the error
     __WS_TOKEN__: JSON.stringify("development-ws-token"),
   },
-  // Add optimizeDeps configuration to handle dependency conflicts
+  // Only include lovable-tagger in optimizeDeps when running in Lovable's environment
   optimizeDeps: {
-    include: ["lovable-tagger"],
+    // Don't include lovable-tagger for local development
+    ...(process.env.NODE_ENV !== 'development' || process.env.LOVABLE_ENV ? {
+      include: ["lovable-tagger"],
+    } : {}),
   },
 }));
