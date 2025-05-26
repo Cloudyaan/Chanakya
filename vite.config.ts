@@ -23,4 +23,13 @@ export default defineConfig(({ mode }) => ({
     // Define the missing WebSocket token to fix the error
     __WS_TOKEN__: JSON.stringify("development-ws-token"),
   },
+  // Add optimizeDeps configuration to handle dependency conflicts
+  optimizeDeps: {
+    force: true,
+    include: ["lovable-tagger"],
+  },
+  // Add legacy peer deps handling
+  legacy: {
+    buildRollupOptions: true
+  }
 }));
