@@ -7,14 +7,23 @@ def create_app():
     app = Flask(__name__)
     CORS(app)  # Enable CORS for all routes
     
+    # Initialize Azure SQL Database
+    try:
+        from app.database import init_db
+        init_db()
+        print("Azure SQL Database initialized successfully")
+    except Exception as e:
+        print(f"Warning: Could not initialize Azure SQL Database: {e}")
+        print("Please check your Azure SQL Database environment variables")
+    
     # Register blueprints
     from app.routes.tenant_routes import tenant_bp
     from app.routes.azure_routes import azure_bp
-    from app.routes.update import update_bp  # Updated import path
+    from app.routes.update import update_bp
     from app.routes.license_routes import license_bp
     from app.routes.windows_routes import windows_bp
     from app.routes.news_routes import news_bp
-    from app.routes.notification import notification_bp  # Updated import path
+    from app.routes.notification import notification_bp
     
     app.register_blueprint(tenant_bp)
     app.register_blueprint(azure_bp)

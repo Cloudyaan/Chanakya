@@ -1,9 +1,7 @@
 
-import sqlite3
 import json
 from datetime import datetime, timedelta
-
-from app.database import get_db_connection, find_tenant_database
+from app.database import get_db_connection, get_tenant_table_connection, ensure_tenant_tables_exist
 
 def init_notification_table():
     """Initialize the notification_settings table if it doesn't exist."""
@@ -11,19 +9,21 @@ def init_notification_table():
     cursor = conn.cursor()
     
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS notification_settings (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        tenants TEXT NOT NULL,
-        update_types TEXT NOT NULL,
-        frequency TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-    )
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='notification_settings' AND xtype='U')
+        CREATE TABLE notification_settings (
+            id NVARCHAR(255) PRIMARY KEY,
+            name NVARCHAR(255) NOT NULL,
+            email NVARCHAR(255) NOT NULL,
+            tenants NVARCHAR(MAX) NOT NULL,
+            update_types NVARCHAR(MAX) NOT NULL,
+            frequency NVARCHAR(50) NOT NULL,
+            created_at NVARCHAR(100) NOT NULL,
+            updated_at NVARCHAR(100) NOT NULL
+        )
     ''')
     
     conn.commit()
+    cursor.close()
     conn.close()
 
 def get_tenant_name(tenant_id):
@@ -34,104 +34,38 @@ def get_tenant_name(tenant_id):
     cursor.execute('SELECT name FROM tenants WHERE id = ?', (tenant_id,))
     tenant = cursor.fetchone()
     
+    cursor.close()
     conn.close()
-    return tenant['name'] if tenant else "Unknown Tenant"
+    return tenant[0] if tenant else "Unknown Tenant"
 
 def ensure_tenant_database(tenant_id):
-    """Create a database for a tenant if it doesn't exist"""
-    tenant_conn = get_db_connection()
-    tenant_data = tenant_conn.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
-    tenant_conn.close()
+    """Ensure tenant tables exist in Azure SQL Database"""
+    # Ensure tables exist for this tenant
+    success = ensure_tenant_tables_exist(tenant_id, 'm365')
     
-    if not tenant_data:
-        print(f"No tenant found with ID: {tenant_id}")
-        return None
+    if success:
+        # Add test data if tables are newly created
+        add_test_data_to_tenant_tables(tenant_id)
+        return True
     
-    tenant_name = tenant_data['name']
-    # Create database with tenant name and tenant ID
-    safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
-    db_path = f"{safe_name}_{tenant_data['tenantId']}.db"
-    print(f"Ensuring database exists for tenant {tenant_name}: {db_path}")
-    
-    # Create database with required tables
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    # Create tables if they don't exist
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS updates (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            category TEXT,
-            severity TEXT,
-            startDateTime TEXT,
-            lastModifiedDateTime TEXT,
-            isMajorChange TEXT,
-            actionRequiredByDateTime TEXT,
-            services TEXT,
-            hasAttachments BOOLEAN,
-            roadmapId TEXT,
-            platform TEXT, 
-            status TEXT,
-            lastUpdateTime TEXT,
-            bodyContent TEXT,
-            tags TEXT
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS m365_news (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            published_date TEXT,
-            link TEXT,
-            summary TEXT,
-            categories TEXT,
-            fetch_date TEXT
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS windows_known_issues (
-            id TEXT PRIMARY KEY,
-            product_id TEXT,
-            title TEXT,
-            description TEXT,
-            web_view_url TEXT,
-            status TEXT,
-            start_date TEXT,
-            resolved_date TEXT
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS windows_products (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            group_name TEXT,
-            friendly_names TEXT
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-    
-    # Add test data for all types
-    add_test_data_to_tenant_db(db_path)
-    
-    return db_path
+    return None
 
-def add_test_data_to_tenant_db(db_path):
-    """Add test data to the tenant database for demo purposes"""
+def add_test_data_to_tenant_tables(tenant_id):
+    """Add test data to the tenant tables for demo purposes"""
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+        # Check if we already have test data for m365_news
+        conn, news_table = get_tenant_table_connection(tenant_id, 'm365_news', 'm365')
+        if not conn or not news_table:
+            return
+        
         cursor = conn.cursor()
         
         # Check if we already have test data
-        cursor.execute('SELECT COUNT(*) as count FROM m365_news')
-        if cursor.fetchone()['count'] == 0:
-            print(f"Adding test data to {db_path}")
+        cursor.execute(f'SELECT COUNT(*) FROM {news_table}')
+        count = cursor.fetchone()[0]
+        
+        if count == 0:
+            print(f"Adding test data to tenant tables for {tenant_id}")
             
             # Add test news entries
             for i in range(1, 15):
@@ -146,8 +80,8 @@ def add_test_data_to_tenant_db(db_path):
                     'fetch_date': datetime.now().isoformat()
                 }
                 
-                cursor.execute('''
-                    INSERT INTO m365_news (
+                cursor.execute(f'''
+                    INSERT INTO {news_table} (
                         id, title, published_date, link, summary, categories, fetch_date
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -161,6 +95,8 @@ def add_test_data_to_tenant_db(db_path):
                 ))
             
             # Add test message center updates
+            _, updates_table = get_tenant_table_connection(tenant_id, 'updates', 'm365')
+            
             for i in range(1, 10):
                 days_ago = i
                 update_entry = {
@@ -173,8 +109,8 @@ def add_test_data_to_tenant_db(db_path):
                     'bodyContent': f'This is a test message center update {i} created {days_ago} days ago.',
                 }
                 
-                cursor.execute('''
-                    INSERT INTO updates (
+                cursor.execute(f'''
+                    INSERT INTO {updates_table} (
                         id, title, category, severity, lastModifiedDateTime, isMajorChange, bodyContent
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -188,8 +124,11 @@ def add_test_data_to_tenant_db(db_path):
                 ))
             
             # Add test Windows updates
-            cursor.execute('''
-                INSERT INTO windows_products (id, name, group_name, friendly_names) VALUES (?, ?, ?, ?)
+            _, products_table = get_tenant_table_connection(tenant_id, 'windows_products', 'm365')
+            _, issues_table = get_tenant_table_connection(tenant_id, 'windows_known_issues', 'm365')
+            
+            cursor.execute(f'''
+                INSERT INTO {products_table} (id, name, group_name, friendly_names) VALUES (?, ?, ?, ?)
             ''', ('win11-22h2', 'Windows 11 22H2', 'Windows 11', 'Windows 11 Version 22H2'))
             
             for i in range(1, 8):
@@ -205,8 +144,8 @@ def add_test_data_to_tenant_db(db_path):
                     'resolved_date': None
                 }
                 
-                cursor.execute('''
-                    INSERT INTO windows_known_issues (
+                cursor.execute(f'''
+                    INSERT INTO {issues_table} (
                         id, product_id, title, description, web_view_url, status, start_date, resolved_date
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
@@ -221,8 +160,9 @@ def add_test_data_to_tenant_db(db_path):
                 ))
             
             conn.commit()
-            print(f"Test data added to {db_path}")
+            print(f"Test data added to tenant tables for {tenant_id}")
         
+        cursor.close()
         conn.close()
     except Exception as e:
         print(f"Error adding test data: {e}")

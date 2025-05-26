@@ -1,5 +1,4 @@
 
-import sqlite3
 import os
 import sys
 import json
@@ -7,7 +6,7 @@ from datetime import datetime
 import pandas as pd
 import requests
 import io
-import glob
+from app.database import get_db_connection, get_table_manager, get_tenant_table_connection, ensure_tenant_tables_exist
 
 # List of known trial SKUs
 TRIAL_SKUS = [
@@ -20,198 +19,90 @@ TRIAL_SKUS = [
 ]
 
 def get_tenant_db_connection():
-    """Get a connection to the tenant configuration database."""
-    conn = sqlite3.connect('chanakya.db')
-    conn.row_factory = sqlite3.Row  # Return rows as dictionaries
-    return conn
+    """Get a connection to the main Azure SQL database."""
+    return get_db_connection()
 
 def fetch_tenants():
     """Fetch all tenants from the tenant configuration database."""
     conn = get_tenant_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM tenants")
-    tenants = [dict(row) for row in cursor.fetchall()]
+    tenants = []
+    
+    for row in cursor.fetchall():
+        tenant_dict = {
+            'id': row[0],
+            'name': row[1],
+            'tenantId': row[2],
+            'applicationId': row[3],
+            'applicationSecret': row[4],
+            'isActive': bool(row[5]),
+            'dateAdded': row[6]
+        }
+        tenants.append(tenant_dict)
+    
+    cursor.close()
     conn.close()
     return tenants
 
-def get_tenant_database_path(tenant_name, tenant_id):
-    """Get the path for a tenant-specific database."""
-    # Replace spaces and special characters for filename safety
-    safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
-    return f"{safe_name}_{tenant_id}.db"
-
 def find_tenant_databases(tenant_id):
-    """Find all databases related to a specific tenant.
+    """Find tenant information for table operations.
     
-    Returns a dictionary mapping database types to paths.
+    Returns a dictionary with tenant info.
     """
-    databases = {}
-    
-    # Get tenant details from chanakya.db to have both IDs
     conn = get_tenant_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
-    conn.close()
     
-    # If tenant is found, we have both internal ID and Microsoft tenant ID
-    if tenant:
-        ms_tenant_id = tenant['tenantId']
-        tenant_name = tenant['name']
-        safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name)
+    try:
+        cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+        tenant = cursor.fetchone()
         
-        # Check for exact database match first
-        tenant_db_exact = f"{safe_name}_{ms_tenant_id}.db"
-        if os.path.exists(tenant_db_exact):
-            databases['tenant'] = tenant_db_exact
-            print(f"Found exact tenant database: {tenant_db_exact}")
-    
-    # If tenant database not found yet, look for pattern matches
-    if 'tenant' not in databases:
-        # Try with internal ID first
-        tenant_dbs = glob.glob(f"*_{tenant_id}.db")
-        for db_path in tenant_dbs:
-            if 'service_announcements' not in db_path:
-                databases['tenant'] = db_path
-                break
+        if tenant:
+            tenant_dict = {
+                'id': tenant[0],
+                'name': tenant[1],
+                'tenantId': tenant[2],
+                'applicationId': tenant[3],
+                'applicationSecret': tenant[4],
+                'isActive': bool(tenant[5]),
+                'dateAdded': tenant[6]
+            }
+            
+            return {
+                'tenant': tenant_dict,
+                'service_announcements': tenant_dict
+            }
         
-        # If not found and we have tenant details, try with MS tenant ID
-        if 'tenant' not in databases and tenant:
-            tenant_dbs = glob.glob(f"*_{ms_tenant_id}.db")
-            for db_path in tenant_dbs:
-                if 'service_announcements' not in db_path:
-                    databases['tenant'] = db_path
-                    break
-    
-    # If still not found, try broader pattern
-    if 'tenant' not in databases:
-        for db_path in glob.glob(f"*{tenant_id}*.db"):
-            if 'service_announcements' not in db_path and db_path not in databases.values():
-                databases['tenant'] = db_path
-                break
+        return {}
         
-        # Try with MS tenant ID if available
-        if 'tenant' not in databases and tenant:
-            for db_path in glob.glob(f"*{ms_tenant_id}*.db"):
-                if 'service_announcements' not in db_path and db_path not in databases.values():
-                    databases['tenant'] = db_path
-                    break
-    
-    print(f"Found databases for tenant {tenant_id}: {databases}")
-    return databases
+    except Exception as e:
+        print(f"Error finding tenant databases: {e}")
+        return {}
+    finally:
+        cursor.close()
+        conn.close()
 
 def initialize_tenant_database(tenant, skip_service_announcements=False):
-    """Create or update the database structure for a tenant."""
+    """Create tenant-specific tables in the Azure SQL database."""
     tenant_name = tenant["name"]
     tenant_id = tenant["tenantId"]
-    db_path = get_tenant_database_path(tenant_name, tenant_id)
     
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    print(f"Initializing tenant tables for: {tenant_name} (ID: {tenant_id})")
     
-    # Create updates table (formerly announcements)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS updates (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            category TEXT,
-            severity TEXT,
-            startDateTime TEXT DEFAULT '',
-            lastModifiedDateTime TEXT DEFAULT '',
-            isMajorChange TEXT,
-            actionRequiredByDateTime TEXT DEFAULT '',
-            services TEXT DEFAULT '',
-            hasAttachments BOOLEAN,
-            roadmapId TEXT DEFAULT '',
-            platform TEXT DEFAULT '',
-            status TEXT DEFAULT '',
-            lastUpdateTime TEXT DEFAULT '',
-            bodyContent TEXT DEFAULT '',
-            tags TEXT DEFAULT ''
-        )
-    """)
-    
-    # Create licenses table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS licenses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            license_sku TEXT,
-            display_name TEXT,
-            type TEXT,
-            total_licenses INTEGER,
-            used_licenses INTEGER,
-            unused_licenses INTEGER,
-            renewal_expiration_date TEXT,
-            captured_date TEXT
-        )
-    """)
-    
-    # Create inactive_users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS inactive_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_principal_name TEXT,
-            display_name TEXT,
-            account_enabled BOOLEAN,
-            last_sign_in_attempt TEXT,
-            last_successful_sign_in TEXT,
-            captured_date TEXT
-        )
-    """)
-    
-    # Create over_licensed_users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS over_licensed_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            display_name TEXT,
-            user_principal_name TEXT,
-            licenses TEXT,
-            captured_date TEXT
-        )
-    """)
-    
-    # Create m365_news table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS m365_news (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            published_date TEXT,
-            link TEXT,
-            summary TEXT,
-            categories TEXT,
-            fetch_date TEXT
-        )
-    """)
-    
-    # Create windows_products table with group_name and friendly_names columns
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS windows_products (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            group_name TEXT,
-            friendly_names TEXT
-        )
-    """)
-    
-    # Create windows_known_issues table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS windows_known_issues (
-            id TEXT PRIMARY KEY,
-            product_id TEXT,
-            title TEXT,
-            description TEXT,
-            status TEXT,
-            start_date TEXT,
-            resolved_date TEXT,
-            web_view_url TEXT,
-            FOREIGN KEY (product_id) REFERENCES windows_products (id)
-        )
-    """)
-    
-    conn.commit()
-    conn.close()
-    
-    print(f"Initialized database for tenant: {tenant_name} (ID: {tenant_id}) at {db_path}")
-    return db_path
+    try:
+        # Ensure tables exist for this tenant
+        success = ensure_tenant_tables_exist(tenant['id'], 'm365')
+        
+        if success:
+            print(f"Successfully initialized tables for tenant: {tenant_name}")
+            return f"Tables created for {tenant_name}"
+        else:
+            print(f"Failed to initialize tables for tenant: {tenant_name}")
+            return None
+            
+    except Exception as e:
+        print(f"Error initializing tenant database: {e}")
+        return None
 
 def get_access_token(tenant):
     """Get an access token for a specific tenant using MSAL."""
@@ -259,9 +150,19 @@ def get_tenant_details(tenant_id):
     """Get tenant details from the tenant configuration database."""
     conn = get_tenant_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     if tenant:
-        return dict(tenant)
+        return {
+            'id': tenant[0],
+            'name': tenant[1],
+            'tenantId': tenant[2],
+            'applicationId': tenant[3],
+            'applicationSecret': tenant[4],
+            'isActive': bool(tenant[5]),
+            'dateAdded': tenant[6]
+        }
     return None
