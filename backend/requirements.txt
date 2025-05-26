@@ -8,4 +8,4 @@ pandas==1.4.3
 feedparser==6.0.10
 python-dateutil==2.8.2
 gunicorn==20.1.0
-
+pyodbc==4.0.39

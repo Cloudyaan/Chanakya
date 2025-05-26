@@ -7,9 +7,10 @@ def check_dependencies():
     """Check if required Python packages are installed."""
     required_packages = [
         "msal",
-        "python-dateutil",
+        "python-dateutil", 
         "pandas",
-        "numpy"
+        "numpy",
+        "pyodbc"
     ]
     
     missing_packages = []
