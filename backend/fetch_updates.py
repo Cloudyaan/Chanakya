@@ -15,7 +15,7 @@ from tenant_db_manager import (
     fetch_tenants, initialize_tenant_database, 
     get_access_token, get_tenant_details
 )
-from app.database import get_tenant_table_connection, ensure_tenant_tables_exist
+from app.database import get_tenant_table_connection, ensure_tenant_tables_exist, get_table_manager
 
 def fetch_data_for_tenant(tenant):
     """Fetch data for a specific tenant using their credentials."""
@@ -35,6 +35,15 @@ def fetch_data_for_tenant(tenant):
     if not db_result:
         print(f"Failed to initialize database for tenant: {tenant_name}")
         return False
+    
+    # Fix existing table column size if needed
+    try:
+        table_manager = get_table_manager()
+        table_manager.update_existing_table_column(tenant_name, "updates")
+        print(f"Updated table column sizes for tenant: {tenant_name}")
+    except Exception as e:
+        print(f"Warning: Could not update table columns for {tenant_name}: {e}")
+        # Continue anyway as the table might already be correct
     
     # Endpoint for message center announcements
     ENDPOINT = "https://graph.microsoft.com/beta/admin/serviceAnnouncement/messages?$top=1000"
