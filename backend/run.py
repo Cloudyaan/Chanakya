@@ -1,9 +1,13 @@
 
 import os
 import sys
+from dotenv import load_dotenv
 from app.database import init_db
 from app.dependencies import check_dependencies
 from app import create_app
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Check for required Azure SQL Database environment variables
 required_azure_vars = [

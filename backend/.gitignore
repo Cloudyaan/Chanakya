@@ -28,6 +28,9 @@ ENV/
 # SQLite database
 *.db
 
+# Environment variables
+.env
+
 # Logs
 logs/
 *.log

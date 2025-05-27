@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -31,6 +30,7 @@ const Settings = () => {
   const [isAddingTenant, setIsAddingTenant] = useState(false);
   const [editingTenant, setEditingTenant] = useState<TenantConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Azure account state
   const [azureAccounts, setAzureAccounts] = useState<AzureConfig[]>([]);
@@ -58,16 +58,26 @@ const Settings = () => {
     };
 
     initializeData();
-  }, []);
+  }, [refreshKey]);
 
   const loadTenants = async () => {
-    const loadedTenants = await getTenants();
-    setTenants(loadedTenants);
+    try {
+      console.log("Loading tenants from database...");
+      const loadedTenants = await getTenants();
+      console.log("Loaded tenants:", loadedTenants);
+      setTenants(loadedTenants);
+    } catch (error) {
+      console.error("Error loading tenants:", error);
+    }
   };
 
   const loadAzureAccounts = async () => {
     const loadedAccounts = await getAzureAccounts();
     setAzureAccounts(loadedAccounts);
+  };
+
+  const forceRefresh = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   // M365 Tenant handlers
@@ -78,11 +88,17 @@ const Settings = () => {
       dateAdded: new Date().toISOString(),
     };
     
+    console.log("Adding new tenant:", newTenant);
     const success = await addTenant(newTenant);
     
     if (success) {
-      await loadTenants();
+      console.log("Tenant added successfully, refreshing list...");
       setIsAddingTenant(false);
+      
+      // Force a complete refresh
+      setTimeout(() => {
+        forceRefresh();
+      }, 500);
       
       toast({
         title: "Tenant added",
@@ -113,8 +129,12 @@ const Settings = () => {
     const success = await updateTenant(updatedTenant);
     
     if (success) {
-      await loadTenants();
       setEditingTenant(null);
+      
+      // Force a complete refresh
+      setTimeout(() => {
+        forceRefresh();
+      }, 500);
       
       toast({
         title: "Tenant updated",
@@ -134,7 +154,8 @@ const Settings = () => {
     const success = await deleteTenant(id);
     
     if (success) {
-      await loadTenants();
+      // Force a complete refresh
+      forceRefresh();
       
       toast({
         title: "Tenant removed",
