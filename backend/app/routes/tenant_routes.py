@@ -14,20 +14,22 @@ tenant_bp = Blueprint('tenant', __name__, url_prefix='/api')
 @tenant_bp.route('/tenants', methods=['GET'])
 def get_tenants():
     conn = get_db_connection()
-    tenants = conn.execute('SELECT * FROM tenants').fetchall()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM tenants')
+    tenants = cursor.fetchall()
     conn.close()
     
-    # Convert rows to dictionaries
+    # Convert pyodbc rows to dictionaries
     result = []
     for tenant in tenants:
         result.append({
-            'id': tenant['id'],
-            'name': tenant['name'],
-            'tenantId': tenant['tenantId'],
-            'applicationId': tenant['applicationId'],
-            'applicationSecret': tenant['applicationSecret'],
-            'isActive': bool(tenant['isActive']),
-            'dateAdded': tenant['dateAdded']
+            'id': tenant.id,
+            'name': tenant.name,
+            'tenantId': tenant.tenantId,
+            'applicationId': tenant.applicationId,
+            'applicationSecret': tenant.applicationSecret,
+            'isActive': bool(tenant.isActive),
+            'dateAdded': tenant.dateAdded
         })
     
     return jsonify(result)
@@ -98,7 +100,8 @@ def update_tenant(id):
     # Get current tenant state to check if isActive changed
     conn = get_db_connection()
     cursor = conn.cursor()
-    current_tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (id,))
+    current_tenant = cursor.fetchone()
     
     cursor.execute('''
     UPDATE tenants
@@ -117,7 +120,7 @@ def update_tenant(id):
     conn.close()
     
     # If tenant was not active before but is active now, fetch data
-    if current_tenant and not current_tenant['isActive'] and data['isActive']:
+    if current_tenant and not current_tenant.isActive and data['isActive']:
         # Ensure dependencies are installed
         if check_dependencies():
             try:
@@ -145,11 +148,12 @@ def delete_tenant(id):
     # First, check if there's a tenant-specific database we need to delete
     conn = get_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT tenantId FROM tenants WHERE id = ?', (id,)).fetchone()
+    cursor.execute('SELECT tenantId FROM tenants WHERE id = ?', (id,))
+    tenant = cursor.fetchone()
     
     if tenant:
         # Try to delete the tenant-specific databases if they exist
-        tenant_id = tenant['tenantId']
+        tenant_id = tenant.tenantId
         import glob
         patterns = [
             f"service_announcements_{tenant_id}.db",
