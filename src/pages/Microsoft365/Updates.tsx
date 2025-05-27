@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -34,7 +33,7 @@ const Updates = () => {
     hasSystemMessage,
     isLoading: messageIsLoading,
     isFetching: messageIsFetching,
-    refreshData: refreshMessageCenter,
+    refreshData: refreshMessageCenterFromDB,
     fetchUpdateData
   } = useUpdates(selectedTenant);
   
@@ -54,21 +53,20 @@ const Updates = () => {
     handleFetchM365News
   } = useM365News(selectedTenant);
 
+  // Manual refresh handlers that only refresh from database
   const handleManualMessageCenterRefresh = async () => {
     toast({
       title: "Refreshing Message Center Updates",
-      description: "Fetching latest data from Microsoft Graph API",
+      description: "Loading latest data from database",
     });
-    await fetchUpdateData();
-    return refreshMessageCenter();
+    return refreshMessageCenterFromDB();
   };
   
   const handleManualWindowsRefresh = async () => {
     toast({
-      title: "Refreshing Windows Updates",
-      description: "Fetching latest data from Microsoft Graph API",
+      title: "Refreshing Windows Updates", 
+      description: "Loading latest data from database",
     });
-    await handleFetchWindowsUpdates();
     if (selectedTenant) {
       return refreshWindowsUpdates(selectedTenant);
     }
@@ -78,15 +76,15 @@ const Updates = () => {
   const handleManualNewsRefresh = async () => {
     toast({
       title: "Refreshing Microsoft 365 News",
-      description: "Fetching latest news and announcements",
+      description: "Loading latest news from database",
     });
-    await handleFetchM365News();
     return refreshNews();
   };
 
+  // Auto-refresh with longer intervals and database-only refresh
   const [messageCenterLastRefresh, refreshMessageCenterManually] = useAutoRefresh(
     handleManualMessageCenterRefresh, 
-    60, 
+    300, // 5 hours instead of 1 hour 
     !!selectedTenant, 
     0, 
     `message-center-last-refresh-${selectedTenant}`
@@ -94,7 +92,7 @@ const Updates = () => {
   
   const [windowsLastRefresh, refreshWindowsManually] = useAutoRefresh(
     handleManualWindowsRefresh, 
-    60, 
+    300, // 5 hours instead of 1 hour
     !!selectedTenant, 
     10, 
     `windows-updates-last-refresh-${selectedTenant}`
@@ -102,7 +100,7 @@ const Updates = () => {
   
   const [newsLastRefresh, refreshNewsManually] = useAutoRefresh(
     handleManualNewsRefresh, 
-    60, 
+    300, // 5 hours instead of 1 hour
     !!selectedTenant, 
     20, 
     `m365-news-last-refresh-${selectedTenant}`

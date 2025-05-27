@@ -9,7 +9,7 @@ export const useUpdates = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
-  // Use React Query for better data fetching and caching, but disable automatic fetching
+  // Use React Query only for data retrieval from database, disable all automatic fetching
   const {
     data: updates = [],
     isLoading,
@@ -19,13 +19,16 @@ export const useUpdates = (tenantId: string | null) => {
     queryKey: ['updates', tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
-      console.log(`Fetching updates for tenant: ${tenantId}`);
+      console.log(`Fetching updates from database for tenant: ${tenantId}`);
       return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnMount: false, // Prevent auto-fetch when component mounts
-    retry: 2
+    staleTime: Infinity, // Never consider data stale
+    refetchOnMount: false, // Don't fetch when component mounts
+    refetchOnWindowFocus: false, // Don't fetch when window gains focus
+    refetchOnReconnect: false, // Don't fetch when network reconnects
+    refetchInterval: false, // Disable automatic refetching
+    retry: 1 // Reduce retry attempts
   });
 
   // Debugging log
@@ -36,6 +39,7 @@ export const useUpdates = (tenantId: string | null) => {
     }
   }, [updates, error]);
 
+  // Manual fetch function for when user explicitly wants to fetch new data from Microsoft Graph
   const fetchUpdateData = async () => {
     if (!tenantId) return;
     
@@ -80,6 +84,12 @@ export const useUpdates = (tenantId: string | null) => {
     }
   };
 
+  // Simple refresh function that only gets data from database
+  const refreshFromDatabase = async () => {
+    console.log("Refreshing data from database only");
+    return refreshData();
+  };
+
   // Filter updates to separate system messages and regular updates
   const hasSystemMessage = updates.some(u => 
     u.id === 'db-init' || 
@@ -106,7 +116,7 @@ export const useUpdates = (tenantId: string | null) => {
     hasSystemMessage,
     isLoading,
     isFetching,
-    refreshData,
-    fetchUpdateData
+    refreshData: refreshFromDatabase, // Only refresh from database
+    fetchUpdateData // Explicit function to fetch from Microsoft Graph
   };
 };
