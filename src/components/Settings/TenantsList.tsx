@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { TenantConfig } from '@/utils/types';
+import { useTenantCache } from '@/hooks/useTenantCache';
 
 type TenantsListProps = {
   onEdit: (tenant: TenantConfig) => void;
@@ -35,8 +36,7 @@ const TenantsList: React.FC<TenantsListProps> = ({
 }) => {
   const [tenantToDelete, setTenantToDelete] = useState<TenantConfig | null>(null);
 
-  // Use useTenantCache hook here instead of receiving tenants as prop
-  const { useTenantCache } = require('@/hooks/useTenantCache');
+  // Use the useTenantCache hook to get tenants data
   const { tenants, isLoading } = useTenantCache();
 
   const handleDeleteConfirm = () => {
