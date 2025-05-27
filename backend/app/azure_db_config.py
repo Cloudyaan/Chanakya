@@ -47,24 +47,31 @@ class TenantTableManager:
     def __init__(self, azure_config: AzureSQLConfig):
         self.azure_config = azure_config
     
-    def get_table_prefix(self, tenant_name: str, service_type: str = "m365") -> str:
-        """Generate table prefix for a tenant."""
+    def get_table_name(self, tenant_name: str, table_type: str) -> str:
+        """Generate table name for a tenant and table type."""
         # Sanitize tenant name for use in table names
         safe_name = ''.join(c if c.isalnum() else '_' for c in tenant_name.lower())
-        return f"{safe_name}_{service_type}_"
+        
+        if table_type == "updates":
+            return f"{safe_name}_m365_updates"
+        elif table_type == "m365_news":
+            return f"{safe_name}_m365_news"
+        elif table_type == "windows_known_issues":
+            return f"{safe_name}_m365_win_issues"
+        else:
+            return f"{safe_name}_m365_{table_type}"
     
     def create_tenant_tables(self, tenant_name: str, tenant_id: str, service_type: str = "m365"):
-        """Create all necessary tables for a tenant."""
+        """Create necessary tables for a Microsoft 365 tenant."""
         conn = self.azure_config.get_connection()
         cursor = conn.cursor()
         
-        table_prefix = self.get_table_prefix(tenant_name, service_type)
-        
         try:
             # Create updates table
+            updates_table = self.get_table_name(tenant_name, "updates")
             cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}updates' AND xtype='U')
-                CREATE TABLE {table_prefix}updates (
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{updates_table}' AND xtype='U')
+                CREATE TABLE {updates_table} (
                     id NVARCHAR(255) PRIMARY KEY,
                     title NVARCHAR(MAX),
                     category NVARCHAR(255),
@@ -84,52 +91,11 @@ class TenantTableManager:
                 )
             """)
             
-            # Create licenses table
-            cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}licenses' AND xtype='U')
-                CREATE TABLE {table_prefix}licenses (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    license_sku NVARCHAR(255),
-                    display_name NVARCHAR(255),
-                    type NVARCHAR(100),
-                    total_licenses INT,
-                    used_licenses INT,
-                    unused_licenses INT,
-                    renewal_expiration_date NVARCHAR(100),
-                    captured_date NVARCHAR(100)
-                )
-            """)
-            
-            # Create inactive_users table
-            cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}inactive_users' AND xtype='U')
-                CREATE TABLE {table_prefix}inactive_users (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    user_principal_name NVARCHAR(255),
-                    display_name NVARCHAR(255),
-                    account_enabled BIT,
-                    last_sign_in_attempt NVARCHAR(100),
-                    last_successful_sign_in NVARCHAR(100),
-                    captured_date NVARCHAR(100)
-                )
-            """)
-            
-            # Create over_licensed_users table
-            cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}over_licensed_users' AND xtype='U')
-                CREATE TABLE {table_prefix}over_licensed_users (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    display_name NVARCHAR(255),
-                    user_principal_name NVARCHAR(255),
-                    licenses NVARCHAR(MAX),
-                    captured_date NVARCHAR(100)
-                )
-            """)
-            
             # Create m365_news table
+            news_table = self.get_table_name(tenant_name, "m365_news")
             cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}m365_news' AND xtype='U')
-                CREATE TABLE {table_prefix}m365_news (
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{news_table}' AND xtype='U')
+                CREATE TABLE {news_table} (
                     id NVARCHAR(255) PRIMARY KEY,
                     title NVARCHAR(MAX),
                     published_date NVARCHAR(100),
@@ -140,21 +106,11 @@ class TenantTableManager:
                 )
             """)
             
-            # Create windows_products table
-            cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}windows_products' AND xtype='U')
-                CREATE TABLE {table_prefix}windows_products (
-                    id NVARCHAR(255) PRIMARY KEY,
-                    name NVARCHAR(255),
-                    group_name NVARCHAR(255),
-                    friendly_names NVARCHAR(MAX)
-                )
-            """)
-            
             # Create windows_known_issues table
+            issues_table = self.get_table_name(tenant_name, "windows_known_issues")
             cursor.execute(f"""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{table_prefix}windows_known_issues' AND xtype='U')
-                CREATE TABLE {table_prefix}windows_known_issues (
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{issues_table}' AND xtype='U')
+                CREATE TABLE {issues_table} (
                     id NVARCHAR(255) PRIMARY KEY,
                     product_id NVARCHAR(255),
                     title NVARCHAR(MAX),
@@ -162,13 +118,12 @@ class TenantTableManager:
                     status NVARCHAR(255),
                     start_date NVARCHAR(100),
                     resolved_date NVARCHAR(100),
-                    web_view_url NVARCHAR(MAX),
-                    FOREIGN KEY (product_id) REFERENCES {table_prefix}windows_products (id)
+                    web_view_url NVARCHAR(MAX)
                 )
             """)
             
             conn.commit()
-            print(f"Successfully created tables for tenant: {tenant_name} with prefix: {table_prefix}")
+            print(f"Successfully created tables for tenant: {tenant_name}")
             
         except Exception as e:
             print(f"Error creating tables for tenant {tenant_name}: {e}")
@@ -183,18 +138,12 @@ class TenantTableManager:
         conn = self.azure_config.get_connection()
         cursor = conn.cursor()
         
-        table_prefix = self.get_table_prefix(tenant_name, service_type)
-        
         try:
-            # Drop tables in reverse order due to foreign key constraints
+            # Drop the three main tables
             tables = [
-                f"{table_prefix}windows_known_issues",
-                f"{table_prefix}windows_products",
-                f"{table_prefix}m365_news",
-                f"{table_prefix}over_licensed_users",
-                f"{table_prefix}inactive_users",
-                f"{table_prefix}licenses",
-                f"{table_prefix}updates"
+                self.get_table_name(tenant_name, "windows_known_issues"),
+                self.get_table_name(tenant_name, "m365_news"),
+                self.get_table_name(tenant_name, "updates")
             ]
             
             for table in tables:
@@ -213,5 +162,4 @@ class TenantTableManager:
     
     def get_tenant_table_name(self, tenant_name: str, table_name: str, service_type: str = "m365") -> str:
         """Get the full table name for a tenant and table."""
-        table_prefix = self.get_table_prefix(tenant_name, service_type)
-        return f"{table_prefix}{table_name}"
+        return self.get_table_name(tenant_name, table_name)
