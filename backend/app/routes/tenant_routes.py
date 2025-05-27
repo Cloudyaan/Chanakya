@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 import subprocess
 
-from app.database import get_db_connection
+from app.database import get_db_connection, get_table_manager
 from app.dependencies import check_dependencies
 
 tenant_bp = Blueprint('tenant', __name__, url_prefix='/api')
@@ -145,33 +145,61 @@ def update_tenant(id):
 
 @tenant_bp.route('/tenants/<string:id>', methods=['DELETE'])
 def delete_tenant(id):
-    # First, check if there's a tenant-specific database we need to delete
+    # First, get the tenant information we need before deletion
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT tenantId FROM tenants WHERE id = ?', (id,))
+    cursor.execute('SELECT id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded FROM tenants WHERE id = ?', (id,))
     tenant = cursor.fetchone()
     
-    if tenant:
-        # Try to delete the tenant-specific databases if they exist
-        tenant_id = tenant[2]  # tenantId is at index 2
+    if not tenant:
+        cursor.close()
+        conn.close()
+        return jsonify({'success': False, 'error': 'Tenant not found'}), 404
+    
+    try:
+        # Extract tenant information
+        tenant_name = tenant[1]  # name is at index 1
+        tenant_azure_id = tenant[2]  # tenantId is at index 2
+        
+        print(f"Deleting tenant: {tenant_name} (ID: {id}, Azure ID: {tenant_azure_id})")
+        
+        # Delete tenant-specific tables using the table manager
+        table_manager = get_table_manager()
+        try:
+            table_manager.drop_tenant_tables(tenant_name, 'm365')
+            print(f"Successfully deleted tenant tables for: {tenant_name}")
+        except Exception as e:
+            print(f"Error deleting tenant tables for {tenant_name}: {e}")
+            # Continue with tenant deletion even if table deletion fails
+        
+        # Try to delete any legacy tenant-specific databases (for backwards compatibility)
         import glob
         patterns = [
-            f"service_announcements_{tenant_id}.db",
-            f"*_{tenant_id}.db",
-            f"*{tenant_id}*.db"
+            f"service_announcements_{tenant_azure_id}.db",
+            f"*_{tenant_azure_id}.db",
+            f"*{tenant_azure_id}*.db"
         ]
         
         for pattern in patterns:
             for db_file in glob.glob(pattern):
                 try:
                     os.remove(db_file)
-                    print(f"Deleted tenant database: {db_file}")
+                    print(f"Deleted legacy tenant database: {db_file}")
                 except Exception as e:
-                    print(f"Error deleting tenant database: {e}")
-    
-    # Now delete the tenant record
-    cursor.execute('DELETE FROM tenants WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
+                    print(f"Error deleting legacy tenant database: {e}")
+        
+        # Finally, delete the tenant record from the main tenants table
+        cursor.execute('DELETE FROM tenants WHERE id = ?', (id,))
+        conn.commit()
+        
+        print(f"Successfully deleted tenant configuration for: {tenant_name}")
+        
+    except Exception as e:
+        print(f"Error during tenant deletion: {e}")
+        conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
     
     return jsonify({'success': True})
