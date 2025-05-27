@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -10,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { getTenants } from '@/utils/database';
+import { useTenantCache } from '@/hooks/useTenantCache';
 import { TenantConfig } from '@/utils/types';
 
 interface Microsoft365Props {
@@ -20,7 +21,7 @@ interface Microsoft365Props {
 const Microsoft365 = ({ children }: Microsoft365Props) => {
   const location = useLocation();
   const [isHovering, setIsHovering] = useState<string | null>(null);
-  const [tenants, setTenants] = useState<TenantConfig[]>([]);
+  const { tenants } = useTenantCache();
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   
@@ -43,32 +44,27 @@ const Microsoft365 = ({ children }: Microsoft365Props) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Load tenants on component mount
+  // Initialize selected tenant from localStorage or first active tenant
   useEffect(() => {
-    async function loadTenants() {
-      try {
-        const loadedTenants = await getTenants();
-        setTenants(loadedTenants);
-        
-        // Check if there's a previously selected tenant in localStorage
-        const savedTenant = localStorage.getItem('selectedTenant');
-        if (savedTenant) {
+    if (tenants.length > 0) {
+      // Check if there's a previously selected tenant in localStorage
+      const savedTenant = localStorage.getItem('selectedTenant');
+      if (savedTenant) {
+        const tenantExists = tenants.find(t => t.id === savedTenant && t.isActive);
+        if (tenantExists) {
           setSelectedTenant(savedTenant);
-        } else {
-          // Set first active tenant as default if no saved tenant
-          const activeTenant = loadedTenants.find(t => t.isActive);
-          if (activeTenant) {
-            setSelectedTenant(activeTenant.id);
-            localStorage.setItem('selectedTenant', activeTenant.id);
-          }
+          return;
         }
-      } catch (error) {
-        console.error("Error loading tenants:", error);
+      }
+      
+      // Set first active tenant as default if no saved tenant
+      const activeTenant = tenants.find(t => t.isActive);
+      if (activeTenant) {
+        setSelectedTenant(activeTenant.id);
+        localStorage.setItem('selectedTenant', activeTenant.id);
       }
     }
-    
-    loadTenants();
-  }, []);
+  }, [tenants]);
 
   const handleTenantChange = (tenantId: string) => {
     setSelectedTenant(tenantId);

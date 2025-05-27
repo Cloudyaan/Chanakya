@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import Microsoft365 from '../Microsoft365';
-import { getTenants } from '@/utils/database';
+import { useTenantCache } from '@/hooks/useTenantCache';
 import { TenantConfig, TenantUpdate, WindowsUpdate } from '@/utils/types';
 import UpdateDetailsDialog from '@/components/Microsoft365/UpdateDetailsDialog';
 import WindowsUpdateDetailsDialog from '@/components/Microsoft365/WindowsUpdateDetailsDialog';
@@ -20,7 +20,7 @@ const Updates = () => {
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
 
-  const [tenants, setTenants] = useState<TenantConfig[]>([]);
+  const { tenants, isLoading: tenantsLoading } = useTenantCache();
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [selectedUpdate, setSelectedUpdate] = useState<TenantUpdate | null>(null);
   const [selectedWindowsUpdate, setSelectedWindowsUpdate] = useState<WindowsUpdate | null>(null);
@@ -109,34 +109,38 @@ const Updates = () => {
   );
 
   useEffect(() => {
-    async function loadTenants() {
-      try {
-        const loadedTenants = await getTenants();
-        console.log('Loaded tenants:', loadedTenants);
-        setTenants(loadedTenants);
+    if (!tenantsLoading && tenants.length > 0) {
+      console.log('Loaded tenants:', tenants);
+      
+      // Find the active tenant from the loaded tenants
+      const activeTenants = tenants.filter(t => t.isActive);
+      console.log('Active tenants:', activeTenants);
+      
+      if (activeTenants.length > 0) {
+        const savedTenantId = localStorage.getItem('selectedTenant');
+        let defaultTenant = activeTenants[0];
         
-        // Find the active tenant from the loaded tenants
-        const activeTenants = loadedTenants.filter(t => t.isActive);
-        console.log('Active tenants:', activeTenants);
-        
-        if (activeTenants.length > 0) {
-          const defaultTenant = activeTenants[0];
-          console.log('Setting default tenant:', defaultTenant.id);
-          setSelectedTenant(defaultTenant.id);
-          localStorage.setItem('selectedTenant', defaultTenant.id);
-        } else {
-          console.log('No active tenants found');
-          // Clear any stored tenant ID if no active tenants
-          localStorage.removeItem('selectedTenant');
-          setSelectedTenant(null);
+        // Check if saved tenant exists and is active
+        if (savedTenantId) {
+          const savedTenant = activeTenants.find(t => t.id === savedTenantId);
+          if (savedTenant) {
+            defaultTenant = savedTenant;
+          }
         }
-      } catch (error) {
-        console.error("Error loading tenants:", error);
+        
+        console.log('Setting default tenant:', defaultTenant.id);
+        setSelectedTenant(defaultTenant.id);
+        localStorage.setItem('selectedTenant', defaultTenant.id);
+      } else {
+        console.log('No active tenants found');
+        localStorage.removeItem('selectedTenant');
+        setSelectedTenant(null);
       }
     }
-    
-    loadTenants();
-    
+  }, [tenants, tenantsLoading]);
+
+  // Listen for tenant change events
+  useEffect(() => {
     const handleTenantChange = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('Tenant changed event:', customEvent.detail);
@@ -155,11 +159,6 @@ const Updates = () => {
           localStorage.setItem('selectedTenant', activeTenant.id);
         }
       }
-      
-      const tenantChangeEvent = new CustomEvent('tenantChanged', {
-        detail: { tenantId: customEvent.detail.tenantId }
-      });
-      window.dispatchEvent(tenantChangeEvent);
     };
     
     window.addEventListener('tenantChanged', handleTenantChange);

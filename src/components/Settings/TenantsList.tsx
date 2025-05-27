@@ -23,18 +23,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { TenantConfig } from '@/utils/types';
+import { useTenantCache } from '@/hooks/useTenantCache';
 
 type TenantsListProps = {
-  tenants: TenantConfig[];
   onEdit: (tenant: TenantConfig) => void;
   onDelete: (id: string) => void;
 };
 
 const TenantsList: React.FC<TenantsListProps> = ({
-  tenants,
   onEdit,
   onDelete,
 }) => {
+  const { tenants, isLoading } = useTenantCache();
   const [tenantToDelete, setTenantToDelete] = useState<TenantConfig | null>(null);
 
   const handleDeleteConfirm = () => {
@@ -43,6 +43,14 @@ const TenantsList: React.FC<TenantsListProps> = ({
       setTenantToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-sm text-gray-500">Loading tenants...</p>
+      </div>
+    );
+  }
 
   if (tenants.length === 0) {
     return (

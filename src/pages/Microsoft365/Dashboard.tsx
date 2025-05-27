@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Microsoft365 from '../Microsoft365';
-import { getTenants } from '@/utils/database';
+import { useTenantCache } from '@/hooks/useTenantCache';
 import { Tenant, TenantConfig } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
 import { useMessageCenterUpdates } from '@/hooks/useMessageCenterUpdates';
@@ -31,8 +31,8 @@ const convertToTenant = (config: TenantConfig): Tenant => {
 };
 
 const Dashboard = () => {
+  const { tenants, isLoading: tenantsLoading } = useTenantCache();
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [tenantData, setTenantData] = useState<Tenant | null>(null);
   const { toast } = useToast();
 
@@ -68,46 +68,38 @@ const Dashboard = () => {
 
   // Load tenants data
   useEffect(() => {
-    const loadTenants = async () => {
-      try {
-        const tenants = await getTenants();
-        if (tenants.length > 0) {
-          const savedTenantId = localStorage.getItem('selectedTenant');
-          if (savedTenantId) {
-            const matchingTenant = tenants.find(t => t.id === savedTenantId);
-            if (matchingTenant) {
-              setTenantData(convertToTenant(matchingTenant));
-            } else if (tenants[0]) {
-              setTenantData(convertToTenant(tenants[0]));
-            }
-          } else if (tenants[0]) {
-            setTenantData(convertToTenant(tenants[0]));
-          }
+    if (!tenantsLoading && tenants.length > 0) {
+      const savedTenantId = localStorage.getItem('selectedTenant');
+      if (savedTenantId) {
+        const matchingTenant = tenants.find(t => t.id === savedTenantId);
+        if (matchingTenant) {
+          setSelectedTenant(savedTenantId);
+          setTenantData(convertToTenant(matchingTenant));
+        } else if (tenants[0]) {
+          setSelectedTenant(tenants[0].id);
+          setTenantData(convertToTenant(tenants[0]));
         }
-      } catch (error) {
-        console.error("Error loading tenants:", error);
-      } finally {
-        setIsLoading(false);
+      } else if (tenants[0]) {
+        setSelectedTenant(tenants[0].id);
+        setTenantData(convertToTenant(tenants[0]));
       }
-    };
-    
-    loadTenants();
-  }, [selectedTenant]);
+    }
+  }, [tenants, tenantsLoading]);
 
   // Listen for tenant changes
   useEffect(() => {
     const handleTenantChange = (event: Event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail && customEvent.detail.tenantId) {
-        setSelectedTenant(customEvent.detail.tenantId);
+        const newTenantId = customEvent.detail.tenantId;
+        setSelectedTenant(newTenantId);
+        
+        const matchingTenant = tenants.find(t => t.id === newTenantId);
+        if (matchingTenant) {
+          setTenantData(convertToTenant(matchingTenant));
+        }
       }
     };
-
-    // Get initial tenant from localStorage
-    const savedTenant = localStorage.getItem('selectedTenant');
-    if (savedTenant) {
-      setSelectedTenant(savedTenant);
-    }
 
     // Add event listener for tenant changes
     window.addEventListener('tenantChanged', handleTenantChange);
@@ -115,10 +107,10 @@ const Dashboard = () => {
     return () => {
       window.removeEventListener('tenantChanged', handleTenantChange);
     };
-  }, []);
+  }, [tenants]);
 
   // Combine loading states
-  const isPageLoading = isLoading || messageIsLoading || windowsIsLoading;
+  const isPageLoading = tenantsLoading || messageIsLoading || windowsIsLoading;
 
   return (
     <Microsoft365>

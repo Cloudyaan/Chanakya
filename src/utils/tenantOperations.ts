@@ -1,6 +1,7 @@
 
 import { TenantConfig } from './types';
 import { API_URL } from './api';
+import { clearTenantCache } from '@/hooks/useTenantCache';
 
 // M365 Tenant Operations
 export const getTenants = async (): Promise<TenantConfig[]> => {
@@ -30,6 +31,8 @@ export const addTenant = async (tenant: TenantConfig): Promise<boolean> => {
       throw new Error('Failed to add tenant');
     }
     
+    // Clear cache when tenant is added
+    clearTenantCache();
     return true;
   } catch (error) {
     console.error('Error adding tenant:', error);
@@ -62,6 +65,8 @@ export const updateTenant = async (tenant: TenantConfig): Promise<boolean> => {
     }
     
     console.log("Tenant update successful");
+    // Clear cache when tenant is updated
+    clearTenantCache();
     return true;
   } catch (error) {
     console.error('Error updating tenant:', error);
@@ -79,6 +84,8 @@ export const deleteTenant = async (id: string): Promise<boolean> => {
       throw new Error('Failed to delete tenant');
     }
     
+    // Clear cache when tenant is deleted
+    clearTenantCache();
     return true;
   } catch (error) {
     console.error('Error deleting tenant:', error);
