@@ -1,3 +1,4 @@
+
 from flask import request, jsonify
 import sqlite3
 import os
@@ -49,7 +50,7 @@ def get_updates():
     
     try:
         # Get all databases for this tenant
-        tenant_databases = get_all_tenant_databases(tenant['tenantId'])
+        tenant_databases = get_all_tenant_databases(tenant[3])  # Access by index instead of key
         
         # Determine which database to use based on the source parameter
         if source == 'message-center' and 'service_announcements' in tenant_databases:
@@ -57,11 +58,11 @@ def get_updates():
             print(f"Using service_announcements database: {tenant_db_path}")
         else:
             # Fall back to the regular tenant database or any found database
-            tenant_db_path = find_tenant_database(tenant['tenantId'])
+            tenant_db_path = find_tenant_database(tenant[3])  # Access by index instead of key
         
         # If no database found, return a system message
         if not tenant_db_path:
-            print(f"No database found for tenant: {tenant['name']} (ID: {tenant_id})")
+            print(f"No database found for tenant: {tenant[1]} (ID: {tenant_id})")  # Access by index
             return jsonify([{
                 'id': 'db-init',
                 'title': 'No updates database found',
@@ -87,7 +88,7 @@ def get_updates():
                 print(f"No updates or announcements table found in database: {tenant_db_path}")
                 return jsonify([])  # Return empty array if table doesn't exist
                 
-            table_name = table_result['name']
+            table_name = table_result[0]  # Access by index instead of key
             print(f"Found table: {table_name} in database: {tenant_db_path}")
             
             # Adapt query based on which table exists - without any LIMIT
@@ -120,8 +121,16 @@ def get_updates():
             
             updates = []
             for row in cursor.fetchall():
-                # Convert SQLite row to dictionary
-                update = dict(row)
+                # Convert SQLite row to dictionary properly
+                update = {
+                    'id': row['id'],
+                    'title': row['title'],
+                    'category': row['category'],
+                    'severity': row['severity'],
+                    'publishedDate': row['publishedDate'],
+                    'actionType': row['actionType'],
+                    'description': row['description']
+                }
                 
                 # Map action type
                 action_type = update.get('actionType')
@@ -132,13 +141,13 @@ def get_updates():
                 else:
                     update['actionType'] = 'Informational'
                 
-                # Add tenant information
-                update['tenantId'] = tenant['tenantId']
-                update['tenantName'] = tenant['name']
+                # Add tenant information using index access
+                update['tenantId'] = tenant[3]  # Access by index
+                update['tenantName'] = tenant[1]  # Access by index
                 
                 # Add a message ID if not present
                 if 'messageId' not in update:
-                    update['messageId'] = f"MC{update['id'][-6:]}"
+                    update['messageId'] = f"MC{str(update['id'])[-6:]}"
                 
                 updates.append(update)
             
@@ -244,7 +253,7 @@ def trigger_fetch_updates():
         
         return jsonify({
             'success': True,
-            'message': f'Successfully fetched updates for tenant {tenant["name"]}'
+            'message': f'Successfully fetched updates for tenant {tenant[1]}'  # Access by index
         })
     except subprocess.CalledProcessError as e:
         print(f"Error running fetch_updates script: {str(e)}")
