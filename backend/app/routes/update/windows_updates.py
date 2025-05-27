@@ -124,13 +124,14 @@ def get_windows_updates():
             else:
                 select_fields.append("NULL as resolvedDate")
             
-            # Check if windows_products table exists
-            products_table = windows_issues_table.replace('_known_issues', '_products')
+            # Check if windows_products table exists - fix the table name calculation
+            products_table = windows_issues_table.replace('_win_issues', '_win_products')
             cursor.execute(f"""
                 SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
                 WHERE TABLE_NAME = '{products_table}'
             """)
             has_products_table = cursor.fetchone()[0] > 0
+            print(f"Checking for products table: {products_table}, exists: {has_products_table}")
             
             # Build and execute the query
             if has_products_table:
