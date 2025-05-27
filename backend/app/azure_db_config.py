@@ -58,6 +58,8 @@ class TenantTableManager:
             return f"{safe_name}_m365_news"
         elif table_type == "windows_known_issues":
             return f"{safe_name}_m365_win_issues"
+        elif table_type == "windows_products":
+            return f"{safe_name}_m365_win_products"
         else:
             return f"{safe_name}_m365_{table_type}"
     
@@ -122,6 +124,18 @@ class TenantTableManager:
                 )
             """)
             
+            # Create windows_products table
+            products_table = self.get_table_name(tenant_name, "windows_products")
+            cursor.execute(f"""
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{products_table}' AND xtype='U')
+                CREATE TABLE {products_table} (
+                    id NVARCHAR(255) PRIMARY KEY,
+                    name NVARCHAR(MAX),
+                    group_name NVARCHAR(MAX),
+                    friendly_names NVARCHAR(MAX)
+                )
+            """)
+            
             conn.commit()
             print(f"Successfully created tables for tenant: {tenant_name}")
             
@@ -139,8 +153,9 @@ class TenantTableManager:
         cursor = conn.cursor()
         
         try:
-            # Drop the three main tables
+            # Drop all four main tables
             tables = [
+                self.get_table_name(tenant_name, "windows_products"),
                 self.get_table_name(tenant_name, "windows_known_issues"),
                 self.get_table_name(tenant_name, "m365_news"),
                 self.get_table_name(tenant_name, "updates")
