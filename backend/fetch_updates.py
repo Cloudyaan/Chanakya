@@ -1,7 +1,6 @@
 
 import requests
 import json
-import sqlite3
 import sys
 import os
 
@@ -14,9 +13,9 @@ except ImportError:
 
 from tenant_db_manager import (
     fetch_tenants, initialize_tenant_database, 
-    get_access_token, get_tenant_database_path,
-    get_tenant_details
+    get_access_token, get_tenant_details
 )
+from app.database import get_tenant_table_connection, ensure_tenant_tables_exist
 
 def fetch_data_for_tenant(tenant):
     """Fetch data for a specific tenant using their credentials."""
@@ -32,7 +31,10 @@ def fetch_data_for_tenant(tenant):
         return False
     
     # Initialize tenant database
-    db_path = initialize_tenant_database(tenant)
+    db_result = initialize_tenant_database(tenant)
+    if not db_result:
+        print(f"Failed to initialize database for tenant: {tenant_name}")
+        return False
     
     # Endpoint for message center announcements
     ENDPOINT = "https://graph.microsoft.com/beta/admin/serviceAnnouncement/messages?$top=1000"
@@ -70,41 +72,81 @@ def fetch_data_for_tenant(tenant):
             print(f"Total messages retrieved: {len(messages)}")
             return messages
 
-        def insert_update(data, database_path):
-            """Inserts or updates data into SQLite updates table in the specified database."""
-            conn = sqlite3.connect(database_path)
+        def insert_update(data, tenant_id):
+            """Inserts or updates data into Azure SQL updates table for the specified tenant."""
+            # Get connection and table name for updates
+            conn, updates_table = get_tenant_table_connection(tenant_id, 'updates', 'm365')
+            
+            if not conn or not updates_table:
+                print(f"Failed to get database connection for tenant {tenant_id}")
+                return
+            
             cursor = conn.cursor()
 
             # Transform isMajorChange to "MajorChange" or "Not MajorChange"
             is_major_change = "MajorChange" if data.get("isMajorChange", False) else "Not MajorChange"
 
-            cursor.execute("""
-                INSERT OR REPLACE INTO updates (
-                    id, title, category, severity, startDateTime, lastModifiedDateTime, 
-                    isMajorChange, actionRequiredByDateTime, services, hasAttachments, 
-                    roadmapId, platform, status, lastUpdateTime, bodyContent, tags
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                data.get("id", ""),
-                data.get("title", ""),
-                data.get("category", ""),
-                data.get("severity", ""),
-                data.get("startDateTime", ""),
-                data.get("lastModifiedDateTime", ""),
-                is_major_change,
-                data.get("actionRequiredByDateTime", ""),
-                data.get("services", ""),
-                data.get("hasAttachments", False),
-                data.get("roadmapId", ""),
-                data.get("platform", ""),
-                data.get("status", ""),
-                data.get("lastUpdateTime", ""),
-                data.get("bodyContent", ""),
-                ", ".join(data.get("tags", [])) if data.get("tags") else ""
-            ))
+            try:
+                cursor.execute(f"""
+                    MERGE {updates_table} AS target
+                    USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)) AS source (
+                        id, title, category, severity, startDateTime, lastModifiedDateTime, 
+                        isMajorChange, actionRequiredByDateTime, services, hasAttachments, 
+                        roadmapId, platform, status, lastUpdateTime, bodyContent, tags
+                    )
+                    ON target.id = source.id
+                    WHEN MATCHED THEN
+                        UPDATE SET 
+                            title = source.title,
+                            category = source.category,
+                            severity = source.severity,
+                            startDateTime = source.startDateTime,
+                            lastModifiedDateTime = source.lastModifiedDateTime,
+                            isMajorChange = source.isMajorChange,
+                            actionRequiredByDateTime = source.actionRequiredByDateTime,
+                            services = source.services,
+                            hasAttachments = source.hasAttachments,
+                            roadmapId = source.roadmapId,
+                            platform = source.platform,
+                            status = source.status,
+                            lastUpdateTime = source.lastUpdateTime,
+                            bodyContent = source.bodyContent,
+                            tags = source.tags
+                    WHEN NOT MATCHED THEN
+                        INSERT (id, title, category, severity, startDateTime, lastModifiedDateTime, 
+                                isMajorChange, actionRequiredByDateTime, services, hasAttachments, 
+                                roadmapId, platform, status, lastUpdateTime, bodyContent, tags)
+                        VALUES (source.id, source.title, source.category, source.severity, 
+                                source.startDateTime, source.lastModifiedDateTime, source.isMajorChange, 
+                                source.actionRequiredByDateTime, source.services, source.hasAttachments, 
+                                source.roadmapId, source.platform, source.status, source.lastUpdateTime, 
+                                source.bodyContent, source.tags);
+                """, (
+                    data.get("id", ""),
+                    data.get("title", ""),
+                    data.get("category", ""),
+                    data.get("severity", ""),
+                    data.get("startDateTime", ""),
+                    data.get("lastModifiedDateTime", ""),
+                    is_major_change,
+                    data.get("actionRequiredByDateTime", ""),
+                    data.get("services", ""),
+                    data.get("hasAttachments", False),
+                    data.get("roadmapId", ""),
+                    data.get("platform", ""),
+                    data.get("status", ""),
+                    data.get("lastUpdateTime", ""),
+                    data.get("bodyContent", ""),
+                    ", ".join(data.get("tags", [])) if data.get("tags") else ""
+                ))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
+            except Exception as e:
+                print(f"Error inserting update: {e}")
+                conn.rollback()
+            finally:
+                cursor.close()
+                conn.close()
 
         # Fetch and store messages
         messages = fetch_all_messages()
@@ -144,15 +186,15 @@ def fetch_data_for_tenant(tenant):
                                 announcement_data["lastUpdateTime"] = feature.get("LastUpdateTime", "")
 
                                 # Store each platform-status combination in the tenant database
-                                insert_update(announcement_data, db_path)
+                                insert_update(announcement_data, tenant["id"])
                     except json.JSONDecodeError:
                         print(f"Error decoding FeatureStatusJson for message ID: {message.get('id', 'N/A')}")
                         # Insert the message anyway without the feature status data
-                        insert_update(announcement_data, db_path)
+                        insert_update(announcement_data, tenant["id"])
 
             # Insert the base message even if FeatureStatusJson is missing
             if not any(detail["name"] == "FeatureStatusJson" for detail in message.get("details", [])):
-                insert_update(announcement_data, db_path)
+                insert_update(announcement_data, tenant["id"])
 
         print(f"Completed processing for tenant: {tenant_name}")
         return True
@@ -169,6 +211,8 @@ def main():
         
         if tenant:
             print(f"Processing single tenant: {tenant['name']}")
+            # Ensure tables exist before fetching data
+            ensure_tenant_tables_exist(tenant_id, 'm365')
             fetch_data_for_tenant(tenant)
         else:
             print(f"No tenant found with ID: {tenant_id}")
@@ -181,6 +225,8 @@ def main():
             
         print(f"Found {len(tenants)} tenants to process.")
         for tenant in tenants:
+            # Ensure tables exist before fetching data
+            ensure_tenant_tables_exist(tenant['id'], 'm365')
             fetch_data_for_tenant(tenant)
 
 if __name__ == "__main__":

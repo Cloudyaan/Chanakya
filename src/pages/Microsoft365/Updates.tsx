@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -111,20 +112,23 @@ const Updates = () => {
     async function loadTenants() {
       try {
         const loadedTenants = await getTenants();
+        console.log('Loaded tenants:', loadedTenants);
         setTenants(loadedTenants);
         
-        const savedTenant = localStorage.getItem('selectedTenant');
-        if (savedTenant) {
-          console.log('Using saved tenant from localStorage:', savedTenant);
-          setSelectedTenant(savedTenant);
-          localStorage.setItem('selectedTenant', savedTenant);
+        // Find the active tenant from the loaded tenants
+        const activeTenants = loadedTenants.filter(t => t.isActive);
+        console.log('Active tenants:', activeTenants);
+        
+        if (activeTenants.length > 0) {
+          const defaultTenant = activeTenants[0];
+          console.log('Setting default tenant:', defaultTenant.id);
+          setSelectedTenant(defaultTenant.id);
+          localStorage.setItem('selectedTenant', defaultTenant.id);
         } else {
-          const activeTenant = loadedTenants.find(t => t.isActive);
-          if (activeTenant) {
-            console.log('Using first active tenant:', activeTenant.id);
-            setSelectedTenant(activeTenant.id);
-            localStorage.setItem('selectedTenant', activeTenant.id);
-          }
+          console.log('No active tenants found');
+          // Clear any stored tenant ID if no active tenants
+          localStorage.removeItem('selectedTenant');
+          setSelectedTenant(null);
         }
       } catch (error) {
         console.error("Error loading tenants:", error);
@@ -136,8 +140,21 @@ const Updates = () => {
     const handleTenantChange = (event: Event) => {
       const customEvent = event as CustomEvent;
       console.log('Tenant changed event:', customEvent.detail);
-      setSelectedTenant(customEvent.detail.tenantId);
-      localStorage.setItem('selectedTenant', customEvent.detail.tenantId);
+      
+      // Validate that the tenant exists in our loaded tenants
+      const tenantExists = tenants.find(t => t.id === customEvent.detail.tenantId);
+      if (tenantExists) {
+        setSelectedTenant(customEvent.detail.tenantId);
+        localStorage.setItem('selectedTenant', customEvent.detail.tenantId);
+      } else {
+        console.warn('Attempted to select non-existent tenant:', customEvent.detail.tenantId);
+        // Fall back to first active tenant
+        const activeTenant = tenants.find(t => t.isActive);
+        if (activeTenant) {
+          setSelectedTenant(activeTenant.id);
+          localStorage.setItem('selectedTenant', activeTenant.id);
+        }
+      }
       
       const tenantChangeEvent = new CustomEvent('tenantChanged', {
         detail: { tenantId: customEvent.detail.tenantId }
@@ -150,7 +167,7 @@ const Updates = () => {
     return () => {
       window.removeEventListener('tenantChanged', handleTenantChange);
     };
-  }, []);
+  }, [tenants]);
 
   const handleUpdateClick = (update: TenantUpdate) => {
     setSelectedUpdate(update);

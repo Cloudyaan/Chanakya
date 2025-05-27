@@ -1,9 +1,9 @@
+
 from flask import request, jsonify
-import sqlite3
 import os
 import subprocess
 
-from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
+from app.database import get_db_connection, get_tenant_table_connection, ensure_tenant_tables_exist
 from app.dependencies import check_dependencies
 from app.routes.update import update_bp
 
@@ -21,7 +21,9 @@ def get_windows_updates():
     # Try to find the tenant
     conn = get_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     if not tenant:
@@ -31,48 +33,59 @@ def get_windows_updates():
         }), 404
     
     try:
-        # Get all databases for this tenant
-        tenant_databases = get_all_tenant_databases(tenant['tenantId'])
+        # Convert row to dictionary for easier access
+        tenant_dict = {
+            'id': tenant[0],
+            'name': tenant[1],
+            'tenantId': tenant[2],
+            'applicationId': tenant[3],
+            'applicationSecret': tenant[4],
+            'isActive': bool(tenant[5]),
+            'dateAdded': tenant[6]
+        }
         
-        # Determine which database to use - prefer the tenant database for Windows updates
-        if 'tenant' in tenant_databases:
-            tenant_db_path = tenant_databases['tenant']
-            print(f"Using tenant database for Windows updates: {tenant_db_path}")
-        else:
-            # Fall back to any database found
-            tenant_db_path = find_tenant_database(tenant['tenantId'])
+        # Ensure tenant tables exist
+        ensure_tenant_tables_exist(tenant_id, 'm365')
         
-        # If the database doesn't exist yet, return a helpful message
-        if not tenant_db_path:
+        # Get connection and table name for Windows issues
+        table_conn, windows_issues_table = get_tenant_table_connection(tenant_id, 'windows_known_issues', 'm365')
+        
+        if not table_conn or not windows_issues_table:
             return jsonify({
-                'error': 'Database not found',
-                'message': f'No Windows updates database found for this tenant. Run the fetch_windows_updates.py script with the tenant ID: python fetch_windows_updates.py {tenant_id}'
-            }), 404
+                'error': 'Database connection failed',
+                'message': 'Could not connect to tenant database'
+            }), 500
         
-        # If the database exists, read from it
         try:
-            conn = sqlite3.connect(tenant_db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            cursor = table_conn.cursor()
             
-            # Check if the windows_known_issues table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
-            if not cursor.fetchone():
+            # Check if the table exists
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_NAME = '{windows_issues_table}'
+            """)
+            table_exists = cursor.fetchone()[0] > 0
+            
+            if not table_exists:
+                cursor.close()
+                table_conn.close()
                 return jsonify([])  # Return empty array if table doesn't exist
             
-            # First check the table structure to get column names
-            cursor.execute("PRAGMA table_info(windows_known_issues)")
-            columns = cursor.fetchall()
-            column_names = [col['name'] for col in columns]
-            print(f"Available columns in windows_known_issues: {column_names}")
+            # Get table structure to build dynamic query
+            cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{windows_issues_table}'")
+            columns_result = cursor.fetchall()
+            column_names = [row[0] for row in columns_result]
+            print(f"Available columns in {windows_issues_table}: {column_names}")
             
-            # Dynamically build query based on available columns
-            select_fields = [
-                "wi.id", 
-                "wi.product_id as productId"
-            ]
+            # Build dynamic query based on available columns
+            select_fields = ["wi.id"]
             
             # Add optional fields if they exist
+            if 'product_id' in column_names:
+                select_fields.append("wi.product_id as productId")
+            else:
+                select_fields.append("NULL as productId")
+                
             if 'title' in column_names:
                 select_fields.append("wi.title")
             else:
@@ -87,6 +100,8 @@ def get_windows_updates():
                 select_fields.append("wi.webViewUrl")
             elif 'web_view_url' in column_names:
                 select_fields.append("wi.web_view_url as webViewUrl")
+            else:
+                select_fields.append("NULL as webViewUrl")
                 
             if 'status' in column_names:
                 select_fields.append("LOWER(wi.status) as status")
@@ -108,19 +123,23 @@ def get_windows_updates():
                 select_fields.append("wi.resolvedDateTime as resolvedDate")
             else:
                 select_fields.append("NULL as resolvedDate")
-                
-            # Check if windows_products table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_products'")
-            has_products_table = cursor.fetchone() is not None
             
-            # Build the query
+            # Check if windows_products table exists
+            products_table = windows_issues_table.replace('_known_issues', '_products')
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_NAME = '{products_table}'
+            """)
+            has_products_table = cursor.fetchone()[0] > 0
+            
+            # Build and execute the query
             if has_products_table:
                 query = f"""
                     SELECT 
                         {', '.join(select_fields)},
                         wp.name as productName
-                    FROM windows_known_issues wi
-                    LEFT JOIN windows_products wp ON wi.product_id = wp.id
+                    FROM {windows_issues_table} wi
+                    LEFT JOIN {products_table} wp ON wi.product_id = wp.id
                     ORDER BY wi.id DESC
                 """
             else:
@@ -128,7 +147,7 @@ def get_windows_updates():
                     SELECT 
                         {', '.join(select_fields)},
                         'Unknown Product' as productName
-                    FROM windows_known_issues wi
+                    FROM {windows_issues_table} wi
                     ORDER BY wi.id DESC
                 """
             
@@ -137,11 +156,14 @@ def get_windows_updates():
             
             updates = []
             for row in cursor.fetchall():
-                # Convert SQLite row to dictionary
-                update = dict(row)
+                # Create dictionary from row data
+                update = {}
+                field_names = [desc[0] for desc in cursor.description]
+                for i, field_name in enumerate(field_names):
+                    update[field_name] = row[i]
                 
                 # Add tenant information
-                update['tenantId'] = tenant['tenantId']
+                update['tenantId'] = tenant_dict['tenantId']
                 
                 # Make sure status is normalized to lowercase for easier filtering
                 if 'status' in update and update['status']:
@@ -149,11 +171,14 @@ def get_windows_updates():
                 
                 updates.append(update)
             
-            conn.close()
+            cursor.close()
+            table_conn.close()
             return jsonify(updates)
             
-        except sqlite3.Error as e:
+        except Exception as e:
             print(f"Database error in get_windows_updates: {e}")
+            if table_conn:
+                table_conn.close()
             return jsonify({
                 'error': 'Database error',
                 'message': str(e)
@@ -180,7 +205,9 @@ def trigger_fetch_windows_updates():
     # Check if the tenant exists
     conn = get_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     if not tenant:
@@ -190,6 +217,17 @@ def trigger_fetch_windows_updates():
         }), 404
     
     try:
+        # Convert row to dictionary for easier access
+        tenant_dict = {
+            'id': tenant[0],
+            'name': tenant[1],
+            'tenantId': tenant[2],
+            'applicationId': tenant[3],
+            'applicationSecret': tenant[4],
+            'isActive': bool(tenant[5]),
+            'dateAdded': tenant[6]
+        }
+        
         print(f"Attempting to fetch Windows updates for tenant ID: {tenant_id}")
         
         # Prepare command arguments
@@ -208,7 +246,7 @@ def trigger_fetch_windows_updates():
         
         return jsonify({
             'success': True,
-            'message': f'Successfully fetched Windows updates for tenant {tenant["name"]}'
+            'message': f'Successfully fetched Windows updates for tenant {tenant_dict["name"]}'
         })
     except subprocess.CalledProcessError as e:
         print(f"Error running fetch_windows_updates script: {str(e)}")
