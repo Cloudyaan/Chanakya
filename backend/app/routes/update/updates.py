@@ -1,11 +1,10 @@
-
 from flask import request, jsonify
 import sqlite3
 import os
 import subprocess
 import importlib.util
 
-from app.database import get_db_connection, find_tenant_database, get_all_tenant_databases
+from app.database import get_db_connection, get_tenant_table_connection, ensure_tenant_tables_exist
 from app.dependencies import check_dependencies, check_numpy_pandas_compatibility
 from app.routes.update import update_bp
 
@@ -24,7 +23,9 @@ def get_updates():
     # Try to find the tenant
     conn = get_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     if not tenant:
@@ -49,20 +50,21 @@ def get_updates():
         }]), 200
     
     try:
-        # Get all databases for this tenant
-        tenant_databases = get_all_tenant_databases(tenant[3])  # Access by index instead of key
+        # Convert pyodbc.Row to dictionary for easier access
+        tenant_dict = {
+            'id': tenant[0],
+            'name': tenant[1],
+            'tenantId': tenant[2],
+            'applicationId': tenant[3],
+            'applicationSecret': tenant[4],
+            'isActive': bool(tenant[5]),
+            'dateAdded': tenant[6]
+        }
         
-        # Determine which database to use based on the source parameter
-        if source == 'message-center' and 'service_announcements' in tenant_databases:
-            tenant_db_path = tenant_databases['service_announcements']
-            print(f"Using service_announcements database: {tenant_db_path}")
-        else:
-            # Fall back to the regular tenant database or any found database
-            tenant_db_path = find_tenant_database(tenant[3])  # Access by index instead of key
-        
-        # If no database found, return a system message
-        if not tenant_db_path:
-            print(f"No database found for tenant: {tenant[1]} (ID: {tenant_id})")  # Access by index
+        # Ensure tenant tables exist
+        table_exists = ensure_tenant_tables_exist(tenant_dict['id'], 'm365')
+        if not table_exists:
+            print(f"Failed to ensure tables exist for tenant: {tenant_dict['name']} (ID: {tenant_id})")
             return jsonify([{
                 'id': 'db-init',
                 'title': 'No updates database found',
@@ -74,62 +76,76 @@ def get_updates():
                 'category': 'preventOrFixIssue'
             }]), 200
         
-        # Connect to the database and fetch updates
+        # Get connection and table name for tenant-specific operations
+        conn, table_name = get_tenant_table_connection(tenant_dict['id'], 'updates', 'm365')
+        if not conn or not table_name:
+            print(f"Failed to get table connection for tenant: {tenant_dict['name']} (ID: {tenant_id})")
+            return jsonify([{
+                'id': 'db-init',
+                'title': 'No updates database found',
+                'description': f'No updates database found for this tenant. Click "Fetch Updates" to retrieve data from Microsoft Graph API.',
+                'tenantId': tenant_id,
+                'tenantName': 'System Message',
+                'publishedDate': '2023-01-01T00:00:00Z',
+                'actionType': 'Action Required',
+                'category': 'preventOrFixIssue'
+            }]), 200
+        
+        # Connect to the Azure SQL database and fetch updates
         try:
-            conn = sqlite3.connect(tenant_db_path)
-            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            # Check which table to use
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
-            table_result = cursor.fetchone()
+            # Check if the updates table exists
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_NAME = '{table_name}'
+            """)
+            table_exists = cursor.fetchone()[0] > 0
             
-            if not table_result:
-                print(f"No updates or announcements table found in database: {tenant_db_path}")
-                return jsonify([])  # Return empty array if table doesn't exist
-                
-            table_name = table_result[0]  # Access by index instead of key
-            print(f"Found table: {table_name} in database: {tenant_db_path}")
+            if not table_exists:
+                print(f"Updates table {table_name} does not exist for tenant: {tenant_dict['name']}")
+                conn.close()
+                return jsonify([{
+                    'id': 'db-init',
+                    'title': 'No updates database found',
+                    'description': f'No updates database found for this tenant. Click "Fetch Updates" to retrieve data from Microsoft Graph API.',
+                    'tenantId': tenant_id,
+                    'tenantName': 'System Message',
+                    'publishedDate': '2023-01-01T00:00:00Z',
+                    'actionType': 'Action Required',
+                    'category': 'preventOrFixIssue'
+                }]), 200
             
-            # Adapt query based on which table exists - without any LIMIT
-            if table_name == 'updates':
-                cursor.execute("""
-                    SELECT 
-                        id,
-                        title,
-                        category,
-                        severity,
-                        lastModifiedDateTime as publishedDate,
-                        isMajorChange as actionType,
-                        bodyContent as description
-                    FROM updates
-                    ORDER BY lastModifiedDateTime DESC
-                """)
-            else:  # announcements
-                cursor.execute("""
-                    SELECT 
-                        id,
-                        title,
-                        category,
-                        severity,
-                        lastModifiedDateTime as publishedDate,
-                        isMajorChange as actionType,
-                        bodyContent as description
-                    FROM announcements
-                    ORDER BY lastModifiedDateTime DESC
-                """)
+            print(f"Found updates table: {table_name} for tenant: {tenant_dict['name']}")
+            
+            # Query the updates table
+            cursor.execute(f"""
+                SELECT 
+                    id,
+                    title,
+                    category,
+                    severity,
+                    lastModifiedDateTime as publishedDate,
+                    isMajorChange as actionType,
+                    bodyContent as description
+                FROM {table_name}
+                ORDER BY lastModifiedDateTime DESC
+            """)
             
             updates = []
-            for row in cursor.fetchall():
-                # Convert SQLite row to dictionary properly
+            rows = cursor.fetchall()
+            print(f"Found {len(rows)} updates in table {table_name}")
+            
+            for row in rows:
+                # Convert to dictionary
                 update = {
-                    'id': row['id'],
-                    'title': row['title'],
-                    'category': row['category'],
-                    'severity': row['severity'],
-                    'publishedDate': row['publishedDate'],
-                    'actionType': row['actionType'],
-                    'description': row['description']
+                    'id': row[0],
+                    'title': row[1],
+                    'category': row[2],
+                    'severity': row[3],
+                    'publishedDate': row[4],
+                    'actionType': row[5],
+                    'description': row[6]
                 }
                 
                 # Map action type
@@ -141,9 +157,9 @@ def get_updates():
                 else:
                     update['actionType'] = 'Informational'
                 
-                # Add tenant information using index access
-                update['tenantId'] = tenant[3]  # Access by index
-                update['tenantName'] = tenant[1]  # Access by index
+                # Add tenant information
+                update['tenantId'] = tenant_dict['id']
+                update['tenantName'] = tenant_dict['name']
                 
                 # Add a message ID if not present
                 if 'messageId' not in update:
@@ -152,11 +168,14 @@ def get_updates():
                 updates.append(update)
             
             conn.close()
+            print(f"Returning {len(updates)} updates for tenant: {tenant_dict['name']}")
             return jsonify(updates)
             
-        except sqlite3.Error as e:
-            error_msg = f"Database error reading from {tenant_db_path}: {str(e)}"
+        except Exception as e:
+            error_msg = f"Database error reading from {table_name}: {str(e)}"
             print(error_msg)
+            if conn:
+                conn.close()
             return jsonify([{
                 'id': 'db-error',
                 'title': 'Database error',
@@ -195,7 +214,9 @@ def trigger_fetch_updates():
     # Check if the tenant exists
     conn = get_db_connection()
     cursor = conn.cursor()
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
+    cursor.close()
     conn.close()
     
     if not tenant:
