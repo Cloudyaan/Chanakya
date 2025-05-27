@@ -1,6 +1,6 @@
+
 import feedparser
 import requests
-import sqlite3
 import sys
 import os
 import json
@@ -22,57 +22,72 @@ COMMON_HEADERS = {
 }
 
 def get_db_connection(tenant_id):
-    """Connect to the tenant's database"""
+    """Connect to the tenant's Azure SQL database"""
     # Add the backend directory to the Python path
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from app.database import find_tenant_database, get_db_connection
+    from app.database import get_db_connection, get_tenant_table_connection, ensure_tenant_tables_exist
     
     # First get connection to main database
     main_conn = get_db_connection()
     cursor = main_conn.cursor()
     
     # Find the tenant
-    tenant = cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,)).fetchone()
+    cursor.execute('SELECT * FROM tenants WHERE id = ?', (tenant_id,))
+    tenant = cursor.fetchone()
     main_conn.close()
     
     if not tenant:
         print(f"Error: No tenant found with ID {tenant_id}")
         sys.exit(1)
     
-    # Find the tenant database file
-    tenant_db_path = find_tenant_database(tenant['tenantId'])
+    # Convert pyodbc.Row to dictionary for easier access
+    tenant_dict = {
+        'id': tenant[0],
+        'name': tenant[1],
+        'tenantId': tenant[2],
+        'applicationId': tenant[3],
+        'applicationSecret': tenant[4],
+        'isActive': bool(tenant[5]),
+        'dateAdded': tenant[6]
+    }
     
-    if not tenant_db_path:
-        # Create a new database for the tenant if it doesn't exist
-        tenant_db_path = f"service_announcements_{tenant['tenantId']}.db"
-        print(f"Creating new database: {tenant_db_path}")
-    else:
-        print(f"Using existing database: {tenant_db_path}")
-    
-    # Connect to the tenant database
-    try:
-        conn = sqlite3.connect(tenant_db_path)
-        conn.row_factory = sqlite3.Row
-        return conn, tenant
-    except sqlite3.Error as e:
-        print(f"Database error: {str(e)}")
+    # Ensure tenant tables exist
+    table_exists = ensure_tenant_tables_exist(tenant_dict['id'], 'm365')
+    if not table_exists:
+        print(f"Failed to ensure tables exist for tenant: {tenant_dict['name']} (ID: {tenant_id})")
         sys.exit(1)
+    
+    # Get connection and table name for tenant-specific operations
+    conn, table_name = get_tenant_table_connection(tenant_dict['id'], 'news', 'm365')
+    if not conn or not table_name:
+        print(f"Failed to get table connection for tenant: {tenant_dict['name']} (ID: {tenant_id})")
+        sys.exit(1)
+    
+    return conn, table_name, tenant_dict
 
-def ensure_news_table(conn):
-    """Ensure the m365_news table exists in the database"""
+def ensure_news_table(conn, table_name):
+    """Ensure the m365_news table exists in the Azure SQL database"""
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS m365_news (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            published_date TEXT,
-            link TEXT,
-            summary TEXT,
-            categories TEXT,
-            fetch_date TEXT
-        )
-    """)
-    conn.commit()
+    try:
+        cursor.execute(f"""
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{table_name}')
+            BEGIN
+                CREATE TABLE {table_name} (
+                    id NVARCHAR(255) PRIMARY KEY,
+                    title NVARCHAR(MAX),
+                    published_date NVARCHAR(255),
+                    link NVARCHAR(MAX),
+                    summary NVARCHAR(MAX),
+                    categories NVARCHAR(MAX),
+                    fetch_date NVARCHAR(255)
+                )
+            END
+        """)
+        conn.commit()
+        print(f"Ensured news table {table_name} exists")
+    except Exception as e:
+        print(f"Error creating news table: {str(e)}")
+        raise
 
 def fetch_rss_feed(url):
     try:
@@ -178,14 +193,16 @@ def filter_recent_entries(entries, days=10):  # Changed to 10 days to match requ
     print(f"Found {len(recent_entries)} recent entries from the last {days} days")
     return recent_entries
 
-def store_news(conn, entries):
-    """Store news entries in the database"""
+def store_news(conn, table_name, entries):
+    """Store news entries in the Azure SQL database"""
     cursor = conn.cursor()
     stored_count = 0
     
     for entry in entries:
         # Check if we already have this entry
-        existing = cursor.execute('SELECT id FROM m365_news WHERE id = ?', (entry.get('id', ''),)).fetchone()
+        entry_id = entry.get('id', f'auto-{datetime.now().timestamp()}')
+        cursor.execute(f'SELECT id FROM {table_name} WHERE id = ?', (entry_id,))
+        existing = cursor.fetchone()
         
         if existing:
             continue  # Skip storing this entry as we already have it
@@ -202,12 +219,12 @@ def store_news(conn, entries):
             summary = entry.summary_detail.get('value', summary)
         
         try:
-            cursor.execute('''
-                INSERT INTO m365_news (
+            cursor.execute(f'''
+                INSERT INTO {table_name} (
                     id, title, published_date, link, summary, categories, fetch_date
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
-                entry.get('id', f'auto-{datetime.now().timestamp()}'),
+                entry_id,
                 entry.get('title', 'Untitled'),
                 published_date,
                 entry.get('link', ''),
@@ -216,7 +233,7 @@ def store_news(conn, entries):
                 datetime.now().isoformat()
             ))
             stored_count += 1
-        except sqlite3.Error as e:
+        except Exception as e:
             print(f"Error storing entry: {str(e)}")
             print(f"Entry data: {entry}")
     
@@ -233,13 +250,13 @@ def main():
     print(f"Fetching M365 news for tenant ID: {tenant_id}")
     
     # Get tenant database connection
-    conn, tenant = get_db_connection(tenant_id)
-    ensure_news_table(conn)
+    conn, table_name, tenant = get_db_connection(tenant_id)
+    ensure_news_table(conn, table_name)
     
-    # Add a test news entry for debugging if the database is empty
+    # Add test news entries if the database is empty (for debugging)
     cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) as count FROM m365_news')
-    count = cursor.fetchone()['count']
+    cursor.execute(f'SELECT COUNT(*) as count FROM {table_name}')
+    count = cursor.fetchone()[0]
     
     if count == 0:
         print("Adding some test news entries for debugging")
@@ -256,8 +273,8 @@ def main():
                 'fetch_date': datetime.now().isoformat()
             }
             
-            cursor.execute('''
-                INSERT INTO m365_news (
+            cursor.execute(f'''
+                INSERT INTO {table_name} (
                     id, title, published_date, link, summary, categories, fetch_date
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
@@ -297,12 +314,12 @@ def main():
     all_updates.sort(key=lambda x: safe_parse_date(x.get('published', '1970-01-01')), reverse=True)
     
     # Store the updates
-    stored_count = store_news(conn, all_updates)
+    stored_count = store_news(conn, table_name, all_updates)
     print(f"Stored {stored_count} new updates in the database")
     
     # Verify the data was stored
-    cursor.execute('SELECT COUNT(*) as count FROM m365_news')
-    total_count = cursor.fetchone()['count']
+    cursor.execute(f'SELECT COUNT(*) as count FROM {table_name}')
+    total_count = cursor.fetchone()[0]
     print(f"Total news items in database: {total_count}")
     
     conn.close()
