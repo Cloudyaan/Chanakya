@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
@@ -295,7 +296,6 @@ const Settings = () => {
                     />
                   ) : (
                     <TenantsList 
-                      tenants={tenants} 
                       onEdit={setEditingTenant} 
                       onDelete={handleDeleteTenant}
                     />
