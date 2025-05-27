@@ -19,17 +19,17 @@ def get_tenants():
     tenants = cursor.fetchall()
     conn.close()
     
-    # Convert pyodbc rows to dictionaries
+    # Convert pyodbc rows to dictionaries using column positions
     result = []
     for tenant in tenants:
         result.append({
-            'id': tenant.id,
-            'name': tenant.name,
-            'tenantId': tenant.tenantId,
-            'applicationId': tenant.applicationId,
-            'applicationSecret': tenant.applicationSecret,
-            'isActive': bool(tenant.isActive),
-            'dateAdded': tenant.dateAdded
+            'id': tenant[0],
+            'name': tenant[1],
+            'tenantId': tenant[2],
+            'applicationId': tenant[3],
+            'applicationSecret': tenant[4],
+            'isActive': bool(tenant[5]),
+            'dateAdded': tenant[6]
         })
     
     return jsonify(result)
@@ -120,7 +120,7 @@ def update_tenant(id):
     conn.close()
     
     # If tenant was not active before but is active now, fetch data
-    if current_tenant and not current_tenant.isActive and data['isActive']:
+    if current_tenant and not current_tenant[5] and data['isActive']:  # isActive is at index 5
         # Ensure dependencies are installed
         if check_dependencies():
             try:
@@ -153,7 +153,7 @@ def delete_tenant(id):
     
     if tenant:
         # Try to delete the tenant-specific databases if they exist
-        tenant_id = tenant.tenantId
+        tenant_id = tenant[2]  # tenantId is at index 2
         import glob
         patterns = [
             f"service_announcements_{tenant_id}.db",

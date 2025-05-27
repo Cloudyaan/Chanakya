@@ -36,8 +36,6 @@ class AzureSQLConfig:
         """Get a connection to Azure SQL Database."""
         try:
             conn = pyodbc.connect(self.get_connection_string())
-            # Enable row access by column name
-            conn.row_factory = pyodbc.Row
             return conn
         except Exception as e:
             print(f"Error connecting to Azure SQL Database: {e}")
