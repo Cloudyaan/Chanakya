@@ -67,7 +67,7 @@ class TenantTableManager:
         cursor = conn.cursor()
         
         try:
-            # Create updates table
+            # Create updates table with proper column sizes
             updates_table = self.get_table_name(tenant_name, "updates")
             cursor.execute(f"""
                 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{updates_table}' AND xtype='U')
@@ -78,7 +78,7 @@ class TenantTableManager:
                     severity NVARCHAR(50),
                     startDateTime NVARCHAR(100) DEFAULT '',
                     lastModifiedDateTime NVARCHAR(100) DEFAULT '',
-                    isMajorChange NVARCHAR(10),
+                    isMajorChange NVARCHAR(20),
                     actionRequiredByDateTime NVARCHAR(100) DEFAULT '',
                     services NVARCHAR(MAX) DEFAULT '',
                     hasAttachments BIT,
@@ -163,3 +163,37 @@ class TenantTableManager:
     def get_tenant_table_name(self, tenant_name: str, table_name: str, service_type: str = "m365") -> str:
         """Get the full table name for a tenant and table."""
         return self.get_table_name(tenant_name, table_name)
+    
+    def update_existing_table_column(self, tenant_name: str, table_type: str = "updates"):
+        """Update existing table column to fix the isMajorChange column size issue."""
+        conn = self.azure_config.get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            table_name = self.get_table_name(tenant_name, table_type)
+            
+            # Check if table exists
+            cursor.execute(f"""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+                WHERE TABLE_NAME = '{table_name}'
+            """)
+            table_exists = cursor.fetchone()[0] > 0
+            
+            if table_exists:
+                # Alter the column to increase its size
+                cursor.execute(f"""
+                    ALTER TABLE {table_name} 
+                    ALTER COLUMN isMajorChange NVARCHAR(20)
+                """)
+                conn.commit()
+                print(f"Successfully updated isMajorChange column for table: {table_name}")
+            else:
+                print(f"Table {table_name} does not exist, skipping column update")
+                
+        except Exception as e:
+            print(f"Error updating column for table {table_name}: {e}")
+            conn.rollback()
+            raise
+        finally:
+            cursor.close()
+            conn.close()
