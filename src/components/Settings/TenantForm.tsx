@@ -67,6 +67,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
   const [progressMessage, setProgressMessage] = React.useState('');
   const [showProgress, setShowProgress] = React.useState(false);
   const [isComplete, setIsComplete] = React.useState(false);
+  const isEditing = !!initialData;
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
@@ -208,10 +209,18 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 <FormItem>
                   <FormLabel>Tenant Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Contoso Corp" {...field} />
+                    <Input 
+                      placeholder="Contoso Corp" 
+                      {...field} 
+                      disabled={isEditing}
+                      className={isEditing ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
+                    />
                   </FormControl>
                   <FormDescription>
-                    A friendly name for this tenant (3-15 chars, alphanumeric with ., _, -)
+                    {isEditing 
+                      ? "Tenant name cannot be changed after creation"
+                      : "A friendly name for this tenant (3-15 chars, alphanumeric with ., _, -)"
+                    }
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -225,10 +234,18 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 <FormItem>
                   <FormLabel>Tenant ID</FormLabel>
                   <FormControl>
-                    <Input placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} />
+                    <Input 
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" 
+                      {...field} 
+                      disabled={isEditing}
+                      className={isEditing ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}
+                    />
                   </FormControl>
                   <FormDescription>
-                    The Microsoft 365 Tenant ID (Directory ID)
+                    {isEditing 
+                      ? "Tenant ID cannot be changed after creation"
+                      : "The Microsoft 365 Tenant ID (Directory ID)"
+                    }
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

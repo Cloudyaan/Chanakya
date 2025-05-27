@@ -82,6 +82,16 @@ def find_tenant_databases(tenant_id):
         cursor.close()
         conn.close()
 
+def get_tenant_database_path(tenant):
+    """Get the database path for a tenant (compatibility function).
+    
+    This function is for compatibility with legacy code that expects a database path.
+    Since we're using Azure SQL with table prefixes, we return a connection identifier.
+    """
+    # For Azure SQL, we don't have file paths, but we can return a connection identifier
+    # This is mainly for compatibility with existing code
+    return f"azure_sql_{tenant['name']}"
+
 def initialize_tenant_database(tenant, skip_service_announcements=False):
     """Create tenant-specific tables in the Azure SQL database."""
     tenant_name = tenant["name"]
