@@ -1,6 +1,5 @@
 
 from flask import request, jsonify
-import sqlite3
 import json
 import uuid
 from datetime import datetime
@@ -18,7 +17,6 @@ def get_notification_settings():
     tenant_id = request.args.get('tenantId')
     
     conn = get_db_connection()
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     try:
@@ -31,21 +29,59 @@ def get_notification_settings():
             settings = []
             for setting in all_settings:
                 try:
-                    tenants = json.loads(setting['tenants'])
+                    # Convert pyodbc.Row to dictionary
+                    setting_dict = {
+                        'id': setting[0],
+                        'name': setting[1],
+                        'email': setting[2],
+                        'tenants': setting[3],
+                        'update_types': setting[4],
+                        'frequency': setting[5],
+                        'created_at': setting[6],
+                        'updated_at': setting[7]
+                    }
+                    
+                    tenants = json.loads(setting_dict['tenants'])
                     if tenant_id in tenants:
-                        settings.append(dict(setting))
+                        # Parse JSON fields for the response
+                        setting_dict['tenants'] = tenants
+                        setting_dict['update_types'] = json.loads(setting_dict['update_types'])
+                        settings.append(setting_dict)
                 except (json.JSONDecodeError, TypeError):
                     continue
         else:
             # Get all settings
             cursor.execute('SELECT * FROM notification_settings')
-            settings = [dict(row) for row in cursor.fetchall()]
+            all_settings = cursor.fetchall()
+            
+            settings = []
+            for setting in all_settings:
+                setting_dict = {
+                    'id': setting[0],
+                    'name': setting[1],
+                    'email': setting[2],
+                    'tenants': setting[3],
+                    'update_types': setting[4],
+                    'frequency': setting[5],
+                    'created_at': setting[6],
+                    'updated_at': setting[7]
+                }
+                
+                # Parse JSON fields for the response
+                try:
+                    setting_dict['tenants'] = json.loads(setting_dict['tenants'])
+                    setting_dict['update_types'] = json.loads(setting_dict['update_types'])
+                    settings.append(setting_dict)
+                except (json.JSONDecodeError, TypeError):
+                    # Skip invalid entries
+                    continue
         
         return jsonify(settings)
     except Exception as e:
         print(f"Error retrieving notification settings: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
+        cursor.close()
         conn.close()
 
 @notification_bp.route('/notification-settings', methods=['POST'])
@@ -95,6 +131,7 @@ def add_notification_setting():
         print(f"Error adding notification setting: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
+        cursor.close()
         conn.close()
 
 @notification_bp.route('/notification-settings/<id>', methods=['PUT'])
@@ -156,6 +193,7 @@ def update_notification_setting(id):
         print(f"Error updating notification setting: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
+        cursor.close()
         conn.close()
 
 @notification_bp.route('/notification-settings/<id>', methods=['DELETE'])
@@ -177,6 +215,7 @@ def delete_notification_setting(id):
         print(f"Error deleting notification setting: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
+        cursor.close()
         conn.close()
 
 @notification_bp.route('/send-notification', methods=['POST'])

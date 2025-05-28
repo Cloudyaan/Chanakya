@@ -1,5 +1,4 @@
 
-import sqlite3
 import json
 import os
 import time
@@ -17,7 +16,6 @@ from .email_sender import send_email_with_ms_graph
 def process_and_send_notification(setting_id=None, use_existing_databases=False, check_period=True, force_exact_date=False):
     """Process notifications and send emails"""
     conn = get_db_connection()
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     # Get notification settings to process
@@ -29,6 +27,7 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
         cursor.execute('SELECT * FROM notification_settings')
         settings = cursor.fetchall()
     
+    cursor.close()
     conn.close()
     
     if not settings:
@@ -38,7 +37,17 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
     results = []
     
     for setting in settings:
-        setting_dict = dict(setting)
+        # Convert pyodbc.Row to dictionary
+        setting_dict = {
+            'id': setting[0],
+            'name': setting[1],
+            'email': setting[2],
+            'tenants': setting[3],
+            'update_types': setting[4],
+            'frequency': setting[5],
+            'created_at': setting[6],
+            'updated_at': setting[7]
+        }
         
         # Parse JSON fields
         try:
