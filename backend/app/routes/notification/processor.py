@@ -136,32 +136,6 @@ def process_and_send_notification(setting_id=None, use_existing_databases=False,
     
     return {"success": True, "results": results}
 
-@notification_bp.route('/send-notification', methods=['POST'])
-def send_notification():
-    """Send a notification immediately"""
-    data = request.json or {}
-    setting_id = data.get('id')
-    use_existing_databases = data.get('useExistingDatabases', False)
-    check_period = data.get('checkPeriod', False)
-    force_exact_date = data.get('forceExactDateFilter', False)
-    
-    if not setting_id:
-        return jsonify({"error": "No notification setting ID provided"}), 400
-    
-    # Print the notification settings
-    conn = get_db_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM notification_settings WHERE id = ?', (setting_id,))
-    setting = cursor.fetchone()
-    conn.close()
-    
-    if setting:
-        print(f"Processing notification: {dict(setting)}")
-    
-    result = process_and_send_notification(setting_id, use_existing_databases, check_period, force_exact_date)
-    return jsonify(result)
-
 # Start the notification scheduler thread
 def run_notification_scheduler():
     # ... keep existing code (notification scheduler thread) the same
