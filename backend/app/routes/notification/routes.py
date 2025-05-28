@@ -12,7 +12,7 @@ from .db_helpers import init_notification_table
 # Initialize the notification table
 init_notification_table()
 
-@notification_bp.route('/api/notification-settings', methods=['GET'])
+@notification_bp.route('/notification-settings', methods=['GET'])
 def get_notification_settings():
     """Get all notification settings or filter by tenant ID"""
     tenant_id = request.args.get('tenantId')
@@ -48,7 +48,7 @@ def get_notification_settings():
     finally:
         conn.close()
 
-@notification_bp.route('/api/notification-settings', methods=['POST'])
+@notification_bp.route('/notification-settings', methods=['POST'])
 def add_notification_setting():
     """Add a new notification setting"""
     data = request.json
@@ -97,7 +97,7 @@ def add_notification_setting():
     finally:
         conn.close()
 
-@notification_bp.route('/api/notification-settings/<id>', methods=['PUT'])
+@notification_bp.route('/notification-settings/<id>', methods=['PUT'])
 def update_notification_setting(id):
     """Update an existing notification setting"""
     data = request.json
@@ -158,7 +158,7 @@ def update_notification_setting(id):
     finally:
         conn.close()
 
-@notification_bp.route('/api/notification-settings/<id>', methods=['DELETE'])
+@notification_bp.route('/notification-settings/<id>', methods=['DELETE'])
 def delete_notification_setting(id):
     """Delete a notification setting"""
     conn = get_db_connection()
@@ -179,7 +179,7 @@ def delete_notification_setting(id):
     finally:
         conn.close()
 
-@notification_bp.route('/api/send-notification', methods=['POST'])
+@notification_bp.route('/send-notification', methods=['POST'])
 def send_notification():
     """Send a notification immediately with proper settings verification"""
     data = request.json
