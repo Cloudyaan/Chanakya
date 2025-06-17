@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -55,31 +54,30 @@ const Updates = () => {
   } = useM365News(selectedTenant);
 
   // Manual refresh handlers that only refresh from database
-  const handleManualMessageCenterRefresh = async () => {
+  const handleManualMessageCenterRefresh = async (): Promise<void> => {
     toast({
       title: "Refreshing Message Center Updates",
       description: "Loading latest data from database",
     });
-    return refreshMessageCenterFromDB();
+    await refreshMessageCenterFromDB();
   };
   
-  const handleManualWindowsRefresh = async () => {
+  const handleManualWindowsRefresh = async (): Promise<void> => {
     toast({
       title: "Refreshing Windows Updates", 
       description: "Loading latest data from database",
     });
     if (selectedTenant) {
-      return refreshWindowsUpdates(selectedTenant);
+      await refreshWindowsUpdates(selectedTenant);
     }
-    return Promise.resolve();
   };
   
-  const handleManualNewsRefresh = async () => {
+  const handleManualNewsRefresh = async (): Promise<void> => {
     toast({
       title: "Refreshing Microsoft 365 News",
       description: "Loading latest news from database",
     });
-    return refreshNews();
+    await refreshNews();
   };
 
   // Debug logging
