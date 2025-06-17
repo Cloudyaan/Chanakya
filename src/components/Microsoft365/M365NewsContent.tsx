@@ -32,18 +32,28 @@ const M365NewsContent = ({
   isFetching,
   onFetch
 }: M365NewsContentProps) => {
-  // Enhanced logging for debugging
-  console.log('M365NewsContent render - props:', {
+  // Enhanced logging for debugging - log every render
+  console.log('M365NewsContent RENDER - comprehensive props debug:', {
     isLoading,
-    newsItemsCount: newsItems?.length || 0,
     isFetching,
-    newsItemsSample: newsItems?.slice(0, 3).map(item => ({
-      id: item.id,
-      title: item.title,
-      published_date: item.published_date,
-      tenantId: item.tenantId
-    }))
+    newsItems,
+    newsItemsType: typeof newsItems,
+    newsItemsIsArray: Array.isArray(newsItems),
+    newsItemsLength: newsItems?.length,
+    newsItemsConstructor: newsItems?.constructor?.name,
+    onFetch: typeof onFetch,
+    propsReceived: { isLoading, newsItems, isFetching, onFetch }
   });
+
+  // Additional validation
+  if (newsItems !== undefined && newsItems !== null) {
+    console.log('M365NewsContent - newsItems validation:', {
+      value: newsItems,
+      stringified: JSON.stringify(newsItems),
+      hasLength: 'length' in newsItems,
+      actualLength: newsItems.length
+    });
+  }
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
@@ -74,7 +84,29 @@ const M365NewsContent = ({
     );
   }
 
-  // Enhanced debugging for empty state
+  // Enhanced debugging for data type issues
+  if (newsItems === undefined) {
+    console.error('M365NewsContent: newsItems is undefined');
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-red-500">Error: newsItems is undefined</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (newsItems === null) {
+    console.error('M365NewsContent: newsItems is null');
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-red-500">Error: newsItems is null</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!Array.isArray(newsItems)) {
     console.error('M365NewsContent: newsItems is not an array:', typeof newsItems, newsItems);
     return (
@@ -129,6 +161,7 @@ const M365NewsContent = ({
             <p>• isLoading: {String(isLoading)}</p>
             <p>• isFetching: {String(isFetching)}</p>
             <p>• newsItems: {Array.isArray(newsItems) ? `Array(${newsItems.length})` : typeof newsItems}</p>
+            <p>• newsItems value: {JSON.stringify(newsItems)}</p>
           </div>
         </CardContent>
       </Card>
@@ -142,7 +175,15 @@ const M365NewsContent = ({
     return dateB - dateA;
   });
 
-  console.log('M365NewsContent: Rendering news items:', sortedNews.length);
+  console.log('M365NewsContent: Rendering news items:', {
+    originalCount: newsItems.length,
+    sortedCount: sortedNews.length,
+    sampleItems: sortedNews.slice(0, 2).map(item => ({
+      id: item.id,
+      title: item.title,
+      published_date: item.published_date
+    }))
+  });
 
   return (
     <Card>

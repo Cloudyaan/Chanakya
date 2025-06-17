@@ -11,51 +11,80 @@ export const useM365News = (tenantId: string | null) => {
 
   // Enhanced logging for debugging
   useEffect(() => {
-    console.log("useM365News hook - tenantId:", tenantId);
+    console.log("useM365News hook - tenantId changed:", tenantId);
   }, [tenantId]);
 
-  // React Query for M365 news with retry and stale time config
+  // React Query for M365 news with enhanced configuration
   const {
-    data: newsItems = [],
+    data: rawNewsItems = [],
     isLoading,
     refetch: refreshData,
-    error
+    error,
+    isSuccess,
+    isError
   } = useQuery<M365News[]>({
     queryKey: ['m365-news', tenantId],
     queryFn: async () => {
-      console.log("useM365News queryFn - fetching for tenantId:", tenantId);
+      console.log("useM365News queryFn - executing for tenantId:", tenantId);
       if (!tenantId) {
         console.log("useM365News queryFn - no tenantId, returning empty array");
         return [];
       }
-      const result = await getM365News(tenantId);
-      console.log("useM365News queryFn - received result:", result?.length || 0, "items");
-      return result;
+      
+      try {
+        const result = await getM365News(tenantId);
+        console.log("useM365News queryFn - raw result:", result);
+        console.log("useM365News queryFn - result type:", typeof result, Array.isArray(result));
+        console.log("useM365News queryFn - result length:", result?.length || 0);
+        
+        // Ensure we return an array
+        if (!Array.isArray(result)) {
+          console.error("useM365News queryFn - result is not an array:", result);
+          return [];
+        }
+        
+        return result;
+      } catch (error) {
+        console.error("useM365News queryFn - error fetching news:", error);
+        throw error; // Let React Query handle the error
+      }
     },
     enabled: !!tenantId,
     staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnMount: false,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    refetchOnMount: true, // Changed to true to ensure fresh data
+    refetchOnWindowFocus: false, // Disable window focus refetch
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
-  // Console log for debugging
+  // Enhanced debugging for query states
   useEffect(() => {
-    console.log("useM365News hook - received news items:", newsItems?.length || 0);
-    console.log("useM365News hook - isLoading:", isLoading);
-    console.log("useM365News hook - tenantId:", tenantId);
-    if (error) {
-      console.error("Error fetching M365 news:", error);
+    console.log("useM365News hook - query states:", {
+      isLoading,
+      isSuccess,
+      isError,
+      error,
+      tenantId,
+      rawNewsItemsCount: rawNewsItems?.length || 0,
+      rawNewsItemsType: typeof rawNewsItems,
+      isArray: Array.isArray(rawNewsItems)
+    });
+    
+    if (isError) {
+      console.error("useM365News hook - query error:", error);
     }
-    if (newsItems && newsItems.length > 0) {
-      console.log("useM365News hook - sample items:", newsItems.slice(0, 2).map(item => ({
-        id: item.id,
-        title: item.title,
-        published_date: item.published_date,
-        tenantId: item.tenantId
-      })));
+    
+    if (isSuccess && rawNewsItems) {
+      console.log("useM365News hook - query success, raw data sample:", 
+        rawNewsItems.slice(0, 2).map(item => ({
+          id: item?.id,
+          title: item?.title,
+          published_date: item?.published_date,
+          tenantId: item?.tenantId
+        }))
+      );
     }
-  }, [newsItems, error, isLoading, tenantId]);
+  }, [isLoading, isSuccess, isError, error, tenantId, rawNewsItems]);
 
   // Parse date with multiple fallback methods
   const parsePublishedDate = (dateStr: string): Date | null => {
@@ -100,44 +129,63 @@ export const useM365News = (tenantId: string | null) => {
     }
   };
 
-  // Filter to get only items from the last 30 days with robust date parsing
-  const recentNewsItems = newsItems?.filter(item => {
-    if (!item || !item.published_date) {
-      console.warn('News item without published_date:', item?.title || 'unknown');
-      return false;
+  // Process and filter news items
+  const newsItems = (() => {
+    console.log("useM365News - processing news items, rawNewsItems:", rawNewsItems);
+    
+    if (!Array.isArray(rawNewsItems)) {
+      console.error("useM365News - rawNewsItems is not an array:", typeof rawNewsItems, rawNewsItems);
+      return [];
     }
     
-    const publishedDate = parsePublishedDate(item.published_date);
-    
-    if (!publishedDate) {
-      console.warn(`Failed to parse date for item: ${item.title}, date: ${item.published_date}`);
-      return false;
+    if (rawNewsItems.length === 0) {
+      console.log("useM365News - rawNewsItems is empty array");
+      return [];
     }
     
-    // Check if the date is within the last 30 days
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Filter to get only items from the last 30 days
+    const recentNewsItems = rawNewsItems.filter(item => {
+      if (!item || !item.published_date) {
+        console.warn('News item without published_date:', item?.title || 'unknown');
+        return false;
+      }
+      
+      const publishedDate = parsePublishedDate(item.published_date);
+      
+      if (!publishedDate) {
+        console.warn(`Failed to parse date for item: ${item.title}, date: ${item.published_date}`);
+        return false;
+      }
+      
+      // Check if the date is within the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const isRecent = publishedDate >= thirtyDaysAgo;
+      if (!isRecent) {
+        console.log(`Filtering out old item: ${item.title}, published: ${publishedDate.toISOString()}`);
+      }
+      
+      return isRecent;
+    });
     
-    const isRecent = publishedDate >= thirtyDaysAgo;
-    if (!isRecent) {
-      console.log(`Filtering out old item: ${item.title}, published: ${publishedDate.toISOString()}`);
-    }
-    
-    return isRecent;
-  }) || [];
+    console.log(`useM365News - filtered ${rawNewsItems.length} total items to ${recentNewsItems.length} recent items`);
+    return recentNewsItems;
+  })();
 
-  // Console log the filtering results
+  // Debug the final result
   useEffect(() => {
-    console.log(`useM365News - filtered ${newsItems?.length || 0} total items to ${recentNewsItems.length} recent items`);
-    if (recentNewsItems.length > 0) {
-      console.log('useM365News - recent news items sample:', recentNewsItems.slice(0, 3).map(item => ({
-        title: item.title,
-        published_date: item.published_date,
-        parsed_date: parsePublishedDate(item.published_date)?.toISOString(),
-        tenantId: item.tenantId
-      })));
-    }
-  }, [newsItems, recentNewsItems]);
+    console.log('useM365News - final newsItems:', {
+      count: newsItems.length,
+      isArray: Array.isArray(newsItems),
+      sample: newsItems.slice(0, 3).map(item => ({
+        title: item?.title,
+        published_date: item?.published_date,
+        parsed_date: parsePublishedDate(item?.published_date || '')?.toISOString(),
+        tenantId: item?.tenantId
+      }))
+    });
+  }, [newsItems]);
 
   // Fetch M365 news from the backend
   const handleFetchM365News = async () => {
@@ -174,7 +222,7 @@ export const useM365News = (tenantId: string | null) => {
   };
 
   return {
-    newsItems: recentNewsItems,
+    newsItems,
     isLoading,
     isFetching,
     handleFetchM365News,
