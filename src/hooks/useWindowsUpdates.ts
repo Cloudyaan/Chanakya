@@ -6,17 +6,11 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useWindowsUpdates = (tenantId: string | null) => {
   const [windowsUpdates, setWindowsUpdates] = useState<WindowsUpdate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
 
-  // Load Windows updates on initial mount or tenantId change, but don't show loading toast
-  useEffect(() => {
-    if (tenantId) {
-      loadWindowsUpdates(tenantId, false);
-    }
-  }, [tenantId]);
-
+  // Manual load function - only called when explicitly requested
   const loadWindowsUpdates = async (tenantId: string, showToast = true) => {
     if (!tenantId) return;
     
