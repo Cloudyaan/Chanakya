@@ -14,7 +14,7 @@ export const useM365News = (tenantId: string | null) => {
     console.log("useM365News hook - tenantId changed:", tenantId);
   }, [tenantId]);
 
-  // React Query for M365 news with NO automatic fetching
+  // React Query for M365 news with enhanced configuration
   const {
     data: rawNewsItems = [],
     isLoading,
@@ -50,12 +50,10 @@ export const useM365News = (tenantId: string | null) => {
         return [];
       }
     },
-    enabled: false, // Disable automatic fetching
-    staleTime: Infinity, // Never consider data stale
-    refetchOnMount: false, // Don't fetch when component mounts
-    refetchOnWindowFocus: false, // Don't fetch when window gains focus
-    refetchOnReconnect: false, // Don't fetch when network reconnects
-    refetchInterval: false, // Disable automatic refetching
+    enabled: !!tenantId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     retry: 1,
     retryDelay: 2000,
   });
@@ -197,17 +195,6 @@ export const useM365News = (tenantId: string | null) => {
     });
   }, [newsItems]);
 
-  // Manual refresh function - only refreshes data from database
-  const handleRefreshData = async () => {
-    if (!tenantId) {
-      console.log('handleRefreshData - no tenantId provided');
-      return;
-    }
-
-    console.log('handleRefreshData - refreshing data for tenantId:', tenantId);
-    await refreshData();
-  };
-
   // Fetch M365 news from the backend
   const handleFetchM365News = async () => {
     if (!tenantId) {
@@ -247,7 +234,7 @@ export const useM365News = (tenantId: string | null) => {
     isLoading,
     isFetching,
     handleFetchM365News,
-    refreshData: handleRefreshData,
+    refreshData,
     error
   };
 };
