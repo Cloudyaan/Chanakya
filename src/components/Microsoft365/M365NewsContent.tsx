@@ -32,8 +32,18 @@ const M365NewsContent = ({
   isFetching,
   onFetch
 }: M365NewsContentProps) => {
-  // Log the news items for debugging
-  console.log('M365NewsContent received news items:', newsItems.length, 'items');
+  // Enhanced logging for debugging
+  console.log('M365NewsContent render - props:', {
+    isLoading,
+    newsItemsCount: newsItems?.length || 0,
+    isFetching,
+    newsItemsSample: newsItems?.slice(0, 3).map(item => ({
+      id: item.id,
+      title: item.title,
+      published_date: item.published_date,
+      tenantId: item.tenantId
+    }))
+  });
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
@@ -56,6 +66,7 @@ const M365NewsContent = ({
   };
   
   if (isLoading) {
+    console.log('M365NewsContent: Showing loading state');
     return (
       <div className="w-full h-48 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
@@ -63,7 +74,23 @@ const M365NewsContent = ({
     );
   }
 
-  if (!Array.isArray(newsItems) || newsItems.length === 0) {
+  // Enhanced debugging for empty state
+  if (!Array.isArray(newsItems)) {
+    console.error('M365NewsContent: newsItems is not an array:', typeof newsItems, newsItems);
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-red-500">Error: News items data is invalid (not an array)</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Received: {typeof newsItems} - {JSON.stringify(newsItems)}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (newsItems.length === 0) {
+    console.log('M365NewsContent: Showing empty state - no news items found');
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -97,6 +124,12 @@ const M365NewsContent = ({
             <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
             {isFetching ? 'Fetching News...' : 'Fetch Microsoft 365 News'}
           </Button>
+          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+            <p>Debug Info:</p>
+            <p>• isLoading: {String(isLoading)}</p>
+            <p>• isFetching: {String(isFetching)}</p>
+            <p>• newsItems: {Array.isArray(newsItems) ? `Array(${newsItems.length})` : typeof newsItems}</p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -108,6 +141,8 @@ const M365NewsContent = ({
     const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
     return dateB - dateA;
   });
+
+  console.log('M365NewsContent: Rendering news items:', sortedNews.length);
 
   return (
     <Card>
@@ -149,6 +184,11 @@ const M365NewsContent = ({
                   <span className="text-xs text-gray-400">
                     ({item.published_date})
                   </span>
+                  {item.tenantId && (
+                    <span className="text-xs text-blue-400">
+                      Tenant: {item.tenantId}
+                    </span>
+                  )}
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">

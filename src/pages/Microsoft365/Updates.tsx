@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -12,7 +13,6 @@ import { useUpdates } from '@/hooks/useUpdates';
 import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 import { useM365News } from '@/hooks/useM365News';
 import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
-import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useToast } from '@/hooks/use-toast';
 
 const Updates = () => {
@@ -27,6 +27,7 @@ const Updates = () => {
   const [isWindowsDialogOpen, setIsWindowsDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  // Always call hooks unconditionally - pass selectedTenant even if null
   const {
     regularUpdates,
     systemMessages,
@@ -81,30 +82,13 @@ const Updates = () => {
     return refreshNews();
   };
 
-  // Auto-refresh with longer intervals and database-only refresh
-  const [messageCenterLastRefresh, refreshMessageCenterManually] = useAutoRefresh(
-    handleManualMessageCenterRefresh, 
-    300, // 5 hours instead of 1 hour 
-    !!selectedTenant, 
-    0, 
-    `message-center-last-refresh-${selectedTenant}`
-  );
-  
-  const [windowsLastRefresh, refreshWindowsManually] = useAutoRefresh(
-    handleManualWindowsRefresh, 
-    300, // 5 hours instead of 1 hour
-    !!selectedTenant, 
-    10, 
-    `windows-updates-last-refresh-${selectedTenant}`
-  );
-  
-  const [newsLastRefresh, refreshNewsManually] = useAutoRefresh(
-    handleManualNewsRefresh, 
-    300, // 5 hours instead of 1 hour
-    !!selectedTenant, 
-    20, 
-    `m365-news-last-refresh-${selectedTenant}`
-  );
+  // Debug logging
+  useEffect(() => {
+    console.log('Updates component - selectedTenant:', selectedTenant);
+    console.log('Updates component - newsItems:', newsItems?.length || 0);
+    console.log('Updates component - newsIsLoading:', newsIsLoading);
+    console.log('Updates component - newsIsFetching:', newsIsFetching);
+  }, [selectedTenant, newsItems, newsIsLoading, newsIsFetching]);
 
   useEffect(() => {
     if (!tenantsLoading && tenants.length > 0) {
@@ -210,23 +194,23 @@ const Updates = () => {
               messageCenterIsFetching={messageIsFetching}
               onFetchMessageCenter={fetchUpdateData}
               onUpdateClick={handleUpdateClick}
-              messageCenterLastRefresh={messageCenterLastRefresh}
-              onRefreshMessageCenter={refreshMessageCenterManually}
+              messageCenterLastRefresh={null}
+              onRefreshMessageCenter={handleManualMessageCenterRefresh}
               
               windowsUpdates={windowsUpdates}
               windowsIsLoading={windowsIsLoading}
               windowsIsFetching={windowsIsFetching}
               onFetchWindows={handleFetchWindowsUpdates}
               onWindowsUpdateClick={handleWindowsUpdateClick}
-              windowsLastRefresh={windowsLastRefresh}
-              onRefreshWindows={refreshWindowsManually}
+              windowsLastRefresh={null}
+              onRefreshWindows={handleManualWindowsRefresh}
               
               newsItems={newsItems}
               newsIsLoading={newsIsLoading}
               newsIsFetching={newsIsFetching}
               onFetchNews={handleFetchM365News}
-              newsLastRefresh={newsLastRefresh}
-              onRefreshNews={refreshNewsManually}
+              newsLastRefresh={null}
+              onRefreshNews={handleManualNewsRefresh}
             />
 
             <UpdateDetailsDialog 
