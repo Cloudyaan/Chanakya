@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -44,6 +43,10 @@ const tenantFormSchema = z.object({
   }),
   isActive: z.boolean().default(true),
   dateAdded: z.string().optional(),
+  autoFetchEnabled: z.boolean().default(false),
+  messageCenterInterval: z.number().min(1).max(168).default(24), // 1 hour to 7 days
+  windowsUpdatesInterval: z.number().min(1).max(168).default(24),
+  newsInterval: z.number().min(1).max(168).default(24),
 });
 
 type TenantFormValues = z.infer<typeof tenantFormSchema>;
@@ -77,6 +80,10 @@ const TenantForm: React.FC<TenantFormProps> = ({
       applicationId: '',
       applicationSecret: '',
       isActive: true,
+      autoFetchEnabled: false,
+      messageCenterInterval: 24,
+      windowsUpdatesInterval: 24,
+      newsInterval: 24,
     },
   });
 
@@ -167,6 +174,10 @@ const TenantForm: React.FC<TenantFormProps> = ({
         applicationSecret: values.applicationSecret,
         isActive: values.isActive,
         dateAdded: values.dateAdded || initialData?.dateAdded || new Date().toISOString(),
+        autoFetchEnabled: values.autoFetchEnabled,
+        messageCenterInterval: values.messageCenterInterval,
+        windowsUpdatesInterval: values.windowsUpdatesInterval,
+        newsInterval: values.newsInterval,
       };
       
       console.log("Final tenant data being submitted:", finalValues);
@@ -310,6 +321,108 @@ const TenantForm: React.FC<TenantFormProps> = ({
               </FormItem>
             )}
           />
+
+          {/* New Auto-Fetch Configuration Section */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <div>
+              <h3 className="text-lg font-medium">Auto-Fetch Configuration</h3>
+              <p className="text-sm text-gray-500">Configure automatic data fetching intervals</p>
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="autoFetchEnabled"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Enable Auto-Fetch</FormLabel>
+                    <FormDescription>
+                      Automatically fetch updates based on configured intervals
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {form.watch('autoFetchEnabled') && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="messageCenterInterval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Message Center (hours)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="168" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Fetch interval (1-168 hours)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="windowsUpdatesInterval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Windows Updates (hours)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="168" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Fetch interval (1-168 hours)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="newsInterval"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>News Updates (hours)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          max="168" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Fetch interval (1-168 hours)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+          </div>
           
           <div className="flex justify-end gap-2">
             <Button

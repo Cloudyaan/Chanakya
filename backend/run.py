@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from app.database import init_db
 from app.dependencies import check_dependencies
 from app import create_app
+from scheduler_service import scheduler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -69,5 +70,13 @@ print(f"From Email: {os.environ.get('MS_FROM_EMAIL')}")
 print(f"Client Secret configured: {'Yes' if os.environ.get('MS_CLIENT_SECRET') else 'No'}")
 
 if __name__ == '__main__':
+    # Start the data fetch scheduler
+    print("Starting tenant data scheduler...")
+    scheduler.start()
+    
     app = create_app()
-    app.run(debug=True, port=5000)
+    try:
+        app.run(debug=True, port=5000)
+    finally:
+        # Stop the scheduler when the app shuts down
+        scheduler.stop()

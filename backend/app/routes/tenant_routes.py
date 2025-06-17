@@ -29,7 +29,12 @@ def get_tenants():
             'applicationId': tenant[3],
             'applicationSecret': tenant[4],
             'isActive': bool(tenant[5]),
-            'dateAdded': tenant[6]
+            'dateAdded': tenant[6],
+            # Add new scheduling fields with defaults if they don't exist
+            'autoFetchEnabled': bool(tenant[7]) if len(tenant) > 7 and tenant[7] is not None else False,
+            'messageCenterInterval': tenant[8] if len(tenant) > 8 and tenant[8] is not None else 24,
+            'windowsUpdatesInterval': tenant[9] if len(tenant) > 9 and tenant[9] is not None else 24,
+            'newsInterval': tenant[10] if len(tenant) > 10 and tenant[10] is not None else 24,
         })
     
     return jsonify(result)
@@ -44,9 +49,21 @@ def add_tenant():
     
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # First, check if the new columns exist, if not add them
+    try:
+        cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
+    except:
+        # Add new columns for scheduling
+        cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN messageCenterInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN windowsUpdatesInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN newsInterval INT DEFAULT 24")
+        conn.commit()
+    
     cursor.execute('''
-    INSERT INTO tenants (id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tenants (id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded, autoFetchEnabled, messageCenterInterval, windowsUpdatesInterval, newsInterval)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         tenant_id,
         data['name'],
@@ -54,7 +71,11 @@ def add_tenant():
         data['applicationId'],
         data['applicationSecret'],
         1 if data['isActive'] else 0,
-        date_added
+        date_added,
+        1 if data.get('autoFetchEnabled', False) else 0,
+        data.get('messageCenterInterval', 24),
+        data.get('windowsUpdatesInterval', 24),
+        data.get('newsInterval', 24)
     ))
     
     conn.commit()
@@ -90,7 +111,11 @@ def add_tenant():
         'applicationId': data['applicationId'],
         'applicationSecret': data['applicationSecret'],
         'isActive': data['isActive'],
-        'dateAdded': date_added
+        'dateAdded': date_added,
+        'autoFetchEnabled': data.get('autoFetchEnabled', False),
+        'messageCenterInterval': data.get('messageCenterInterval', 24),
+        'windowsUpdatesInterval': data.get('windowsUpdatesInterval', 24),
+        'newsInterval': data.get('newsInterval', 24)
     })
 
 @tenant_bp.route('/tenants/<string:id>', methods=['PUT'])
@@ -103,9 +128,20 @@ def update_tenant(id):
     cursor.execute('SELECT * FROM tenants WHERE id = ?', (id,))
     current_tenant = cursor.fetchone()
     
+    # Check if new columns exist, if not add them
+    try:
+        cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
+    except:
+        # Add new columns for scheduling
+        cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN messageCenterInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN windowsUpdatesInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN newsInterval INT DEFAULT 24")
+        conn.commit()
+    
     cursor.execute('''
     UPDATE tenants
-    SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?
+    SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?, autoFetchEnabled = ?, messageCenterInterval = ?, windowsUpdatesInterval = ?, newsInterval = ?
     WHERE id = ?
     ''', (
         data['name'],
@@ -113,6 +149,10 @@ def update_tenant(id):
         data['applicationId'],
         data['applicationSecret'],
         1 if data['isActive'] else 0,
+        1 if data.get('autoFetchEnabled', False) else 0,
+        data.get('messageCenterInterval', 24),
+        data.get('windowsUpdatesInterval', 24),
+        data.get('newsInterval', 24),
         id
     ))
     
@@ -143,6 +183,7 @@ def update_tenant(id):
     
     return jsonify({'success': True})
 
+# ... keep existing code (delete_tenant route) the same
 @tenant_bp.route('/tenants/<string:id>', methods=['DELETE'])
 def delete_tenant(id):
     # First, get the tenant information we need before deletion
