@@ -252,7 +252,7 @@ const Settings = () => {
           className="mb-6"
         >
           <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-          <p className="text-m365-gray-500">Configure your Chanakya instance</p>
+          <p className="text-m365-gray-500">Configure your instance</p>
         </motion.div>
         
         {isLoading ? (
