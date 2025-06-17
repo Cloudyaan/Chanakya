@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { M365News } from '@/utils/types';
+import UpdatesLoading from './UpdatesLoading';
 import { 
   RefreshCw, 
   Newspaper, 
@@ -32,28 +33,14 @@ const M365NewsContent = ({
   isFetching,
   onFetch
 }: M365NewsContentProps) => {
-  // Enhanced logging for debugging - log every render
-  console.log('M365NewsContent RENDER - comprehensive props debug:', {
+  // Enhanced logging for debugging
+  console.log('M365NewsContent RENDER - props:', {
     isLoading,
     isFetching,
-    newsItems,
-    newsItemsType: typeof newsItems,
-    newsItemsIsArray: Array.isArray(newsItems),
     newsItemsLength: newsItems?.length,
-    newsItemsConstructor: newsItems?.constructor?.name,
-    onFetch: typeof onFetch,
-    propsReceived: { isLoading, newsItems, isFetching, onFetch }
+    newsItemsType: typeof newsItems,
+    newsItemsIsArray: Array.isArray(newsItems)
   });
-
-  // Additional validation
-  if (newsItems !== undefined && newsItems !== null) {
-    console.log('M365NewsContent - newsItems validation:', {
-      value: newsItems,
-      stringified: JSON.stringify(newsItems),
-      hasLength: 'length' in newsItems,
-      actualLength: newsItems.length
-    });
-  }
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
@@ -77,51 +64,10 @@ const M365NewsContent = ({
   
   if (isLoading) {
     console.log('M365NewsContent: Showing loading state');
-    return (
-      <div className="w-full h-48 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
-      </div>
-    );
+    return <UpdatesLoading />;
   }
 
-  // Enhanced debugging for data type issues
-  if (newsItems === undefined) {
-    console.error('M365NewsContent: newsItems is undefined');
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-500">Error: newsItems is undefined</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (newsItems === null) {
-    console.error('M365NewsContent: newsItems is null');
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-500">Error: newsItems is null</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!Array.isArray(newsItems)) {
-    console.error('M365NewsContent: newsItems is not an array:', typeof newsItems, newsItems);
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-500">Error: News items data is invalid (not an array)</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Received: {typeof newsItems} - {JSON.stringify(newsItems)}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (newsItems.length === 0) {
+  if (!Array.isArray(newsItems) || newsItems.length === 0) {
     console.log('M365NewsContent: Showing empty state - no news items found');
     return (
       <Card>
@@ -138,23 +84,23 @@ const M365NewsContent = ({
             className="flex items-center gap-1"
           >
             <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-            {isFetching ? 'Refreshing...' : 'Refresh'}
+            {isFetching ? 'Fetching...' : 'Refresh'}
           </Button>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
           <Newspaper className="h-12 w-12 text-yellow-500 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No Recent Microsoft 365 News</h3>
+          <h3 className="text-xl font-medium mb-2">No Microsoft 365 News Available</h3>
           <p className="text-muted-foreground mb-4 max-w-md">
-            There are no recent Microsoft 365 news updates in the database (last 30 days). 
-            The refresh button pulls data from the database. Use the external fetch if you need to get new data from Microsoft.
+            There are no Microsoft 365 news items available in the database. Click the button below to fetch news from Microsoft.
           </p>
-          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-            <p>Debug Info:</p>
-            <p>• isLoading: {String(isLoading)}</p>
-            <p>• isFetching: {String(isFetching)}</p>
-            <p>• newsItems: {Array.isArray(newsItems) ? `Array(${newsItems.length})` : typeof newsItems}</p>
-            <p>• newsItems value: {JSON.stringify(newsItems)}</p>
-          </div>
+          <Button 
+            onClick={onFetch} 
+            disabled={isFetching}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+            {isFetching ? 'Fetching News...' : 'Fetch Microsoft 365 News'}
+          </Button>
         </CardContent>
       </Card>
     );
@@ -169,12 +115,7 @@ const M365NewsContent = ({
 
   console.log('M365NewsContent: Rendering news items:', {
     originalCount: newsItems.length,
-    sortedCount: sortedNews.length,
-    sampleItems: sortedNews.slice(0, 2).map(item => ({
-      id: item.id,
-      title: item.title,
-      published_date: item.published_date
-    }))
+    sortedCount: sortedNews.length
   });
 
   return (
@@ -182,9 +123,7 @@ const M365NewsContent = ({
       <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Microsoft 365 News</CardTitle>
-          <CardDescription>
-            Recent Microsoft 365 news and updates (last 30 days) - {sortedNews.length} items found
-          </CardDescription>
+          <CardDescription>Recent Microsoft 365 news and updates</CardDescription>
         </div>
         <Button 
           variant="outline" 
@@ -194,7 +133,7 @@ const M365NewsContent = ({
           className="flex items-center gap-1"
         >
           <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-          {isFetching ? 'Refreshing...' : 'Refresh'}
+          {isFetching ? 'Fetching...' : 'Refresh'}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -206,7 +145,7 @@ const M365NewsContent = ({
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <h3 className="text-lg font-medium flex items-center gap-1 text-blue-700 hover:underline">
+                <h3 className="text-lg font-medium text-blue-700 flex items-center gap-1">
                   {item.title || "Untitled News Item"}
                   <ExternalLink size={14} />
                 </h3>
@@ -214,20 +153,12 @@ const M365NewsContent = ({
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
                   <span>{formatDate(item.published_date)}</span>
-                  <span className="text-xs text-gray-400">
-                    ({item.published_date})
-                  </span>
-                  {item.tenantId && (
-                    <span className="text-xs text-blue-400">
-                      Tenant: {item.tenantId}
-                    </span>
-                  )}
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
                   {Array.isArray(item.categories) && item.categories.length > 0 ? (
                     item.categories.map((category, i) => (
-                      <Badge key={i} variant="outline" className="flex gap-1 items-center bg-blue-50 text-blue-700 border-blue-200">
+                      <Badge key={i} variant="outline" className="flex gap-1 items-center bg-yellow-50 text-yellow-700 border-yellow-200">
                         <Tag size={10} />
                         {category}
                       </Badge>
@@ -235,7 +166,7 @@ const M365NewsContent = ({
                   ) : (
                     <Badge variant="outline" className="flex gap-1 items-center bg-gray-50 text-gray-700 border-gray-200">
                       <Tag size={10} />
-                      Uncategorized
+                      News
                     </Badge>
                   )}
                 </div>
