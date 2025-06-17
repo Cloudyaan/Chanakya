@@ -39,6 +39,9 @@ const M365NewsContent = ({
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if date is invalid
+      }
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (e) {
       console.error('Error formatting date:', e);
@@ -81,9 +84,10 @@ const M365NewsContent = ({
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
           <Newspaper className="h-12 w-12 text-yellow-500 mb-4" />
-          <h3 className="text-xl font-medium mb-2">No Microsoft 365 News Available</h3>
+          <h3 className="text-xl font-medium mb-2">No Recent Microsoft 365 News</h3>
           <p className="text-muted-foreground mb-4 max-w-md">
-            There are no Microsoft 365 news updates in the database. Click the button below to fetch updates from the Microsoft RSS feed.
+            There are no recent Microsoft 365 news updates in the database (last 30 days). 
+            Click the button below to fetch the latest updates from Microsoft.
           </p>
           <Button 
             onClick={onFetch} 
@@ -110,7 +114,9 @@ const M365NewsContent = ({
       <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
         <div>
           <CardTitle>Microsoft 365 News</CardTitle>
-          <CardDescription>Recent Microsoft 365 news and updates (last 10 days) - {sortedNews.length} items</CardDescription>
+          <CardDescription>
+            Recent Microsoft 365 news and updates (last 30 days) - {sortedNews.length} items found
+          </CardDescription>
         </div>
         <Button 
           variant="outline" 
@@ -132,7 +138,7 @@ const M365NewsContent = ({
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <h3 className="text-lg font-medium flex items-center gap-1 text-blue-700">
+                <h3 className="text-lg font-medium flex items-center gap-1 text-blue-700 hover:underline">
                   {item.title || "Untitled News Item"}
                   <ExternalLink size={14} />
                 </h3>
@@ -140,6 +146,9 @@ const M365NewsContent = ({
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
                   <span>{formatDate(item.published_date)}</span>
+                  <span className="text-xs text-gray-400">
+                    ({item.published_date})
+                  </span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">

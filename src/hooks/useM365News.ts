@@ -34,42 +34,86 @@ export const useM365News = (tenantId: string | null) => {
     }
   }, [newsItems, error]);
 
-  // Filter to get only items from the last 10 days with robust date parsing
-  const recentNewsItems = newsItems.filter(item => {
-    if (!item.published_date) return false;
+  // Parse date with multiple fallback methods
+  const parsePublishedDate = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
     
     try {
-      let publishedDate: Date | null = null;
-      const dateStr = item.published_date;
-      
       // Try parsing as ISO format first
-      publishedDate = parseISO(dateStr);
-      
-      // If not valid ISO format, try other common formats
-      if (!isValid(publishedDate)) {
-        // Format like "Mon, 10 Mar 2025 23:30:35 Z"
-        publishedDate = parse(dateStr, 'EEE, dd MMM yyyy HH:mm:ss X', new Date());
-      }
-      
-      // If still not valid, try to use Date constructor as fallback
-      if (!isValid(publishedDate)) {
-        publishedDate = new Date(dateStr);
-      }
-      
-      // If we have a valid date now
+      let publishedDate = parseISO(dateStr);
       if (isValid(publishedDate)) {
-        const tenDaysAgo = new Date();
-        tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-        return publishedDate >= tenDaysAgo;
+        return publishedDate;
       }
       
-      console.error(`Could not parse date: ${dateStr}`);
-      return false;
+      // Try parsing RFC 2822 format: "Wed, 28 May 2025 23:00:19 Z"
+      publishedDate = parse(dateStr, 'EEE, dd MMM yyyy HH:mm:ss X', new Date());
+      if (isValid(publishedDate)) {
+        return publishedDate;
+      }
+      
+      // Try parsing without timezone: "Wed, 28 May 2025 23:00:19"
+      publishedDate = parse(dateStr, 'EEE, dd MMM yyyy HH:mm:ss', new Date());
+      if (isValid(publishedDate)) {
+        return publishedDate;
+      }
+      
+      // Try with different timezone format: "Wed, 28 May 2025 23:00:19 GMT"
+      publishedDate = parse(dateStr, 'EEE, dd MMM yyyy HH:mm:ss z', new Date());
+      if (isValid(publishedDate)) {
+        return publishedDate;
+      }
+      
+      // As a last resort, try the Date constructor
+      publishedDate = new Date(dateStr);
+      if (isValid(publishedDate)) {
+        return publishedDate;
+      }
+      
+      console.warn(`Could not parse date: ${dateStr}`);
+      return null;
     } catch (e) {
-      console.error("Error parsing date:", e, item);
+      console.error("Error parsing date:", e, dateStr);
+      return null;
+    }
+  };
+
+  // Filter to get only items from the last 30 days with robust date parsing
+  const recentNewsItems = newsItems.filter(item => {
+    if (!item.published_date) {
+      console.warn('News item without published_date:', item.title);
       return false;
     }
+    
+    const publishedDate = parsePublishedDate(item.published_date);
+    
+    if (!publishedDate) {
+      console.warn(`Failed to parse date for item: ${item.title}, date: ${item.published_date}`);
+      return false;
+    }
+    
+    // Check if the date is within the last 30 days (increased from 10 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const isRecent = publishedDate >= thirtyDaysAgo;
+    if (!isRecent) {
+      console.log(`Filtering out old item: ${item.title}, published: ${publishedDate.toISOString()}`);
+    }
+    
+    return isRecent;
   });
+
+  // Console log the filtering results
+  useEffect(() => {
+    console.log(`Filtered ${newsItems.length} total items to ${recentNewsItems.length} recent items`);
+    if (recentNewsItems.length > 0) {
+      console.log('Recent news items sample:', recentNewsItems.slice(0, 3).map(item => ({
+        title: item.title,
+        published_date: item.published_date,
+        parsed_date: parsePublishedDate(item.published_date)?.toISOString()
+      })));
+    }
+  }, [newsItems, recentNewsItems]);
 
   // Fetch M365 news from the backend
   const handleFetchM365News = async () => {
@@ -100,9 +144,6 @@ export const useM365News = (tenantId: string | null) => {
       setIsFetching(false);
     }
   };
-
-  // We'll no longer automatically refresh data when tenantId changes
-  // to prevent unexpected auto-fetches
 
   return {
     newsItems: recentNewsItems,
