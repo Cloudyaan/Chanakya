@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify
 import sqlite3
 import uuid
@@ -50,12 +51,12 @@ def add_tenant():
     
     # First, check if the new columns exist, if not add them
     try:
-        cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
+        cursor.execute("SELECT TOP 1 autoFetchEnabled FROM tenants")
     except:
-        # Add new columns for unified scheduling
-        cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleValue INT DEFAULT 1")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleUnit VARCHAR(10) DEFAULT 'hours'")
+        # Add new columns for unified scheduling using SQL Server syntax
+        cursor.execute("ALTER TABLE tenants ADD autoFetchEnabled BIT DEFAULT 0")
+        cursor.execute("ALTER TABLE tenants ADD scheduleValue INT DEFAULT 1")
+        cursor.execute("ALTER TABLE tenants ADD scheduleUnit VARCHAR(10) DEFAULT 'hours'")
         conn.commit()
     
     cursor.execute('''
@@ -123,14 +124,14 @@ def update_tenant(id):
     cursor.execute('SELECT * FROM tenants WHERE id = ?', (id,))
     current_tenant = cursor.fetchone()
     
-    # Check if new columns exist, if not add them
+    # Check if new columns exist, if not add them using SQL Server syntax
     try:
-        cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
+        cursor.execute("SELECT TOP 1 autoFetchEnabled FROM tenants")
     except:
-        # Add new columns for unified scheduling
-        cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleValue INT DEFAULT 1")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleUnit VARCHAR(10) DEFAULT 'hours'")
+        # Add new columns for unified scheduling using SQL Server syntax
+        cursor.execute("ALTER TABLE tenants ADD autoFetchEnabled BIT DEFAULT 0")
+        cursor.execute("ALTER TABLE tenants ADD scheduleValue INT DEFAULT 1")
+        cursor.execute("ALTER TABLE tenants ADD scheduleUnit VARCHAR(10) DEFAULT 'hours'")
         conn.commit()
     
     cursor.execute('''
@@ -178,6 +179,7 @@ def update_tenant(id):
 
 @tenant_bp.route('/tenants/<string:id>', methods=['DELETE'])
 def delete_tenant(id):
+    # ... keep existing code (delete tenant functionality)
     # First, get the tenant information we need before deletion
     conn = get_db_connection()
     cursor = conn.cursor()
