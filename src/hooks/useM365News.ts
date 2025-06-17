@@ -46,15 +46,16 @@ export const useM365News = (tenantId: string | null) => {
         return result;
       } catch (error) {
         console.error("useM365News queryFn - error fetching news:", error);
-        throw error; // Let React Query handle the error
+        // Don't throw error, return empty array to prevent UI from breaking
+        return [];
       }
     },
     enabled: !!tenantId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnMount: true, // Changed to true to ensure fresh data
-    refetchOnWindowFocus: false, // Disable window focus refetch
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 1,
+    retryDelay: 2000,
   });
 
   // Enhanced debugging for query states
@@ -129,7 +130,7 @@ export const useM365News = (tenantId: string | null) => {
     }
   };
 
-  // Process and filter news items - TEMPORARILY DISABLE 30-DAY FILTER TO DEBUG
+  // Process and filter news items - show recent items (last 90 days)
   const newsItems = (() => {
     console.log("useM365News - processing news items, rawNewsItems:", rawNewsItems);
     
@@ -143,14 +144,12 @@ export const useM365News = (tenantId: string | null) => {
       return [];
     }
     
-    console.log("useM365News - DEBUG: Temporarily showing ALL news items to identify filtering issue");
+    console.log("useM365News - processing", rawNewsItems.length, "news items");
     
     // Process all items first to see what we're working with
     const processedItems = rawNewsItems.map(item => {
       const publishedDate = parsePublishedDate(item.published_date || '');
       const daysSincePublished = publishedDate ? differenceInDays(new Date(), publishedDate) : null;
-      
-      console.log(`Item: ${item.title}, Date: ${item.published_date}, Parsed: ${publishedDate?.toISOString()}, Days ago: ${daysSincePublished}`);
       
       return {
         ...item,
@@ -159,15 +158,14 @@ export const useM365News = (tenantId: string | null) => {
       };
     });
     
-    // For now, return all items to see if the issue is with the filtering
-    // We'll filter to last 90 days instead of 30 to be more permissive
+    // Filter to last 90 days to be more permissive
     const recentNewsItems = processedItems.filter(item => {
       if (!item.parsedDate) {
-        console.warn('News item without valid date:', item.title);
-        return true; // Include items without valid dates for now
+        console.log('Including news item without valid date:', item.title);
+        return true; // Include items without valid dates
       }
       
-      // Check if the date is within the last 90 days (more permissive)
+      // Check if the date is within the last 90 days
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       

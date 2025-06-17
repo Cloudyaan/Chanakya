@@ -15,17 +15,22 @@ export const getM365News = async (tenantId: string): Promise<M365News[]> => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error fetching M365 news: ${response.status} ${response.statusText}, ${errorText}`);
-      throw new Error(`Error fetching M365 news: ${response.statusText}`);
+      
+      // Don't throw error, return empty array instead
+      return [];
     }
     
     const news: M365News[] = await response.json();
-    console.log(`Retrieved ${news.length} M365 news items`);
+    console.log(`Retrieved ${news.length} M365 news items for tenant ${tenantId}`);
     
     // Log the date formats for debugging
     if (news.length > 0) {
-      console.log('Sample M365 news date format:', news[0].published_date);
-      console.log('First item title:', news[0].title);
-      console.log('First item date:', new Date(news[0].published_date || '').toISOString());
+      console.log('Sample M365 news item:', {
+        id: news[0].id,
+        title: news[0].title,
+        published_date: news[0].published_date,
+        tenantId: news[0].tenantId
+      });
     }
     
     // Handle possible issues with news item structure and ensure proper date formatting

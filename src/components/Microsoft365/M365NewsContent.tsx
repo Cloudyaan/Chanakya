@@ -39,7 +39,8 @@ const M365NewsContent = ({
     isFetching,
     newsItemsLength: newsItems?.length,
     newsItemsType: typeof newsItems,
-    newsItemsIsArray: Array.isArray(newsItems)
+    newsItemsIsArray: Array.isArray(newsItems),
+    newsItemsSample: newsItems?.slice(0, 2)
   });
   
   const formatDate = (dateString: string | null | undefined) => {
@@ -73,7 +74,10 @@ const M365NewsContent = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
-            <CardTitle>Microsoft 365 News</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Newspaper className="h-5 w-5 text-yellow-500" />
+              Microsoft 365 News
+            </CardTitle>
             <CardDescription>Recent Microsoft 365 news and updates</CardDescription>
           </div>
           <Button 
@@ -122,8 +126,11 @@ const M365NewsContent = ({
     <Card>
       <CardHeader className="sticky top-[200px] z-10 bg-white flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle>Microsoft 365 News</CardTitle>
-          <CardDescription>Recent Microsoft 365 news and updates</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Newspaper className="h-5 w-5 text-yellow-500" />
+            Microsoft 365 News
+          </CardTitle>
+          <CardDescription>Recent Microsoft 365 news and updates ({newsItems.length} items)</CardDescription>
         </div>
         <Button 
           variant="outline" 
@@ -145,7 +152,7 @@ const M365NewsContent = ({
           >
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <h3 className="text-lg font-medium text-blue-700 flex items-center gap-1">
+                <h3 className="text-lg font-medium text-blue-700 flex items-center gap-1 hover:underline">
                   {item.title || "Untitled News Item"}
                   <ExternalLink size={14} />
                 </h3>
@@ -153,6 +160,12 @@ const M365NewsContent = ({
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
                   <span>{formatDate(item.published_date)}</span>
+                  {item.tenantName && (
+                    <>
+                      <span>•</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{item.tenantName}</span>
+                    </>
+                  )}
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
