@@ -129,7 +129,7 @@ export const useM365News = (tenantId: string | null) => {
     }
   };
 
-  // Process and filter news items
+  // Process and filter news items - TEMPORARILY DISABLE 30-DAY FILTER TO DEBUG
   const newsItems = (() => {
     console.log("useM365News - processing news items, rawNewsItems:", rawNewsItems);
     
@@ -143,33 +143,43 @@ export const useM365News = (tenantId: string | null) => {
       return [];
     }
     
-    // Filter to get only items from the last 30 days
-    const recentNewsItems = rawNewsItems.filter(item => {
-      if (!item || !item.published_date) {
-        console.warn('News item without published_date:', item?.title || 'unknown');
-        return false;
+    console.log("useM365News - DEBUG: Temporarily showing ALL news items to identify filtering issue");
+    
+    // Process all items first to see what we're working with
+    const processedItems = rawNewsItems.map(item => {
+      const publishedDate = parsePublishedDate(item.published_date || '');
+      const daysSincePublished = publishedDate ? differenceInDays(new Date(), publishedDate) : null;
+      
+      console.log(`Item: ${item.title}, Date: ${item.published_date}, Parsed: ${publishedDate?.toISOString()}, Days ago: ${daysSincePublished}`);
+      
+      return {
+        ...item,
+        parsedDate: publishedDate,
+        daysAgo: daysSincePublished
+      };
+    });
+    
+    // For now, return all items to see if the issue is with the filtering
+    // We'll filter to last 90 days instead of 30 to be more permissive
+    const recentNewsItems = processedItems.filter(item => {
+      if (!item.parsedDate) {
+        console.warn('News item without valid date:', item.title);
+        return true; // Include items without valid dates for now
       }
       
-      const publishedDate = parsePublishedDate(item.published_date);
+      // Check if the date is within the last 90 days (more permissive)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       
-      if (!publishedDate) {
-        console.warn(`Failed to parse date for item: ${item.title}, date: ${item.published_date}`);
-        return false;
-      }
-      
-      // Check if the date is within the last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const isRecent = publishedDate >= thirtyDaysAgo;
+      const isRecent = item.parsedDate >= ninetyDaysAgo;
       if (!isRecent) {
-        console.log(`Filtering out old item: ${item.title}, published: ${publishedDate.toISOString()}`);
+        console.log(`Filtering out old item: ${item.title}, published: ${item.parsedDate.toISOString()}, days ago: ${item.daysAgo}`);
       }
       
       return isRecent;
     });
     
-    console.log(`useM365News - filtered ${rawNewsItems.length} total items to ${recentNewsItems.length} recent items`);
+    console.log(`useM365News - filtered ${rawNewsItems.length} total items to ${recentNewsItems.length} recent items (90-day filter)`);
     return recentNewsItems;
   })();
 
