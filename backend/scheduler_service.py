@@ -41,10 +41,9 @@ class TenantDataScheduler:
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Get all active tenants with auto-fetch enabled
+            # Get all active tenants with auto-fetch enabled using new unified scheduling
             cursor.execute('''
-                SELECT id, name, tenantId, autoFetchEnabled, messageCenterInterval, 
-                       windowsUpdatesInterval, newsInterval 
+                SELECT id, name, tenantId, autoFetchEnabled, scheduleValue, scheduleUnit 
                 FROM tenants 
                 WHERE isActive = 1 AND autoFetchEnabled = 1
             ''')
@@ -61,27 +60,24 @@ class TenantDataScheduler:
                 tenant_name = tenant[1]
                 tenant_azure_id = tenant[2]
                 auto_fetch_enabled = bool(tenant[3])
-                message_center_interval = tenant[4] if len(tenant) > 4 and tenant[4] else 24
-                windows_updates_interval = tenant[5] if len(tenant) > 5 and tenant[5] else 24
-                news_interval = tenant[6] if len(tenant) > 6 and tenant[6] else 24
+                schedule_value = tenant[4] if len(tenant) > 4 and tenant[4] else 1
+                schedule_unit = tenant[5] if len(tenant) > 5 and tenant[5] else 'hours'
                 
                 if not auto_fetch_enabled:
                     continue
                 
-                print(f"Checking intervals for tenant {tenant_name}:")
-                print(f"  Message Center: {message_center_interval}h")
-                print(f"  Windows Updates: {windows_updates_interval}h") 
-                print(f"  News: {news_interval}h")
+                # Convert schedule to hours for unified checking
+                interval_hours = schedule_value
+                if schedule_unit == 'days':
+                    interval_hours = schedule_value * 24
                 
-                # Check if it's time to fetch each type of data
-                if self._should_fetch_data('message_center', tenant_id, message_center_interval):
-                    self._fetch_message_center_data(tenant_id, tenant_name)
+                print(f"Checking schedule for tenant {tenant_name}:")
+                print(f"  Schedule: Every {schedule_value} {schedule_unit} (equivalent to {interval_hours} hours)")
                 
-                if self._should_fetch_data('windows_updates', tenant_id, windows_updates_interval):
-                    self._fetch_windows_updates_data(tenant_id, tenant_name)
-                
-                if self._should_fetch_data('news', tenant_id, news_interval):
-                    self._fetch_news_data(tenant_id, tenant_name)
+                # Check if it's time to fetch data for all update types
+                if self._should_fetch_data('unified_updates', tenant_id, interval_hours):
+                    print(f"Fetching all update types for tenant {tenant_name}")
+                    self._fetch_all_data(tenant_id, tenant_name)
                     
         except Exception as e:
             print(f"Error in scheduler check: {e}")
@@ -145,38 +141,36 @@ class TenantDataScheduler:
             print(f"Error checking fetch time for {data_type}: {e}")
             return False
     
-    def _fetch_message_center_data(self, tenant_id, tenant_name):
-        """Fetch message center data for a tenant"""
+    def _fetch_all_data(self, tenant_id, tenant_name):
+        """Fetch all data types (message center, windows updates, and news) for a tenant"""
         try:
-            print(f"Fetching message center data for tenant {tenant_name}")
+            print(f"Fetching all update types for tenant {tenant_name}")
+            
+            # Fetch message center data
+            print(f"  - Fetching message center data...")
             if os.name == 'nt':
                 subprocess.run(['fetch_updates.bat', tenant_id], check=False)
             else:
                 subprocess.run(['python', 'fetch_updates.py', tenant_id], check=False)
-        except Exception as e:
-            print(f"Error fetching message center data for {tenant_name}: {e}")
-    
-    def _fetch_windows_updates_data(self, tenant_id, tenant_name):
-        """Fetch Windows updates data for a tenant"""
-        try:
-            print(f"Fetching Windows updates data for tenant {tenant_name}")
+            
+            # Fetch Windows updates data
+            print(f"  - Fetching Windows updates data...")
             if os.name == 'nt':
                 subprocess.run(['fetch_windows_updates.bat', tenant_id], check=False)
             else:
                 subprocess.run(['python', 'fetch_windows_updates.py', tenant_id], check=False)
-        except Exception as e:
-            print(f"Error fetching Windows updates data for {tenant_name}: {e}")
-    
-    def _fetch_news_data(self, tenant_id, tenant_name):
-        """Fetch news data for a tenant"""
-        try:
-            print(f"Fetching news data for tenant {tenant_name}")
+            
+            # Fetch news data
+            print(f"  - Fetching news data...")
             if os.name == 'nt':
                 subprocess.run(['fetch_m365_news.bat', tenant_id], check=False)
             else:
                 subprocess.run(['python', 'fetch_m365_news.py', tenant_id], check=False)
+                
+            print(f"Completed fetching all data for tenant {tenant_name}")
+            
         except Exception as e:
-            print(f"Error fetching news data for {tenant_name}: {e}")
+            print(f"Error fetching data for {tenant_name}: {e}")
 
 # Global scheduler instance
 scheduler = TenantDataScheduler()

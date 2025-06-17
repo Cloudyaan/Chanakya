@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TenantConfig } from '@/utils/types';
 import { getTenants } from '@/utils/database';
 import { useToast } from '@/hooks/use-toast';
@@ -44,9 +46,8 @@ const tenantFormSchema = z.object({
   isActive: z.boolean().default(true),
   dateAdded: z.string().optional(),
   autoFetchEnabled: z.boolean().default(false),
-  messageCenterInterval: z.number().min(1).max(168).default(24), // 1 hour to 7 days
-  windowsUpdatesInterval: z.number().min(1).max(168).default(24),
-  newsInterval: z.number().min(1).max(168).default(24),
+  scheduleValue: z.number().min(1).max(30).default(1),
+  scheduleUnit: z.enum(['hours', 'days']).default('hours'),
 });
 
 type TenantFormValues = z.infer<typeof tenantFormSchema>;
@@ -81,9 +82,8 @@ const TenantForm: React.FC<TenantFormProps> = ({
       applicationSecret: '',
       isActive: true,
       autoFetchEnabled: false,
-      messageCenterInterval: 24,
-      windowsUpdatesInterval: 24,
-      newsInterval: 24,
+      scheduleValue: 1,
+      scheduleUnit: 'hours',
     },
   });
 
@@ -175,9 +175,8 @@ const TenantForm: React.FC<TenantFormProps> = ({
         isActive: values.isActive,
         dateAdded: values.dateAdded || initialData?.dateAdded || new Date().toISOString(),
         autoFetchEnabled: values.autoFetchEnabled,
-        messageCenterInterval: values.messageCenterInterval,
-        windowsUpdatesInterval: values.windowsUpdatesInterval,
-        newsInterval: values.newsInterval,
+        scheduleValue: values.scheduleValue,
+        scheduleUnit: values.scheduleUnit,
       };
       
       console.log("Final tenant data being submitted:", finalValues);
@@ -322,11 +321,11 @@ const TenantForm: React.FC<TenantFormProps> = ({
             )}
           />
 
-          {/* New Auto-Fetch Configuration Section */}
+          {/* Updated Auto-Fetch Configuration Section */}
           <div className="border rounded-lg p-4 space-y-4">
             <div>
               <h3 className="text-lg font-medium">Auto-Fetch Configuration</h3>
-              <p className="text-sm text-gray-500">Configure automatic data fetching intervals</p>
+              <p className="text-sm text-gray-500">Configure automatic data fetching for all update types</p>
             </div>
             
             <FormField
@@ -337,7 +336,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Enable Auto-Fetch</FormLabel>
                     <FormDescription>
-                      Automatically fetch updates based on configured intervals
+                      Automatically fetch all updates (Message Center, Windows Updates, and News) based on the schedule below
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -351,24 +350,24 @@ const TenantForm: React.FC<TenantFormProps> = ({
             />
 
             {form.watch('autoFetchEnabled') && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <FormField
                   control={form.control}
-                  name="messageCenterInterval"
+                  name="scheduleValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Message Center (hours)</FormLabel>
+                      <FormLabel>Schedule Frequency</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           min="1" 
-                          max="168" 
+                          max="30" 
                           {...field} 
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                         />
                       </FormControl>
                       <FormDescription>
-                        Fetch interval (1-168 hours)
+                        How often to fetch updates (1-30)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -377,49 +376,37 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 
                 <FormField
                   control={form.control}
-                  name="windowsUpdatesInterval"
+                  name="scheduleUnit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Windows Updates (hours)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="168" 
-                          {...field} 
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
-                        />
-                      </FormControl>
+                      <FormLabel>Schedule Unit</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select unit" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="hours">Hours</SelectItem>
+                          <SelectItem value="days">Days</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormDescription>
-                        Fetch interval (1-168 hours)
+                        Time unit for the schedule
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="newsInterval"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>News Updates (hours)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="168" 
-                          {...field} 
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 24)}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Fetch interval (1-168 hours)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              </div>
+            )}
+            
+            {form.watch('autoFetchEnabled') && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Schedule Summary:</strong> All updates will be fetched every{' '}
+                  {form.watch('scheduleValue')} {form.watch('scheduleUnit')}
+                </p>
               </div>
             )}
           </div>

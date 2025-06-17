@@ -1,4 +1,3 @@
-
 from flask import Blueprint, request, jsonify
 import sqlite3
 import uuid
@@ -30,11 +29,10 @@ def get_tenants():
             'applicationSecret': tenant[4],
             'isActive': bool(tenant[5]),
             'dateAdded': tenant[6],
-            # Add new scheduling fields with defaults if they don't exist
+            # Handle both old and new scheduling configurations
             'autoFetchEnabled': bool(tenant[7]) if len(tenant) > 7 and tenant[7] is not None else False,
-            'messageCenterInterval': tenant[8] if len(tenant) > 8 and tenant[8] is not None else 24,
-            'windowsUpdatesInterval': tenant[9] if len(tenant) > 9 and tenant[9] is not None else 24,
-            'newsInterval': tenant[10] if len(tenant) > 10 and tenant[10] is not None else 24,
+            'scheduleValue': tenant[8] if len(tenant) > 8 and tenant[8] is not None else 1,
+            'scheduleUnit': tenant[9] if len(tenant) > 9 and tenant[9] is not None else 'hours',
         })
     
     return jsonify(result)
@@ -54,16 +52,15 @@ def add_tenant():
     try:
         cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
     except:
-        # Add new columns for scheduling
+        # Add new columns for unified scheduling
         cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN messageCenterInterval INT DEFAULT 24")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN windowsUpdatesInterval INT DEFAULT 24")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN newsInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleValue INT DEFAULT 1")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleUnit VARCHAR(10) DEFAULT 'hours'")
         conn.commit()
     
     cursor.execute('''
-    INSERT INTO tenants (id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded, autoFetchEnabled, messageCenterInterval, windowsUpdatesInterval, newsInterval)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tenants (id, name, tenantId, applicationId, applicationSecret, isActive, dateAdded, autoFetchEnabled, scheduleValue, scheduleUnit)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         tenant_id,
         data['name'],
@@ -73,9 +70,8 @@ def add_tenant():
         1 if data['isActive'] else 0,
         date_added,
         1 if data.get('autoFetchEnabled', False) else 0,
-        data.get('messageCenterInterval', 24),
-        data.get('windowsUpdatesInterval', 24),
-        data.get('newsInterval', 24)
+        data.get('scheduleValue', 1),
+        data.get('scheduleUnit', 'hours')
     ))
     
     conn.commit()
@@ -113,9 +109,8 @@ def add_tenant():
         'isActive': data['isActive'],
         'dateAdded': date_added,
         'autoFetchEnabled': data.get('autoFetchEnabled', False),
-        'messageCenterInterval': data.get('messageCenterInterval', 24),
-        'windowsUpdatesInterval': data.get('windowsUpdatesInterval', 24),
-        'newsInterval': data.get('newsInterval', 24)
+        'scheduleValue': data.get('scheduleValue', 1),
+        'scheduleUnit': data.get('scheduleUnit', 'hours')
     })
 
 @tenant_bp.route('/tenants/<string:id>', methods=['PUT'])
@@ -132,16 +127,15 @@ def update_tenant(id):
     try:
         cursor.execute("SELECT autoFetchEnabled FROM tenants LIMIT 1")
     except:
-        # Add new columns for scheduling
+        # Add new columns for unified scheduling
         cursor.execute("ALTER TABLE tenants ADD COLUMN autoFetchEnabled BIT DEFAULT 0")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN messageCenterInterval INT DEFAULT 24")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN windowsUpdatesInterval INT DEFAULT 24")
-        cursor.execute("ALTER TABLE tenants ADD COLUMN newsInterval INT DEFAULT 24")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleValue INT DEFAULT 1")
+        cursor.execute("ALTER TABLE tenants ADD COLUMN scheduleUnit VARCHAR(10) DEFAULT 'hours'")
         conn.commit()
     
     cursor.execute('''
     UPDATE tenants
-    SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?, autoFetchEnabled = ?, messageCenterInterval = ?, windowsUpdatesInterval = ?, newsInterval = ?
+    SET name = ?, tenantId = ?, applicationId = ?, applicationSecret = ?, isActive = ?, autoFetchEnabled = ?, scheduleValue = ?, scheduleUnit = ?
     WHERE id = ?
     ''', (
         data['name'],
@@ -150,9 +144,8 @@ def update_tenant(id):
         data['applicationSecret'],
         1 if data['isActive'] else 0,
         1 if data.get('autoFetchEnabled', False) else 0,
-        data.get('messageCenterInterval', 24),
-        data.get('windowsUpdatesInterval', 24),
-        data.get('newsInterval', 24),
+        data.get('scheduleValue', 1),
+        data.get('scheduleUnit', 'hours'),
         id
     ))
     
@@ -183,7 +176,6 @@ def update_tenant(id):
     
     return jsonify({'success': True})
 
-# ... keep existing code (delete_tenant route) the same
 @tenant_bp.route('/tenants/<string:id>', methods=['DELETE'])
 def delete_tenant(id):
     # First, get the tenant information we need before deletion

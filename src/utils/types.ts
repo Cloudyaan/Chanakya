@@ -1,3 +1,4 @@
+
 export interface License {
   id: string;
   name: string;
@@ -36,11 +37,10 @@ export interface TenantConfig {
   applicationSecret: string;
   isActive: boolean;
   dateAdded: string;
-  // New scheduling configuration
+  // Updated scheduling configuration
   autoFetchEnabled?: boolean;
-  messageCenterInterval?: number; // in hours
-  windowsUpdatesInterval?: number; // in hours  
-  newsInterval?: number; // in hours
+  scheduleValue?: number; // The numeric value (e.g., 2 for "every 2 hours")
+  scheduleUnit?: 'hours' | 'days'; // The unit (hours or days)
 }
 
 export interface LicenseMetric {
