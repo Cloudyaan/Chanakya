@@ -138,7 +138,7 @@ const M365NewsContent = ({
             className="flex items-center gap-1"
           >
             <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-            {isFetching ? 'Fetching...' : 'Refresh'}
+            {isFetching ? 'Refreshing...' : 'Refresh'}
           </Button>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
@@ -146,16 +146,8 @@ const M365NewsContent = ({
           <h3 className="text-xl font-medium mb-2">No Recent Microsoft 365 News</h3>
           <p className="text-muted-foreground mb-4 max-w-md">
             There are no recent Microsoft 365 news updates in the database (last 30 days). 
-            Click the button below to fetch the latest updates from Microsoft.
+            The refresh button pulls data from the database. Use the external fetch if you need to get new data from Microsoft.
           </p>
-          <Button 
-            onClick={onFetch} 
-            disabled={isFetching}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-            {isFetching ? 'Fetching News...' : 'Fetch Microsoft 365 News'}
-          </Button>
           <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
             <p>Debug Info:</p>
             <p>• isLoading: {String(isLoading)}</p>
@@ -202,7 +194,7 @@ const M365NewsContent = ({
           className="flex items-center gap-1"
         >
           <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-          {isFetching ? 'Fetching...' : 'Refresh'}
+          {isFetching ? 'Refreshing...' : 'Refresh'}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

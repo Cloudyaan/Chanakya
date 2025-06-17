@@ -63,7 +63,8 @@ const UpdateTabsContent = ({
   newsIsLoading,
   newsIsFetching,
   onFetchNews,
-  newsLastRefresh
+  newsLastRefresh,
+  onRefreshNews
 }: UpdateTabsContentProps) => {
   
   return (
@@ -148,7 +149,7 @@ const UpdateTabsContent = ({
             isLoading={newsIsLoading}
             newsItems={newsItems}
             isFetching={newsIsFetching}
-            onFetch={onFetchNews}
+            onFetch={onRefreshNews || onFetchNews}
           />
         </TabsContent>
       </Tabs>
