@@ -7,6 +7,7 @@ from datetime import datetime
 from app.database import get_db_connection
 from . import notification_bp
 from .db_helpers import init_notification_table
+from .processor import process_and_send_notification
 
 # Initialize the notification table
 init_notification_table()
@@ -228,10 +229,36 @@ def send_notification():
         return jsonify({"error": "Missing notification setting ID"}), 400
     
     try:
-        # Here you would implement the notification sending logic
-        # For now, we'll just return success
-        print(f"Sending notification for setting ID: {setting_id}")
-        return jsonify({"message": "Notification sent successfully"})
+        print(f"Processing notification for setting ID: {setting_id}")
+        
+        # Get the additional parameters from the request
+        use_existing_databases = data.get('useExistingDatabases', True)
+        verify_settings = data.get('verifySettings', True)
+        check_period = data.get('checkPeriod', True)
+        force_exact_date = data.get('forceExactDateFilter', True)
+        
+        # Call the notification processor with proper parameters
+        result = process_and_send_notification(
+            setting_id=setting_id,
+            use_existing_databases=use_existing_databases,
+            check_period=check_period,
+            force_exact_date=force_exact_date
+        )
+        
+        if result.get('success', False):
+            # Get the specific result for this setting
+            setting_results = result.get('results', [])
+            if setting_results:
+                setting_result = setting_results[0]  # Should be only one result for specific setting ID
+                if setting_result.get('success', False):
+                    return jsonify({"message": "Notification sent successfully"})
+                else:
+                    return jsonify({"error": setting_result.get('message', 'Failed to send notification')}), 500
+            else:
+                return jsonify({"error": "No results returned from notification processor"}), 500
+        else:
+            return jsonify({"error": result.get('message', 'Failed to process notification')}), 500
+            
     except Exception as e:
         print(f"Error sending notification: {e}")
         return jsonify({"error": str(e)}), 500

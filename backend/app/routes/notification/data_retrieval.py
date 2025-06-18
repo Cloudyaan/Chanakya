@@ -1,8 +1,9 @@
-import sqlite3
+
+import json
 from datetime import datetime, timedelta
 from dateutil import parser
 
-from app.database import find_tenant_database
+from app.database import get_tenant_table_connection, find_tenant_database
 from .db_helpers import ensure_tenant_database
 
 def get_time_period_for_frequency(frequency, check_period=True):
@@ -42,26 +43,14 @@ def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True
     days = get_time_period_for_frequency(frequency, check_period)
     print(f"Fetching message center updates for last {days} days based on {frequency} frequency")
     
-    # Ensure the tenant database exists
-    db_path = find_tenant_database(tenant_id)
-    if not db_path:
-        db_path = ensure_tenant_database(tenant_id)
-        if not db_path:
-            return []
-    
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check which table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name='updates' OR name='announcements')")
-        table_result = cursor.fetchone()
-        
-        if not table_result:
+        # Get connection and table name for Azure SQL
+        conn, updates_table = get_tenant_table_connection(tenant_id, 'updates', 'm365')
+        if not conn or not updates_table:
+            print(f"Could not get connection or table for tenant {tenant_id}")
             return []
-            
-        table_name = table_result['name']
+        
+        cursor = conn.cursor()
         
         # Calculate the date range
         if force_exact_date:
@@ -73,27 +62,31 @@ def fetch_message_center_updates(tenant_id, frequency="Daily", check_period=True
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
             print(f"Filtering updates since: {cutoff_date}")
         
-        # Query based on which table exists
-        if table_name == 'updates':
-            cursor.execute(f"""
-                SELECT 
-                    id, title, category, severity, lastModifiedDateTime as publishedDate,
-                    isMajorChange as actionType, bodyContent as description
-                FROM updates
-                WHERE lastModifiedDateTime > ?
-                ORDER BY lastModifiedDateTime DESC
-            """, (cutoff_date,))
-        else:  # announcements
-            cursor.execute(f"""
-                SELECT 
-                    id, title, category, severity, lastModifiedDateTime as publishedDate,
-                    isMajorChange as actionType, bodyContent as description
-                FROM announcements
-                WHERE lastModifiedDateTime > ?
-                ORDER BY lastModifiedDateTime DESC
-            """, (cutoff_date,))
+        # Query the Azure SQL table
+        cursor.execute(f"""
+            SELECT 
+                id, title, category, severity, lastModifiedDateTime as publishedDate,
+                isMajorChange as actionType, bodyContent as description
+            FROM {updates_table}
+            WHERE lastModifiedDateTime > ?
+            ORDER BY lastModifiedDateTime DESC
+        """, (cutoff_date,))
         
-        updates = [dict(row) for row in cursor.fetchall()]
+        # Convert rows to dictionaries
+        updates = []
+        for row in cursor.fetchall():
+            update_dict = {
+                'id': row[0],
+                'title': row[1],
+                'category': row[2],
+                'severity': row[3],
+                'publishedDate': row[4],
+                'actionType': row[5],
+                'description': row[6]
+            }
+            updates.append(update_dict)
+        
+        cursor.close()
         conn.close()
         print(f"Found {len(updates)} message center updates since {cutoff_date}")
         return updates
@@ -107,22 +100,16 @@ def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force
     days = get_time_period_for_frequency(frequency, check_period)
     print(f"Fetching Windows updates for last {days} days based on {frequency} frequency")
     
-    # Ensure the tenant database exists
-    db_path = find_tenant_database(tenant_id)
-    if not db_path:
-        db_path = ensure_tenant_database(tenant_id)
-        if not db_path:
-            return []
-    
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check if the windows_known_issues table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='windows_known_issues'")
-        if not cursor.fetchone():
+        # Get connection and table names for Azure SQL
+        conn, issues_table = get_tenant_table_connection(tenant_id, 'windows_known_issues', 'm365')
+        if not conn or not issues_table:
+            print(f"Could not get connection or table for tenant {tenant_id}")
             return []
+        
+        _, products_table = get_tenant_table_connection(tenant_id, 'windows_products', 'm365')
+        
+        cursor = conn.cursor()
         
         # Calculate the date range
         if force_exact_date:
@@ -134,18 +121,34 @@ def fetch_windows_updates(tenant_id, frequency="Daily", check_period=True, force
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
             print(f"Filtering Windows updates since: {cutoff_date}")
         
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT 
                 wi.id, wi.product_id as productId, wi.title, wi.description, 
                 wi.webViewUrl, wi.status, wi.start_date as startDate, 
                 wi.resolved_date as resolvedDate, wp.name as productName
-            FROM windows_known_issues wi
-            LEFT JOIN windows_products wp ON wi.product_id = wp.id
+            FROM {issues_table} wi
+            LEFT JOIN {products_table} wp ON wi.product_id = wp.id
             WHERE wi.start_date > ?
             ORDER BY wi.start_date DESC
         """, (cutoff_date,))
         
-        updates = [dict(row) for row in cursor.fetchall()]
+        # Convert rows to dictionaries
+        updates = []
+        for row in cursor.fetchall():
+            update_dict = {
+                'id': row[0],
+                'productId': row[1],
+                'title': row[2],
+                'description': row[3],
+                'webViewUrl': row[4],
+                'status': row[5],
+                'startDate': row[6],
+                'resolvedDate': row[7],
+                'productName': row[8]
+            }
+            updates.append(update_dict)
+        
+        cursor.close()
         conn.close()
         print(f"Found {len(updates)} Windows updates since {cutoff_date}")
         return updates
@@ -159,22 +162,14 @@ def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact
     days = get_time_period_for_frequency(frequency, check_period)
     print(f"Fetching M365 news for last {days} days based on {frequency} frequency")
     
-    # Ensure the tenant database exists
-    db_path = find_tenant_database(tenant_id)
-    if not db_path:
-        db_path = ensure_tenant_database(tenant_id)
-        if not db_path:
-            return []
-    
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Check if the m365_news table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='m365_news'")
-        if not cursor.fetchone():
+        # Get connection and table name for Azure SQL
+        conn, news_table = get_tenant_table_connection(tenant_id, 'm365_news', 'm365')
+        if not conn or not news_table:
+            print(f"Could not get connection or table for tenant {tenant_id}")
             return []
+        
+        cursor = conn.cursor()
         
         # Calculate the cutoff date
         if force_exact_date:
@@ -188,8 +183,24 @@ def fetch_m365_news(tenant_id, frequency="Daily", check_period=True, force_exact
             print(f"Filtering M365 news since: {cutoff_date.isoformat()}")
         
         # Get all news entries first
-        cursor.execute("SELECT * FROM m365_news ORDER BY published_date DESC")
-        all_news = [dict(row) for row in cursor.fetchall()]
+        cursor.execute(f"SELECT * FROM {news_table} ORDER BY published_date DESC")
+        all_news_rows = cursor.fetchall()
+        
+        # Convert rows to dictionaries
+        all_news = []
+        for row in all_news_rows:
+            news_dict = {
+                'id': row[0],
+                'title': row[1],
+                'published_date': row[2],
+                'link': row[3],
+                'summary': row[4],
+                'categories': row[5],
+                'fetch_date': row[6]
+            }
+            all_news.append(news_dict)
+        
+        cursor.close()
         conn.close()
         
         # Filter the news entries manually based on the date
