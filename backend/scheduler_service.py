@@ -50,7 +50,7 @@ class TenantDataScheduler:
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Ensure refresh tracking table exists
+            # Ensure both tracking tables exist
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS auto_fetch_refresh_log (
                     id VARCHAR(100) PRIMARY KEY,
@@ -58,6 +58,16 @@ class TenantDataScheduler:
                     data_type VARCHAR(50),
                     last_refresh_time DATETIME,
                     status VARCHAR(20) DEFAULT 'success',
+                    UNIQUE(tenant_id, data_type)
+                )
+            ''')
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS scheduled_fetch_log (
+                    id VARCHAR(50) PRIMARY KEY,
+                    tenant_id VARCHAR(50),
+                    data_type VARCHAR(50),
+                    last_fetch_time DATETIME,
                     UNIQUE(tenant_id, data_type)
                 )
             ''')
@@ -116,17 +126,6 @@ class TenantDataScheduler:
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Create tracking table if it doesn't exist
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS scheduled_fetch_log (
-                    id VARCHAR(50) PRIMARY KEY,
-                    tenant_id VARCHAR(50),
-                    data_type VARCHAR(50),
-                    last_fetch_time DATETIME,
-                    UNIQUE(tenant_id, data_type)
-                )
-            ''')
-            
             # Get the last fetch time for this tenant and data type
             cursor.execute('''
                 SELECT last_fetch_time FROM scheduled_fetch_log 
@@ -177,12 +176,14 @@ class TenantDataScheduler:
             return False
     
     def _update_refresh_time(self, tenant_id, data_type, status='success'):
-        """Update the refresh time for a specific data type"""
+        """Update the refresh time for a specific data type in the table that the UI reads from"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             
             current_time = datetime.now()
+            
+            # Update the auto_fetch_refresh_log table that the UI reads from
             cursor.execute('''
                 INSERT OR REPLACE INTO auto_fetch_refresh_log 
                 (id, tenant_id, data_type, last_refresh_time, status) 
@@ -192,7 +193,7 @@ class TenantDataScheduler:
             conn.commit()
             cursor.close()
             conn.close()
-            print(f"    Updated refresh time for {data_type}: {current_time}")
+            print(f"    Updated refresh time for {data_type}: {current_time} (status: {status})")
             
         except Exception as e:
             print(f"Error updating refresh time for {data_type}: {e}")
