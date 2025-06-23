@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -14,6 +13,7 @@ import { useWindowsUpdates } from '@/hooks/useWindowsUpdates';
 import { useM365News } from '@/hooks/useM365News';
 import UpdateTabsContent from '@/components/Microsoft365/UpdateTabsContent';
 import { useToast } from '@/hooks/use-toast';
+import { useRefreshTimes } from '@/hooks/useRefreshTimes';
 
 const Updates = () => {
   const [searchParams] = useSearchParams();
@@ -26,6 +26,13 @@ const Updates = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isWindowsDialogOpen, setIsWindowsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Get refresh times for the selected tenant
+  const { 
+    messageCenterLastRefresh, 
+    windowsLastRefresh, 
+    newsLastRefresh 
+  } = useRefreshTimes(selectedTenant);
 
   // Always call hooks unconditionally - pass selectedTenant even if null
   const {
@@ -237,7 +244,7 @@ const Updates = () => {
               messageCenterIsFetching={messageIsFetching}
               onFetchMessageCenter={fetchUpdateData}
               onUpdateClick={handleUpdateClick}
-              messageCenterLastRefresh={null}
+              messageCenterLastRefresh={messageCenterLastRefresh}
               onRefreshMessageCenter={handleManualMessageCenterRefresh}
               
               windowsUpdates={windowsUpdates}
@@ -245,14 +252,14 @@ const Updates = () => {
               windowsIsFetching={windowsIsFetching}
               onFetchWindows={handleFetchWindowsUpdates}
               onWindowsUpdateClick={handleWindowsUpdateClick}
-              windowsLastRefresh={null}
+              windowsLastRefresh={windowsLastRefresh}
               onRefreshWindows={handleManualWindowsRefresh}
               
               newsItems={newsItems}
               newsIsLoading={newsIsLoading}
               newsIsFetching={newsIsFetching}
               onFetchNews={handleFetchM365News}
-              newsLastRefresh={null}
+              newsLastRefresh={newsLastRefresh}
               onRefreshNews={handleManualNewsRefresh}
             />
 

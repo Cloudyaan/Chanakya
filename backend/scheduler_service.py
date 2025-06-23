@@ -50,6 +50,18 @@ class TenantDataScheduler:
             conn = get_db_connection()
             cursor = conn.cursor()
             
+            # Ensure refresh tracking table exists
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS auto_fetch_refresh_log (
+                    id VARCHAR(100) PRIMARY KEY,
+                    tenant_id VARCHAR(50),
+                    data_type VARCHAR(50),
+                    last_refresh_time DATETIME,
+                    status VARCHAR(20) DEFAULT 'success',
+                    UNIQUE(tenant_id, data_type)
+                )
+            ''')
+            
             # Get all active tenants with auto-fetch enabled
             cursor.execute('''
                 SELECT id, name, tenantId, autoFetchEnabled, scheduleValue, scheduleUnit 
@@ -164,6 +176,27 @@ class TenantDataScheduler:
             print(f"Error checking fetch time for {data_type}: {e}")
             return False
     
+    def _update_refresh_time(self, tenant_id, data_type, status='success'):
+        """Update the refresh time for a specific data type"""
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            current_time = datetime.now()
+            cursor.execute('''
+                INSERT OR REPLACE INTO auto_fetch_refresh_log 
+                (id, tenant_id, data_type, last_refresh_time, status) 
+                VALUES (?, ?, ?, ?, ?)
+            ''', (f"{tenant_id}_{data_type}", tenant_id, data_type, current_time.isoformat(), status))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print(f"    Updated refresh time for {data_type}: {current_time}")
+            
+        except Exception as e:
+            print(f"Error updating refresh time for {data_type}: {e}")
+    
     def _fetch_all_data(self, tenant_id, tenant_name, tenant_azure_id):
         """Fetch all data types (message center, windows updates, and news) for a tenant"""
         try:
@@ -194,13 +227,17 @@ class TenantDataScheduler:
                 
                 if result.returncode == 0:
                     print(f"     ✓ Message center data fetched successfully")
+                    self._update_refresh_time(tenant_id, 'message_center', 'success')
                 else:
                     print(f"     ✗ Message center fetch failed: {result.stderr}")
+                    self._update_refresh_time(tenant_id, 'message_center', 'failed')
                     
             except subprocess.TimeoutExpired:
                 print(f"     ✗ Message center fetch timed out")
+                self._update_refresh_time(tenant_id, 'message_center', 'timeout')
             except Exception as e:
                 print(f"     ✗ Message center fetch error: {e}")
+                self._update_refresh_time(tenant_id, 'message_center', 'error')
             
             # Fetch Windows updates data
             print(f"  🪟 Fetching Windows updates data...")
@@ -224,13 +261,17 @@ class TenantDataScheduler:
                 
                 if result.returncode == 0:
                     print(f"     ✓ Windows updates data fetched successfully")
+                    self._update_refresh_time(tenant_id, 'windows_updates', 'success')
                 else:
                     print(f"     ✗ Windows updates fetch failed: {result.stderr}")
+                    self._update_refresh_time(tenant_id, 'windows_updates', 'failed')
                     
             except subprocess.TimeoutExpired:
                 print(f"     ✗ Windows updates fetch timed out")
+                self._update_refresh_time(tenant_id, 'windows_updates', 'timeout')
             except Exception as e:
                 print(f"     ✗ Windows updates fetch error: {e}")
+                self._update_refresh_time(tenant_id, 'windows_updates', 'error')
             
             # Fetch news data
             print(f"  📰 Fetching M365 news data...")
@@ -254,13 +295,17 @@ class TenantDataScheduler:
                 
                 if result.returncode == 0:
                     print(f"     ✓ M365 news data fetched successfully")
+                    self._update_refresh_time(tenant_id, 'news', 'success')
                 else:
                     print(f"     ✗ M365 news fetch failed: {result.stderr}")
+                    self._update_refresh_time(tenant_id, 'news', 'failed')
                     
             except subprocess.TimeoutExpired:
                 print(f"     ✗ M365 news fetch timed out")
+                self._update_refresh_time(tenant_id, 'news', 'timeout')
             except Exception as e:
                 print(f"     ✗ M365 news fetch error: {e}")
+                self._update_refresh_time(tenant_id, 'news', 'error')
                 
             print(f"🎉 Completed auto-fetch for tenant {tenant_name}")
             
