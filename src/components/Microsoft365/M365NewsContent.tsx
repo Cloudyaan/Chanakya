@@ -114,11 +114,11 @@ const M365NewsContent = ({
     );
   }
 
-  // Sort news by published date (oldest first - ascending order)
+  // Sort news by published date (latest first - descending order)
   const sortedNews = [...newsItems].sort((a, b) => {
     const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
     const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
-    return dateA - dateB;
+    return dateB - dateA; // Changed to descending order (latest first)
   });
 
   console.log('M365NewsContent: Rendering news items:', {

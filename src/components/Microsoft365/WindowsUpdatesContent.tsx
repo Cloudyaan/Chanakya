@@ -93,11 +93,11 @@ const WindowsUpdatesContent = ({
     );
   }
 
-  // Sort by start date (oldest first - ascending order)  
+  // Sort by start date (latest first - descending order)  
   const sortedUpdates = [...windowsUpdates].sort((a, b) => {
     const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
     const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-    return dateA - dateB;
+    return dateB - dateA; // Changed to descending order (latest first)
   });
 
   return (
