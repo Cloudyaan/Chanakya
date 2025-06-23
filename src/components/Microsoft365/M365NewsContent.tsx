@@ -49,6 +49,7 @@ const M365NewsContent = ({
       if (isNaN(date.getTime())) {
         return dateString; // Return original string if date is invalid
       }
+      // Format date without time - only show day, month, and year
       return date.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric', 
@@ -118,12 +119,14 @@ const M365NewsContent = ({
   const sortedNews = [...newsItems].sort((a, b) => {
     const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
     const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
-    return dateB - dateA; // Changed to descending order (latest first)
+    return dateB - dateA; // Descending order (latest first)
   });
 
   console.log('M365NewsContent: Rendering news items:', {
     originalCount: newsItems.length,
-    sortedCount: sortedNews.length
+    sortedCount: sortedNews.length,
+    firstItemDate: sortedNews[0]?.published_date,
+    lastItemDate: sortedNews[sortedNews.length - 1]?.published_date
   });
 
   return (
