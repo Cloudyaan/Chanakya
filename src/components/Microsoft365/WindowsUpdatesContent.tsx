@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { WindowsUpdate } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -88,10 +89,11 @@ const WindowsUpdatesContent = ({
     );
   }
 
+  // Sort updates by startDate in descending order (newest first)
   const sortedUpdates = [...windowsUpdates].sort((a, b) => {
     const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
     const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-    return dateB - dateA;
+    return dateB - dateA; // Descending order - newest first
   });
 
   return (
