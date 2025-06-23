@@ -110,16 +110,25 @@ const M365NewsContent = ({
     );
   }
 
-  // Sort news by published date (newest first)
+  // Fixed sorting logic: Sort news by published date (newest first) with proper null/undefined handling
   const sortedNews = [...newsItems].sort((a, b) => {
+    // Handle null/undefined dates by treating them as very old dates (epoch time)
     const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
     const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
-    return dateB - dateA;
+    
+    // Handle invalid dates
+    const timeA = isNaN(dateA) ? 0 : dateA;
+    const timeB = isNaN(dateB) ? 0 : dateB;
+    
+    // Sort in descending order (newest first)
+    return timeB - timeA;
   });
 
   console.log('M365NewsContent: Rendering news items:', {
     originalCount: newsItems.length,
-    sortedCount: sortedNews.length
+    sortedCount: sortedNews.length,
+    firstItemDate: sortedNews[0]?.published_date,
+    lastItemDate: sortedNews[sortedNews.length - 1]?.published_date
   });
 
   return (
