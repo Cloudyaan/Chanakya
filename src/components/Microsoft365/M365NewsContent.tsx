@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { M365News } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -49,12 +48,11 @@ const M365NewsContent = ({
       if (isNaN(date.getTime())) {
         return dateString; // Return original string if date is invalid
       }
-      // Format date without time - only show day, month, and year
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric', 
-        month: 'short',
-        day: 'numeric'
+      // Format date as dd/mm/yyyy
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
       });
     } catch (e) {
       console.error('Error formatting date:', e);

@@ -39,11 +39,14 @@ const WindowsUpdatesContent = ({
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric', 
-        month: 'short',
-        day: 'numeric'
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if date is invalid
+      }
+      // Format date as dd/mm/yyyy
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
       });
     } catch (e) {
       console.error('Error formatting date:', e);
