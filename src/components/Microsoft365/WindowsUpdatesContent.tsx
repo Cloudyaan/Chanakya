@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { WindowsUpdate } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -17,7 +18,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNow } from 'date-fns';
 
 interface WindowsUpdatesContentProps {
   isLoading: boolean;
@@ -39,7 +39,12 @@ const WindowsUpdatesContent = ({
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return formatDistanceToNow(date, { addSuffix: true });
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric', 
+        month: 'short',
+        day: 'numeric'
+      });
     } catch (e) {
       console.error('Error formatting date:', e);
       return dateString || 'N/A';
@@ -88,10 +93,11 @@ const WindowsUpdatesContent = ({
     );
   }
 
+  // Sort by last modified date (oldest first - ascending order)  
   const sortedUpdates = [...windowsUpdates].sort((a, b) => {
-    const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-    const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-    return dateB - dateA;
+    const dateA = a.lastModifiedDate ? new Date(a.lastModifiedDate).getTime() : 0;
+    const dateB = b.lastModifiedDate ? new Date(b.lastModifiedDate).getTime() : 0;
+    return dateA - dateB;
   });
 
   return (
@@ -127,7 +133,7 @@ const WindowsUpdatesContent = ({
                 
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
-                  <span>{formatDate(update.startDate)}</span>
+                  <span>{formatDate(update.lastModifiedDate)}</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
