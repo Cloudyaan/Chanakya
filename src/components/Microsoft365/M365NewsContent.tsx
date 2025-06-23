@@ -114,10 +114,10 @@ const M365NewsContent = ({
     );
   }
 
-  // Sort news by last modified date (oldest first - ascending order)
+  // Sort news by published date (oldest first - ascending order)
   const sortedNews = [...newsItems].sort((a, b) => {
-    const dateA = a.last_modified ? new Date(a.last_modified).getTime() : 0;
-    const dateB = b.last_modified ? new Date(b.last_modified).getTime() : 0;
+    const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
+    const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
     return dateA - dateB;
   });
 
@@ -163,7 +163,7 @@ const M365NewsContent = ({
                 
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
-                  <span>{formatDate(item.last_modified)}</span>
+                  <span>{formatDate(item.published_date)}</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">

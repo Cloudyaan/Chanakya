@@ -35,7 +35,7 @@ const WindowsUpdatesContent = ({
   onUpdateClick
 }: WindowsUpdatesContentProps) => {
   
-  const formatDate = (dateString: string | undefined) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
@@ -93,10 +93,10 @@ const WindowsUpdatesContent = ({
     );
   }
 
-  // Sort by last modified date (oldest first - ascending order)  
+  // Sort by start date (oldest first - ascending order)  
   const sortedUpdates = [...windowsUpdates].sort((a, b) => {
-    const dateA = a.lastModifiedDate ? new Date(a.lastModifiedDate).getTime() : 0;
-    const dateB = b.lastModifiedDate ? new Date(b.lastModifiedDate).getTime() : 0;
+    const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+    const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
     return dateA - dateB;
   });
 
@@ -133,7 +133,7 @@ const WindowsUpdatesContent = ({
                 
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
-                  <span>{formatDate(update.lastModifiedDate)}</span>
+                  <span>{formatDate(update.startDate)}</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
