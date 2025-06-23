@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { M365News } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -52,7 +51,7 @@ const M365NewsContent = ({
       let date: Date;
       
       // Check if it's already a Date object
-      if (dateString instanceof Date) {
+      if (typeof dateString === 'object' && dateString instanceof Date) {
         date = dateString;
       } else {
         // Clean the date string - remove extra spaces and handle RFC format
