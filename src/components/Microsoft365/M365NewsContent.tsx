@@ -110,11 +110,11 @@ const M365NewsContent = ({
     );
   }
 
-  // Sort news by published date (newest first)
+  // Sort news by published date (oldest first - ascending order)
   const sortedNews = [...newsItems].sort((a, b) => {
     const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
     const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
-    return dateB - dateA;
+    return dateA - dateB;
   });
 
   console.log('M365NewsContent: Rendering news items:', {
@@ -160,12 +160,6 @@ const M365NewsContent = ({
                 <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
                   <Calendar size={14} />
                   <span>{formatDate(item.published_date)}</span>
-                  {item.tenantName && (
-                    <>
-                      <span>•</span>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{item.tenantName}</span>
-                    </>
-                  )}
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mt-2">
