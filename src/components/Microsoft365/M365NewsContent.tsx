@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { M365News } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -43,20 +44,50 @@ const M365NewsContent = ({
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
+    
+    console.log('Original date string:', dateString);
+    
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return dateString; // Return original string if date is invalid
+      // Handle various date formats
+      let date: Date;
+      
+      // Check if it's already a Date object
+      if (dateString instanceof Date) {
+        date = dateString;
+      } else {
+        // Clean the date string - remove extra spaces and handle RFC format
+        const cleanDateString = dateString.toString().trim();
+        
+        // Handle RFC 2822 format like "Wed, 28 May 2025 23:00:19 Z"
+        if (cleanDateString.includes(',') && cleanDateString.includes('Z')) {
+          // Remove the Z and parse
+          const withoutZ = cleanDateString.replace(' Z', ' GMT');
+          date = new Date(withoutZ);
+        } else {
+          // Try parsing as-is
+          date = new Date(cleanDateString);
+        }
       }
+      
+      console.log('Parsed date:', date);
+      
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date after parsing:', dateString);
+        return 'Invalid Date';
+      }
+      
       // Format date as dd/mm/yyyy
-      return date.toLocaleDateString('en-GB', {
+      const formatted = date.toLocaleDateString('en-GB', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       });
+      
+      console.log('Formatted date:', formatted);
+      return formatted;
     } catch (e) {
-      console.error('Error formatting date:', e);
-      return dateString || 'N/A';
+      console.error('Error formatting date:', e, 'Original:', dateString);
+      return 'Error formatting date';
     }
   };
 
@@ -113,11 +144,56 @@ const M365NewsContent = ({
     );
   }
 
-  // Sort news by published date (latest first - descending order)
+  // Enhanced sorting function with better date parsing
   const sortedNews = [...newsItems].sort((a, b) => {
-    const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
-    const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
-    return dateB - dateA; // Descending order (latest first)
+    console.log('Sorting comparison:', {
+      itemA: { title: a.title, date: a.published_date },
+      itemB: { title: b.title, date: b.published_date }
+    });
+    
+    // Handle missing dates
+    if (!a.published_date && !b.published_date) return 0;
+    if (!a.published_date) return 1; // Put items without dates at the end
+    if (!b.published_date) return -1;
+    
+    try {
+      // Parse dates with enhanced handling
+      let dateA: Date, dateB: Date;
+      
+      // Clean and parse date A
+      const cleanDateA = a.published_date.toString().trim();
+      if (cleanDateA.includes(',') && cleanDateA.includes('Z')) {
+        dateA = new Date(cleanDateA.replace(' Z', ' GMT'));
+      } else {
+        dateA = new Date(cleanDateA);
+      }
+      
+      // Clean and parse date B
+      const cleanDateB = b.published_date.toString().trim();
+      if (cleanDateB.includes(',') && cleanDateB.includes('Z')) {
+        dateB = new Date(cleanDateB.replace(' Z', ' GMT'));
+      } else {
+        dateB = new Date(cleanDateB);
+      }
+      
+      // Check for invalid dates
+      if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+      if (isNaN(dateA.getTime())) return 1;
+      if (isNaN(dateB.getTime())) return -1;
+      
+      // Sort in descending order (latest first)
+      const result = dateB.getTime() - dateA.getTime();
+      console.log('Sort result:', {
+        dateA: dateA.toISOString(),
+        dateB: dateB.toISOString(),
+        result
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Error sorting dates:', error);
+      return 0;
+    }
   });
 
   console.log('M365NewsContent: Rendering news items:', {
