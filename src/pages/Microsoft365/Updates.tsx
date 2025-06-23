@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -171,6 +172,7 @@ const Updates = () => {
     await refreshWindowsUpdates(selectedTenant);
   };
   
+  // Updated news refresh handler to fetch from external source
   const handleManualNewsRefresh = async (): Promise<void> => {
     if (!selectedTenant) {
       toast({
@@ -181,12 +183,12 @@ const Updates = () => {
       return;
     }
     
-    console.log('handleManualNewsRefresh - refreshing news for tenant:', selectedTenant);
+    console.log('handleManualNewsRefresh - fetching news from external source for tenant:', selectedTenant);
     toast({
-      title: "Refreshing Microsoft 365 News",
-      description: "Loading latest news from database",
+      title: "Fetching Microsoft 365 News",
+      description: "Getting latest news from Microsoft RSS feed",
     });
-    await refreshNews();
+    await handleFetchM365News();
   };
 
   // Debug logging
