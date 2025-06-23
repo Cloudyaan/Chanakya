@@ -40,21 +40,14 @@ const UpdatesTable = ({
     return ['all', ...cats];
   }, [updates]);
   
-  // Apply filters and sorting to updates
-  const filteredAndSortedUpdates = useMemo(() => {
-    let filtered = updates.filter(update => {
+  // Apply filters to updates
+  const filteredUpdates = useMemo(() => {
+    return updates.filter(update => {
       const matchesActionType = actionTypeFilter === 'all' || 
         (update.actionType || 'Informational') === actionTypeFilter;
       const matchesCategory = categoryFilter === 'all' || 
         (update.category || 'General') === categoryFilter;
       return matchesActionType && matchesCategory;
-    });
-
-    // Sort by publishedDate in descending order (newest first)
-    return filtered.sort((a, b) => {
-      const dateA = new Date(a.publishedDate).getTime();
-      const dateB = new Date(b.publishedDate).getTime();
-      return dateB - dateA; // Descending order - newest first
     });
   }, [updates, actionTypeFilter, categoryFilter]);
 
@@ -73,13 +66,7 @@ const UpdatesTable = ({
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      return date.toLocaleDateString();
     } catch (e) {
       return dateString;
     }
@@ -152,7 +139,7 @@ const UpdatesTable = ({
             </Select>
             
             <div className="text-sm text-muted-foreground">
-              Showing {filteredAndSortedUpdates.length} of {updates.length} updates
+              Showing {filteredUpdates.length} of {updates.length} updates
             </div>
           </div>
         </div>
@@ -170,7 +157,7 @@ const UpdatesTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedUpdates.map(update => {
+              {filteredUpdates.map(update => {
                 const isPlanForChange = update.actionType === 'Plan for Change';
                 const isNotStayInformed = update.category !== 'stayInformed';
                 return (
