@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react';
 import { getTenantUpdates, fetchTenantUpdates } from '@/utils/messageCenterOperations';
 import { TenantUpdate } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useUpdates = (tenantId: string | null) => {
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Use React Query only for data retrieval from database, disable all automatic fetching
   const {
@@ -23,8 +24,8 @@ export const useUpdates = (tenantId: string | null) => {
       return await getTenantUpdates(tenantId);
     },
     enabled: !!tenantId,
-    staleTime: Infinity, // Never consider data stale
-    refetchOnMount: false, // Don't fetch when component mounts
+    staleTime: 1000 * 30, // 30 seconds - allow some staleness but not too much
+    refetchOnMount: true, // Refetch when component mounts
     refetchOnWindowFocus: false, // Don't fetch when window gains focus
     refetchOnReconnect: false, // Don't fetch when network reconnects
     refetchInterval: false, // Disable automatic refetching
@@ -60,11 +61,16 @@ export const useUpdates = (tenantId: string | null) => {
           variant: "default",
         });
         
-        // Wait a moment to allow the backend to process the data
-        setTimeout(() => {
-          refreshData();
+        // Wait a moment to allow the backend to process the data, then invalidate and refetch
+        setTimeout(async () => {
+          // Invalidate all related queries to ensure fresh data
+          await queryClient.invalidateQueries({ queryKey: ['updates', tenantId] });
+          await queryClient.invalidateQueries({ queryKey: ['refresh-times', tenantId] });
+          
+          // Force refetch to get the latest data
+          await refreshData();
           setIsFetching(false);
-        }, 2000);
+        }, 3000); // Increased timeout to ensure backend processing completes
       } else {
         toast({
           title: "Fetching updates failed",
@@ -87,6 +93,8 @@ export const useUpdates = (tenantId: string | null) => {
   // Simple refresh function that only gets data from database
   const refreshFromDatabase = async () => {
     console.log("Refreshing data from database only");
+    // Invalidate cache first to ensure fresh data
+    await queryClient.invalidateQueries({ queryKey: ['updates', tenantId] });
     return refreshData();
   };
 

@@ -32,8 +32,8 @@ export const useRefreshTimes = (tenantId: string | null) => {
       }
     },
     enabled: !!tenantId,
-    staleTime: 1000 * 30, // 30 seconds stale time for more frequent updates
-    refetchInterval: 1000 * 60, // Refetch every minute to catch auto-updates quickly
+    staleTime: 1000 * 10, // 10 seconds stale time for more frequent updates
+    refetchInterval: 1000 * 30, // Refetch every 30 seconds to catch auto-updates quickly
   });
 
   // Helper function to get last refresh time for a specific data type

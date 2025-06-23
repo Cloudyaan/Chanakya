@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { WindowsUpdate } from '@/utils/types';
 import { getWindowsUpdates, fetchWindowsUpdates } from '@/utils/updatesOperations';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useWindowsUpdates = (tenantId: string | null) => {
   const [windowsUpdates, setWindowsUpdates] = useState<WindowsUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Load Windows updates on initial mount or tenantId change, but don't show loading toast
   useEffect(() => {
@@ -69,14 +71,20 @@ export const useWindowsUpdates = (tenantId: string | null) => {
           description: "Windows update data is being retrieved from Microsoft Graph API",
           variant: "default",
         });
-        // Reload the data after fetching with a small delay
-        setTimeout(() => loadWindowsUpdates(tenantId), 2000);
+        
+        // Invalidate related queries and reload data with increased timeout
+        setTimeout(async () => {
+          await queryClient.invalidateQueries({ queryKey: ['refresh-times', tenantId] });
+          await loadWindowsUpdates(tenantId);
+          setIsFetching(false);
+        }, 3000); // Increased timeout to ensure backend processing completes
       } else {
         toast({
           title: "Fetching Windows updates failed",
           description: "Could not fetch Windows update data from Microsoft Graph API",
           variant: "destructive",
         });
+        setIsFetching(false);
       }
     } catch (error) {
       console.error('Error fetching Windows updates:', error);
@@ -85,7 +93,6 @@ export const useWindowsUpdates = (tenantId: string | null) => {
         description: "Failed to trigger Windows update data fetch",
         variant: "destructive",
       });
-    } finally {
       setIsFetching(false);
     }
   };
