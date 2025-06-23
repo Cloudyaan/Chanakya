@@ -70,13 +70,29 @@ print(f"From Email: {os.environ.get('MS_FROM_EMAIL')}")
 print(f"Client Secret configured: {'Yes' if os.environ.get('MS_CLIENT_SECRET') else 'No'}")
 
 if __name__ == '__main__':
+    print("\n" + "="*60)
+    print("STARTING AUTO-FETCH SCHEDULER")
+    print("="*60)
+    
     # Start the data fetch scheduler
-    print("Starting tenant data scheduler...")
-    scheduler.start()
+    try:
+        scheduler.start()
+        print("✓ Tenant data scheduler started successfully")
+    except Exception as e:
+        print(f"✗ Failed to start scheduler: {e}")
+    
+    print("="*60)
+    print("STARTING FLASK APPLICATION")
+    print("="*60)
     
     app = create_app()
     try:
-        app.run(debug=True, port=5000)
+        print("Flask application is starting on http://127.0.0.1:5000")
+        app.run(debug=True, port=5000, use_reloader=False)  # Disable reloader to prevent scheduler conflicts
+    except KeyboardInterrupt:
+        print("\nShutting down application...")
     finally:
         # Stop the scheduler when the app shuts down
+        print("Stopping scheduler...")
         scheduler.stop()
+        print("Application stopped.")
