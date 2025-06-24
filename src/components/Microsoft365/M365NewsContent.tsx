@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { M365News } from '@/utils/types';
 import UpdatesLoading from './UpdatesLoading';
@@ -50,22 +51,18 @@ const M365NewsContent = ({
       // Handle various date formats
       let date: Date;
       
-      // Check if it's already a Date object
-      if (dateString instanceof Date) {
-        date = dateString;
+      // Since dateString is guaranteed to be a string here (after null check)
+      // we can safely convert it to string and parse
+      const cleanDateString = dateString.toString().trim();
+      
+      // Handle RFC 2822 format like "Wed, 28 May 2025 23:00:19 Z"
+      if (cleanDateString.includes(',') && cleanDateString.includes('Z')) {
+        // Remove the Z and parse
+        const withoutZ = cleanDateString.replace(' Z', ' GMT');
+        date = new Date(withoutZ);
       } else {
-        // Clean the date string - remove extra spaces and handle RFC format
-        const cleanDateString = dateString.toString().trim();
-        
-        // Handle RFC 2822 format like "Wed, 28 May 2025 23:00:19 Z"
-        if (cleanDateString.includes(',') && cleanDateString.includes('Z')) {
-          // Remove the Z and parse
-          const withoutZ = cleanDateString.replace(' Z', ' GMT');
-          date = new Date(withoutZ);
-        } else {
-          // Try parsing as-is
-          date = new Date(cleanDateString);
-        }
+        // Try parsing as-is
+        date = new Date(cleanDateString);
       }
       
       console.log('Parsed date:', date);
