@@ -86,9 +86,14 @@ if __name__ == '__main__':
     print("="*60)
     
     app = create_app()
+    
+    # Get port from environment variable (Azure sets this) or default to 8000
+    port = int(os.environ.get('PORT', 8000))
+    host = os.environ.get('HOST', '0.0.0.0')  # Azure requires binding to 0.0.0.0
+    
     try:
-        print("Flask application is starting on http://127.0.0.1:5000")
-        app.run(debug=True, port=5000, use_reloader=False)  # Disable reloader to prevent scheduler conflicts
+        print(f"Flask application is starting on {host}:{port}")
+        app.run(debug=False, host=host, port=port, use_reloader=False)  # Disable debug in production
     except KeyboardInterrupt:
         print("\nShutting down application...")
     finally:

@@ -51,7 +51,7 @@ const M365NewsContent = ({
       let date: Date;
       
       // Check if it's already a Date object
-      if (typeof dateString === 'object' && dateString instanceof Date) {
+      if (dateString instanceof Date) {
         date = dateString;
       } else {
         // Clean the date string - remove extra spaces and handle RFC format
